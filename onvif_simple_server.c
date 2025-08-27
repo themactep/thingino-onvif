@@ -31,6 +31,7 @@
 #include "media2_service.h"
 #include "ptz_service.h"
 #include "events_service.h"
+#include "deviceio_service.h"
 #include "fault.h"
 #include "ezxml_wrapper.h"
 #include "conf.h"
@@ -38,6 +39,7 @@
 #include "log.h"
 
 #define DEFAULT_CONF_FILE "/etc/onvif_simple_server.conf"
+#define DEFAULT_JSON_CONF_FILE "/etc/onvif_simple_server.json"
 #define DEFAULT_LOG_FILE "/var/log/onvif_simple_server.log"
 #define DEBUG_FILE "/tmp/onvif_simple_server.debug"
 
@@ -165,6 +167,11 @@ int main(int argc, char ** argv)
     }
     conf_file = (char *) malloc((strlen(DEFAULT_CONF_FILE) + 1) * sizeof(char));
     strcpy(conf_file, DEFAULT_CONF_FILE);
+    if (access(conf_file, F_OK) == -1) {
+        free(conf_file);
+        conf_file = (char *) malloc((strlen(DEFAULT_JSON_CONF_FILE) + 1) * sizeof(char));
+        strcpy(conf_file, DEFAULT_JSON_CONF_FILE);
+    }
 
     while (1) {
         static struct option long_options[] =
@@ -252,7 +259,8 @@ int main(int argc, char ** argv)
                 (strstr(tmp, "media_service") != NULL) ||
                 (strstr(tmp, "media2_service") != NULL) ||
                 (strstr(tmp, "ptz_service") != NULL) ||
-                (strstr(tmp, "events_service") != NULL)) {
+                (strstr(tmp, "events_service") != NULL) ||
+                (strstr(tmp, "deviceio_service") != NULL)) {
             tmp = argv[argc - 1];
         } else {
             tmp = argv[0];
@@ -263,6 +271,11 @@ int main(int argc, char ** argv)
     prog_name = basename(tmp);
 
     if (conf_file[0] == '\0') {
+        print_usage(argv[0]);
+        free(conf_file);
+        exit(EXIT_SUCCESS);
+    }
+    if (strlen(conf_file) <= 5) {
         print_usage(argv[0]);
         free(conf_file);
         exit(EXIT_SUCCESS);
@@ -279,7 +292,11 @@ int main(int argc, char ** argv)
     dump_env();
 
     log_info("Processing configuration file %s...", conf_file);
-    itmp = process_conf_file(conf_file);
+    if (strcasecmp(".json", &conf_file[strlen(conf_file) - 5]) == 0) {
+        itmp = process_json_conf_file(conf_file);
+    } else {
+        itmp = process_conf_file(conf_file);
+    }
     if (itmp == -1) {
         log_fatal("Unable to find configuration file %s", conf_file);
         fclose(fLog);
@@ -540,6 +557,8 @@ int main(int argc, char ** argv)
                 media2_get_service_capabilities();
             } else if (strcasecmp(method, "GetProfiles") == 0) {
                 media2_get_profiles();
+            } else if (strcasecmp(method, "GetVideoSourceModes") == 0) {
+                media2_get_video_source_modes();
             } else if (strcasecmp(method, "GetVideoSourceConfigurations") == 0) {
                 media2_get_video_source_configurations();
             } else if (strcasecmp(method, "GetVideoSourceConfigurationOptions") == 0) {
@@ -628,6 +647,26 @@ int main(int argc, char ** argv)
                 events_set_synchronization_point();
             } else {
                 events_unsupported(method);
+            }
+        } else if (strcasecmp("deviceio_service", prog_name) == 0) {
+            if (strcasecmp(method, "GetVideoSources") == 0) {
+                deviceio_get_video_sources();
+            } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
+                deviceio_get_service_capabilities();
+            } else if (strcasecmp(method, "GetAudioOutputs") == 0) {
+                deviceio_get_audio_outputs();
+            } else if (strcasecmp(method, "GetAudioSources") == 0) {
+                deviceio_get_audio_sources();
+            } else if (strcasecmp(method, "GetRelayOutputs") == 0) {
+                deviceio_get_relay_outputs();
+            } else if (strcasecmp(method, "GetRelayOutputOptions") == 0) {
+                deviceio_get_relay_output_options();
+            } else if (strcasecmp(method, "SetRelayOutputSettings") == 0) {
+                deviceio_set_relay_output_settings();
+            } else if (strcasecmp(method, "SetRelayOutputState") == 0) {
+                deviceio_set_relay_output_state();
+            } else {
+                deviceio_unsupported(method);
             }
         }
     } else {

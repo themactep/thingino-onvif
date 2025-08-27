@@ -382,6 +382,36 @@ int media2_get_profiles()
     }
 }
 
+int media2_get_video_source_modes()
+{
+    const char *token = get_element("VideoSourceToken", "Body");
+    char stmp_w[16], stmp_h[16], video_enc[16];
+
+    if (strcasecmp("VideoSourceToken", token) == 0) {
+
+        // Get data from profile 0
+        sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
+        sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
+        set_video_codec(video_enc, 16, service_ctx.profiles[0].type, 2);
+        long size = cat(NULL, "media2_service_files/GetVideoSourceModes.xml", 6,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h,
+                "%VIDEO_ENCODING%", video_enc);
+
+        fprintf(stdout, "Content-type: application/soap+xml\r\n");
+        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+
+        return cat("stdout", "media2_service_files/GetVideoSourceModes.xml", 6,
+                "%WIDTH%", stmp_w,
+                "%HEIGHT%", stmp_h,
+                "%VIDEO_ENCODING%", video_enc);
+
+    } else {
+        send_fault("media2_service", "Sender", "ter:InvalidArgVal", "ter:NoVideoSource", "No video source", "The requested video source does not exist");
+        return -1;
+    }
+}
+
 int media2_get_video_source_configurations()
 {
     const char *configuration_token = get_element("ConfigurationToken", "Body");
@@ -899,6 +929,8 @@ int media2_get_audio_encoder_configuration_options()
     const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
 
+    char bitrate[4], samplerate[4];
+
     memset(token, '\0', sizeof(token));
     if (configuration_token != NULL) {
         // Extract "Profile_x" from token Profile_x_VideoEncoderConfig
@@ -920,10 +952,18 @@ int media2_get_audio_encoder_configuration_options()
     if ((service_ctx.profiles_num > 0) &&
             (strcasecmp(service_ctx.profiles[0].name, token) == 0)) {
 
-        if (service_ctx.profiles[0].audio_encoder != AUDIO_NONE) {
+        // G726 is not suppoerted
+        if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) && (service_ctx.profiles[0].audio_encoder != G726)) {
 
             set_audio_codec(audio_enc, 16, service_ctx.profiles[0].audio_encoder, 2);
 
+            if (service_ctx.profiles[0].audio_encoder == G711) {
+                sprintf(bitrate, "%d", 64);
+                sprintf(samplerate, "%d", 8);
+            } else if (service_ctx.profiles[0].audio_encoder == AAC) {
+                sprintf(bitrate, "%d", 50);
+                sprintf(samplerate, "%d", 16);
+            }
         } else {
             send_fault("media2_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
             return -2;
@@ -931,10 +971,18 @@ int media2_get_audio_encoder_configuration_options()
     } else if ((service_ctx.profiles_num == 2) &&
             (strcasecmp(service_ctx.profiles[1].name, token) == 0)) {
 
-        if (service_ctx.profiles[1].audio_encoder != AUDIO_NONE) {
+        // G726 is not suppoerted
+        if ((service_ctx.profiles[1].audio_encoder != AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder != G726)) {
 
             set_audio_codec(audio_enc, 16, service_ctx.profiles[1].audio_encoder, 2);
 
+            if (service_ctx.profiles[1].audio_encoder == G711) {
+                sprintf(bitrate, "%d", 64);
+                sprintf(samplerate, "%d", 8);
+            } else if (service_ctx.profiles[1].audio_encoder == AAC) {
+                sprintf(bitrate, "%d", 50);
+                sprintf(samplerate, "%d", 16);
+            }
         } else {
             send_fault("media2_service", "Receiver", "ter:ActionNotSupported", "ter:AudioNotSupported", "AudioNotSupported", "The device does not support audio");
             return -3;
@@ -944,14 +992,18 @@ int media2_get_audio_encoder_configuration_options()
         return -4;
     }
 
-    long size = cat(NULL, "media2_service_files/GetAudioEncoderConfigurationOptions.xml", 2,
-            "%AUDIO_ENCODING%", audio_enc);
+    long size = cat(NULL, "media2_service_files/GetAudioEncoderConfigurationOptions.xml", 6,
+            "%AUDIO_ENCODING%", audio_enc,
+            "%BITRATE%", bitrate,
+            "%SAMPLERATE%", samplerate);
 
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-    return cat("stdout", "media2_service_files/GetAudioEncoderConfigurationOptions.xml", 2,
-            "%AUDIO_ENCODING%", audio_enc);
+    return cat("stdout", "media2_service_files/GetAudioEncoderConfigurationOptions.xml", 6,
+            "%AUDIO_ENCODING%", audio_enc,
+            "%BITRATE%", bitrate,
+            "%SAMPLERATE%", samplerate);
 }
 
 int media2_get_audio_output_configurations()
@@ -1168,6 +1220,7 @@ int media2_get_audio_decoder_configuration_options()
     const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
     char audio_decoder[16];
+    char bitrate[4], samplerate[4];
 
     memset(token, '\0', sizeof(token));
     if (configuration_token != NULL) {
@@ -1193,18 +1246,30 @@ int media2_get_audio_decoder_configuration_options()
         decoder_type = service_ctx.profiles[1].audio_decoder;
     }
 
-    if (decoder_type != AUDIO_NONE) {
+    // G726 is not suppoerted
+    if ((decoder_type != AUDIO_NONE) && (decoder_type != G726)) {
 
         set_audio_codec(audio_decoder, 16, decoder_type, 2);
+        if (decoder_type == G711) {
+            sprintf(bitrate, "%d", 64);
+            sprintf(samplerate, "%d", 8);
+        } else if (decoder_type == AAC) {
+            sprintf(bitrate, "%d", 50);
+            sprintf(samplerate, "%d", 16);
+        }
 
-        long size = cat(NULL, "media2_service_files/GetAudioDecoderConfigurationOptions.xml", 2,
-                "%AUDIO_DECODING%", audio_decoder);
+        long size = cat(NULL, "media2_service_files/GetAudioDecoderConfigurationOptions.xml", 6,
+                "%AUDIO_DECODING%", audio_decoder,
+                "%BITRATE%", bitrate,
+                "%SAMPLERATE%", samplerate);
 
         fprintf(stdout, "Content-type: application/soap+xml\r\n");
         fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
 
-        return cat("stdout", "media2_service_files/GetAudioDecoderConfigurationOptions.xml", 2,
-                "%AUDIO_DECODING%", audio_decoder);
+        return cat("stdout", "media2_service_files/GetAudioDecoderConfigurationOptions.xml", 6,
+                "%AUDIO_DECODING%", audio_decoder,
+                "%BITRATE%", bitrate,
+                "%SAMPLERATE%", samplerate);
 
     } else {
         send_fault("media2_service", "Receiver", "ter:ActionNotSupported", "ter:AudioDecodingNotSupported", "AudioDecodingNotSupported", "Audio or Audio decoding is not supported by the device");

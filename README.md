@@ -7,7 +7,7 @@ So:
 
 The XML parsing features are replaced by a wrapper that uses ezxml library and a template based strategy.
 
-About security, you can choose between libtomcrypt or mbedtls, to handle authentication.
+About security, you can choose between libtomcrypt, mbedtls or wolfssl to handle authentication.
 
 The web service discovery daemon and the notify server daemon are standalone programs and must be started with command line options.
 
@@ -17,6 +17,8 @@ Simple also means that it does not implement all the functions required and ther
 But usually is enough to work with an onvif client.
 
 ## Table of Contents
+- [Build](#build)
+- [Httpd](#httpd)
 - [Table of Contents](#table-of-contents)
 - [Configuration](#configuration)
 - [Compatibility](#compatibility)
@@ -26,10 +28,13 @@ But usually is enough to work with an onvif client.
 - [Donation](#donation)
 
 ## Build
-- Open the `Makefile` and edit the path to the libtomcrypt library to suit your needs
+- Open the `Makefile` and edit it to suit your needs. Instead of `Makefile` rename `Makefile.static` if you want to build a static binary embedding all libraries (ssl and zlib).
+- Export HAVE_WOLFSSL if you want to use wolfssl or HAVE_MBEDTLS if you want to use mbedtls (default libtomcrypt).
+- Export USE_ZLIB if you want to use compressed template files. In this case, all xml files will be compressed to use less disk space but the server will be slower.
 - Run `make`
 
-## Create a working example with lighttpd
+## Httpd
+### Create a working example with lighttpd
 - Open extras folder
 - Customize `build.sh` script, if you want
 - Run `./build.sh`
@@ -37,7 +42,7 @@ But usually is enough to work with an onvif client.
 - Run `/usr/local/bin/lighttpd -f /usr/local/etc/lighttpd.conf`
 - Run your preferred client and test the address `http://YOUR_IP:8080/onvif/device_service`
 
-## Use httpd from busybox
+### Use httpd from busybox
 If you are using busybox I prepared a patch to use it with onvif_simple_server. The patch is valid for version 1.36.1.
 ```
 diff -Naur busybox-1.36.1.ori/networking/httpd.c busybox-1.36.1/networking/httpd.c
@@ -92,6 +97,9 @@ serial_num=AFUSY12ABCDE3F456789
 ifs=wlan0
 port=80
 scope=onvif://www.onvif.org/Profile/Streaming
+scope=onvif://www.onvif.org/Profile/T
+scope=onvif://www.onvif.org/hardware
+scope=onvif://www.onvif.org/name
 user=
 password=
 #Advanced options
@@ -136,46 +144,62 @@ move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up -s %f
 move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down -s %f
 move_in=/tmp/sd/yi-hack/bin/ipc_cmd -m in -s %f
 move_out=/tmp/sd/yi-hack/bin/ipc_cmd -m out -s %f
-move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop
+move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop -t %s
 move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %d
 goto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0
-set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %s
+set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -n %d -m %s
 set_home_position=/tmp/sd/yi-hack/script/ptz_presets.sh -a set_home_position
 remove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %d
 jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f,%f
 jump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %f,%f,%f
 get_presets=/tmp/sd/yi-hack/script/ptz_presets.sh -a get_presets
 
+#RELAY OUTPUTS
+#Relay 0
+idle_state=open
+close=/usr/local/bin/set_relay -n 0 -a close
+open=/usr/local/bin/set_relay -n 0 -a open
+#Relay 1
+idle_state=open
+close=/usr/local/bin/set_relay -n 1 -a close
+open=/usr/local/bin/set_relay -n 1 -a open
+
 #EVENT
 events=1
 #Event 0
 topic=tns1:VideoSource/MotionAlarm
-source_name=VideoSourceConfigurationToken
+source_name=Source
+source_type=tt:ReferenceToken
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/motion_alarm
 #Event 1
 topic=tns1:RuleEngine/MyRuleDetector/PeopleDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/human_detection
 #Event 2
 topic=tns1:RuleEngine/MyRuleDetector/VehicleDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/vehicle_detection
 #Event 3
 topic=tns1:RuleEngine/MyRuleDetector/DogCatDetect
 source_name=VideoSourceConfigurationToken
+source_type=xsd:string
 source_value=VideoSourceToken
 input_file=/tmp/onvif_notify_server/animal_detection
 #Event 4
 topic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect
 source_name=AudioSourceConfigurationToken
+source_type=xsd:string
 source_value=AudioSourceToken
 input_file=/tmp/onvif_notify_server/baby_crying
 #Event 5
 topic=tns1:AudioAnalytics/Audio/DetectedSound
 source_name=AudioSourceConfigurationToken
+source_type=tt:ReferenceToken
 source_value=AudioSourceToken
 input_file=/tmp/onvif_notify_server/sound_detection
 ```
@@ -190,7 +214,35 @@ Note:
   example: move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right > /dev/null
 
 - %s, %d and %f are placeholders replaced runtime with the proper parameter
+
+  move_left=/tmp/sd/yi-hack/bin/ipc_cmd -m left -s %f
+  %s is the velocity of the pan movement
+  move_right=/tmp/sd/yi-hack/bin/ipc_cmd -m right -s %f
+  %s is the velocity of the pan movement
+  move_up=/tmp/sd/yi-hack/bin/ipc_cmd -m up -s %f
+  %s is the velocity of the tilt movement
+  move_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down -s %f
+  %s is the velocity of the tilt movement
+  move_in=/tmp/sd/yi-hack/bin/ipc_cmd -m in -s %f
+  %s is the velocity of the zoom movement
+  move_out=/tmp/sd/yi-hack/bin/ipc_cmd -m out -s %f
+  %s is the velocity of the zoom movement
+  move_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop -t %s
+  %s is what you want to stop: "pantilt", "zoom" or "all"
+  move_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %d
+  %d is the number of the preset you want to move
+  set_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -n %d -m %s
+  %d is the nunmber of the preset you want to update or -1 if you are adding a preset
+  %s is the name of the preset you are adding or changing
+  remove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %d
+  %d is the nunmber of the preset you want to remove
+  jump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %f,%f,%f
+  %f are the pan/tilt/zoom coordinates you want to move
+  jump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %f,%f,%f
+  %f are the pan/tilt/zoom coordinates you want to move
+
 - use the same folder for the input files of the events
+- max 8 events are currently supported (relay_output feature uses events messages to get the relay state, so each relay uses 1 event and the sum of events and relays cannot be greater than 8)
 
 **Please pay attention: the order of the lines must be respected. Don't mix them!**
 
@@ -210,10 +262,14 @@ Brief explanation of some parameters:
 | audio_decoder | set to G711 or AAC if your device support an audio back channel |
 | ptz | 1 if onvif_simple_server can control PTZ, 0 otherwise |
 | max_step_* | max values of x and y movements reported by the cam (min = 0) |
-| move_* | the binary that moves the PTZ controls, onvif_simple_server will run it with a system call |
+| move_* | the binary command that moves the PTZ controls, onvif_simple_server will run it with a system call |
+| idle_state | the relay state when inactive ("close" or "open") |
+| close | the binary command that closes the relay, onvif_simple_server will run it with a system call |
+| open | the binary command that opens the relay, onvif_simple_server will run it with a system call |
 | events | set to 1 to enable PullPoint, 2 to enable Base Subscription or 3 to enable both |
 | topic | the topic of the event |
 | source_name | the source name inside the Notify message |
+| source_name | the source type inside the Notify message |
 | source_value | the source value inside the Notify message |
 | input_file | the file created when the event is fired |
 
@@ -288,6 +344,8 @@ I tested this program with the following clients:
 - Onvif Device Manager (Windows)
 - Synology Surveillance Station (DSM 6.x and 7.x)
 - Onvier (Android)
+- Frigate
+- Unifi Protect
 
 If you test it with other clients or NVR, please let me know opening a issue or a pull request.
 
@@ -295,103 +353,120 @@ Below a list of the implemented functions, all other functions return a generic 
 
 **Device**
 ```
+GetCapabilities
+GetDeviceInformation
+GetDiscoveryMode
+GetNetworkInterfaces
+GetScopes
 GetServices
 GetServiceCapabilities
-GetDeviceInformation
 GetSystemDateAndTime
-SystemReboot
-GetScopes
 GetUsers
 GetWsdlUrl
-GetCapabilities
-GetNetworkInterfaces
+SystemReboot
 ```
-**Media**
+
+**DeviceIO**
 ```
+GetAudioOutputs
+GetAudioSources
+GetRelayOutputOptions
+GetRelayOutputs
 GetServiceCapabilities
 GetVideoSources
-GetVideoSourceConfigurations
-GetVideoSourceConfiguration
-GetCompatibleVideoSourceConfigurations
-GetVideoSourceConfigurationOptions
-GetProfiles
-GetProfile
-GetVideoEncoderConfigurations
-GetVideoEncoderConfiguration
-GetCompatibleVideoEncoderConfigurations
-GetVideoEncoderConfigurationOptions
-GetGuaranteedNumberOfVideoEncoderInstances
-GetSnapshotUri
-GetStreamUri
-GetAudioSources
-GetAudioSourceConfigurations
-GetAudioSourceConfiguration
-GetAudioSourceConfigurationOptions
-GetAudioEncoderConfigurations
-GetAudioEncoderConfiguration
-GetAudioEncoderConfigurationOptions
-GetAudioDecoderConfigurations
-GetAudioDecoderConfiguration
-GetAudioDecoderConfigurationOptions
-GetAudioOutputs
-GetAudioOutputConfiguration
-GetAudioOutputConfigurations
-GetAudioOutputConfigurationOptions
-GetCompatibleAudioSourceConfigurations
-GetCompatibleAudioEncoderConfigurations
-GetCompatibleAudioDecoderConfigurations
-GetCompatibleAudioOutputConfigurations
+SetRelayOutputSettings
+SetRelayOutputState
 ```
-**Media2**
-```
-GetServiceCapabilities
-GetProfiles
-GetVideoSourceConfigurations
-GetVideoSourceConfigurationOptions
-GetVideoEncoderConfigurations
-GetVideoEncoderConfigurationOptions
-GetAudioSourceConfigurations
-GetAudioSourceConfigurationOptions
-GetAudioEncoderConfigurations
-GetAudioEncoderConfigurationOptions
-GetAudioOutputConfigurations
-GetAudioOutputConfigurationOptions
-GetAudioDecoderConfigurations
-GetAudioDecoderConfigurationOptions
-GetSnapshotUri
-GetStreamUri
 
-```
-**PTZ**
-```
-GetServiceCapabilities
-GetConfigurations
-GetConfiguration
-GetConfigurationOptions
-GetNodes
-GetNode
-GetPresets
-GotoPreset
-GotoHomePosition
-ContinuousMove
-RelativeMove
-AbsoluteMove
-Stop
-GetStatus
-SetPreset
-SetHomePosition
-RemovePreset
-```
 **Events**
 ```
-GetServiceCapabilities
 CreatePullPointSubscription
-PullMessages
-Subscribe
-Renew
-Unsubscribe
 GetEventProperties
+GetServiceCapabilities
+PullMessages
+Renew
 SetSynchronizationPoint
+Subscribe
+Unsubscribe
+```
+
+**Media**
+```
+GetAudioDecoderConfiguration
+GetAudioDecoderConfigurationOptions
+GetAudioDecoderConfigurations
+GetAudioEncoderConfiguration
+GetAudioEncoderConfigurationOptions
+GetAudioEncoderConfigurations
+GetAudioOutputConfiguration
+GetAudioOutputConfigurationOptions
+GetAudioOutputConfigurations
+GetAudioOutputs
+GetAudioSources
+GetAudioSourceConfiguration
+GetAudioSourceConfigurationOptions
+GetAudioSourceConfigurations
+GetCompatibleAudioDecoderConfigurations
+GetCompatibleAudioEncoderConfigurations
+GetCompatibleAudioOutputConfigurations
+GetCompatibleAudioSourceConfigurations
+GetCompatibleVideoEncoderConfigurations
+GetCompatibleVideoSourceConfigurations
+GetGuaranteedNumberOfVideoEncoderInstances
+GetProfile
+GetProfiles
+GetServiceCapabilities
+GetSnapshotUri
+GetStreamUri
+GetVideoSourceConfiguration
+GetVideoSourceConfigurationOptions
+GetVideoSourceConfigurations
+GetVideoEncoderConfiguration
+GetVideoEncoderConfigurationOptions
+GetVideoEncoderConfigurations
+GetVideoSources
+```
+
+**Media2**
+```
+GetAudioDecoderConfigurationOptions
+GetAudioDecoderConfigurations
+GetAudioEncoderConfigurationOptions
+GetAudioEncoderConfigurations
+GetAudioOutputConfigurationOptions
+GetAudioOutputConfigurations
+GetAudioSourceConfigurationOptions
+GetAudioSourceConfigurations
+GetProfiles
+GetServiceCapabilities
+GetSnapshotUri
+GetStreamUri
+GetVideoEncoderConfigurationOptions
+GetVideoEncoderConfigurations
+GetVideoSourceConfigurationOptions
+GetVideoSourceConfigurations
+GetVideoSourceModes
+```
+
+**PTZ**
+```
+AbsoluteMove
+ContinuousMove
+GetConfiguration
+GetConfigurationOptions
+GetConfigurations
+GetNode
+GetNodes
+GetPresets
+GetServiceCapabilities
+GetStatus
+GotoHomePosition
+GotoPreset
+RelativeMove
+RemovePreset
+SetHomePosition
+SetPreset
+Stop
 ```
 
 ## Credits

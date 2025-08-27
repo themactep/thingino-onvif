@@ -47,6 +47,11 @@ typedef enum {
     AAC
 } audio_type;
 
+typedef enum {
+    IDLE_STATE_CLOSE,
+    IDLE_STATE_OPEN
+} idle_state;
+
 typedef struct {
     char *name;
     int  width;
@@ -57,6 +62,12 @@ typedef struct {
     int  audio_encoder;
     int  audio_decoder;
 } stream_profile_t;
+
+typedef struct {
+    int idle_state;
+    char *close;
+    char *open;
+} relay_output_t;
 
 typedef struct {
     int enable;
@@ -88,6 +99,7 @@ typedef struct {
 typedef struct {
     char *topic;
     char *source_name;
+    char *source_type;
     char *source_value;
     char *input_file;
 } event_t;
@@ -117,6 +129,8 @@ typedef struct {
     char **scopes;
     int scopes_num;
 
+    relay_output_t *relay_outputs;
+    int relay_outputs_num;
     ptz_node_t ptz_node;
     event_t *events;
     int events_enable;

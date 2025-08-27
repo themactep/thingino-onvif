@@ -46,6 +46,8 @@
 #endif
 #endif
 
+#include <zlib.h>
+
 #include "utils.h"
 #include "onvif_simple_server.h"
 #include "log.h"
@@ -55,6 +57,10 @@
 
 sem_t *sem_memory_lock = SEM_FAILED;
 
+/**
+ * Open a semaphore
+ * @return 0 on success, -1 on error
+ */
 int sem_memory_open()
 {
     sem_memory_lock = sem_open(MEM_LOCK_FILE, O_CREAT, S_IRUSR | S_IWUSR, 1);
@@ -65,8 +71,10 @@ int sem_memory_open()
     return 0;
 }
 
+/**
+ * Close a semaphore
+ */
 void sem_memory_close()
-
 {
     if (sem_memory_lock != SEM_FAILED) {
         sem_close(sem_memory_lock);
@@ -76,6 +84,11 @@ void sem_memory_close()
     return;
 }
 
+/**
+ * Create or open shared memory to share subscriptions and events
+ * @param create Set to 1 if the memory must be created, 0 if not
+ * @return a pointer to the shared memory
+ */
 void *create_shared_memory(int create) {
     int shmfd, rc;
     int shared_seg_size = sizeof(shm_t);
@@ -143,6 +156,11 @@ void *create_shared_memory(int create) {
     return shared_area;
 }
 
+/**
+ * Destroy shared memory
+ * @param shared_area Pointer to the shared memory
+ * @param destroy_all Set to 1 to unlink the file
+ */
 void destroy_shared_memory(void *shared_area, int destroy_all)
 {
     int shared_seg_size = sizeof(shm_t);
@@ -173,12 +191,58 @@ int sem_memory_post()
     return sem_post(sem_memory_lock);
 }
 
+#ifdef USE_ZLIB
+/**
+ * Decompress a gzipped file
+ * @param file_in The input file name
+ * @param file_out The output file pointer
+ * @return 0 on success, negative on error
+ */
+int gzip_d(FILE *file_out, char *file_in)
+{
+    char buf[1024];
+    char file_in_gz[MAX_LEN];
+
+    sprintf(file_in_gz, "%s.gz", file_in);
+    gzFile fi;
+    if (access(file_in_gz, F_OK) == 0) {
+        fi = gzopen(file_in_gz, "rb");
+    } else {
+        fi = gzopen(file_in, "rb");
+    }
+    if (!fi) {
+        return -1;
+    }
+    if (file_out == NULL) {
+        gzclose(fi);
+        return -2;
+    }
+
+    gzrewind(fi);
+    while (!gzeof(fi)) {
+        int len = gzread(fi, buf, sizeof(buf));
+        if ((len < 0) || ((len == 0) && (!gzeof(fi)))) {
+            gzclose(fi);
+            return -3;
+        }
+        if (fwrite(buf, 1, len, file_out) < 0) {
+            gzclose(fi);
+            return -4;
+        }
+    }
+    gzclose(fi);
+
+    return 0;
+}
+#endif
+
 /**
  * Read a file line by line and send to output after replacing arguments
  * @param out The output type: "sdout", char *ptr or NULL
  * @param filename The input file to process
  * @param num The number of variable arguments
  * @param ... The argument list to replace: src1, dst1, src2, dst2, etc...
+ * @return the number of processed bytes
  */
 long cat(char *out, char *filename, int num, ...)
 {
@@ -189,12 +253,27 @@ long cat(char *out, char *filename, int num, ...)
     char *pars, *pare, *par_to_find, *par_to_sub;
     int i;
     long ret = 0;
+    FILE *file;
 
-    FILE* file = fopen(filename, "r");
-    if (!file) {
+#ifdef USE_ZLIB
+    file = tmpfile();
+    if (file == NULL) {
         log_error("Unable to open file %s\n", filename);
         return -1;
     }
+    if (gzip_d(file, filename) != 0) {
+        log_error("Unable to decompress file %s\n", filename);
+        fclose(file);
+        return -2;
+    }
+    rewind(file);
+#else
+    file = fopen(filename, "r");
+    if (!file) {
+        log_error("Unable to open file %s\n", filename);
+        return -3;
+    }
+#endif
 
     char line[MAX_CAT_LEN];
 
@@ -249,6 +328,13 @@ long cat(char *out, char *filename, int num, ...)
     return ret;
 }
 
+/**
+ * Get the IP address/netmask of an interface "name"
+ * @param name The name of the interface
+ * @param netmask String that will contain the netmask
+ * @param address String that will contain the address
+ * @return 0 on success, negative on error
+ */
 int get_ip_address(char *address, char *netmask, char *name)
 {
     struct ifaddrs *ifaddr, *ifa;
@@ -270,9 +356,9 @@ int get_ip_address(char *address, char *netmask, char *name)
         if ((strcmp(ifa->ifa_name, name) == 0) && (ifa->ifa_addr->sa_family == AF_INET)) {
 
             sa = (struct sockaddr_in *) ifa->ifa_addr;
-            inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), address, 15);
+            inet_ntop(AF_INET, &(((struct sockaddr_in *)sa)->sin_addr), address, 16);
             san = (struct sockaddr_in *) ifa->ifa_netmask;
-            inet_ntop(AF_INET, &(((struct sockaddr_in *)san)->sin_addr), netmask, 15);
+            inet_ntop(AF_INET, &(((struct sockaddr_in *)san)->sin_addr), netmask, 16);
 
             log_debug("Interface: <%s>", ifa->ifa_name);
             log_debug("Address: <%s>", address);
@@ -289,6 +375,12 @@ int get_ip_address(char *address, char *netmask, char *name)
     return 0;
 }
 
+/**
+ * Get the MAC address of an interface "name"
+ * @param name The name of the interface
+ * @param address String that will contain the address
+ * @return 0 on success, negative on error
+ */
 int get_mac_address(char *address, char *name)
 {
     struct ifreq ifr;
@@ -342,6 +434,11 @@ int get_mac_address(char *address, char *name)
     return 0;
 }
 
+/**
+ * Convert the netmask to a len
+ * @param netmask The netmask to convert
+ * @return the len of the netmask
+ */
 int netmask2prefixlen(char *netmask)
 {
     int n;
@@ -357,6 +454,23 @@ int netmask2prefixlen(char *netmask)
     log_debug("Prefix length: %d", i);
 
     return i;
+}
+
+/**
+ * Get MTU for interface if_name
+ * @param if_name The name of the interface
+ * @return The value of the MTU
+ */
+int get_mtu(char *if_name)
+{
+    int ret = 0;
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+    struct ifreq ifr;
+    strcpy(ifr.ifr_name, if_name);
+    if(ioctl(sock, SIOCGIFMTU, &ifr) == 0) {
+        ret = ifr.ifr_mtu;
+    }
+    return ret;
 }
 
 /**
@@ -638,6 +752,11 @@ void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *ou
 #endif
 }
 
+/**
+ * Convert an interval in ONVIF notation to a interval in seconds
+ * @param interval String that represents the interval
+ * @return Time interval in seconds
+ */
 int interval2sec(const char *interval)
 {
     int d1 = -1, d2 = -1, d3 = -1, n, ret;
@@ -703,6 +822,12 @@ int interval2sec(const char *interval)
     return ret;
 }
 
+/**
+ * Convert a time_t to a datetime in ISO format
+ * @param timestamp Time in time_t
+ * @param iso_date Output time in ISO format
+ * @return 0 on success, negative on error
+ */
 int to_iso_date(char *iso_date, int size, time_t timestamp)
 {
     struct tm my_tm;
@@ -717,6 +842,11 @@ int to_iso_date(char *iso_date, int size, time_t timestamp)
     return 0;
 }
 
+/**
+ * Convert a datetime in ISO format to a time_t
+ * @param iso_date Time in ISO format
+ * @return Time in time_t
+ */
 time_t from_iso_date(const char *date)
 {
     struct tm tt = {0};
@@ -744,6 +874,11 @@ time_t from_iso_date(const char *date)
     return timegm(&tt);
 }
 
+/**
+ * Create a random UUID
+ * @param g_uuid output to store the UUID
+ * @return 0 on success, negative on error
+ */
 int gen_uuid(char *g_uuid)
 {
     int i;
@@ -774,6 +909,13 @@ int gen_uuid(char *g_uuid)
     return 0;
 }
 
+/**
+ * Get the value of a parameter in the query string
+ * @param par The name of the parameter
+ * @param ret_size the size of the destination string
+ * @param ret The output string
+ * @return 0 on success, negative on error
+ */
 int get_from_query_string(char **ret, int *ret_size, char *par)
 {
     char *query_string = getenv("QUERY_STRING");
@@ -798,6 +940,14 @@ int get_from_query_string(char **ret, int *ret_size, char *par)
     return -1;
 }
 
+/**
+ * Convert a video codec from number to string
+ * @param ver The version of media service
+ * @param codec The number of the codec
+ * @param buffer_len The size of the destination buffer
+ * @param buffer The output buffer
+ * @return 0 on success, negative on error
+ */
 int set_video_codec(char *buffer, int buffer_len, int codec, int ver)
 {
     if (buffer_len < 16) return -1;
@@ -821,6 +971,14 @@ int set_video_codec(char *buffer, int buffer_len, int codec, int ver)
     return 0;
 }
 
+/**
+ * Convert an audio codec from number to string
+ * @param ver The version of media service
+ * @param codec The number of the codec
+ * @param buffer_len The size of the destination buffer
+ * @param buffer The output buffer
+ * @return 0 on success, negative on error
+ */
 int set_audio_codec(char *buffer, int buffer_len, int codec, int ver)
 {
     if (buffer_len < 16) return -1;
@@ -846,6 +1004,122 @@ int set_audio_codec(char *buffer, int buffer_len, int codec, int ver)
     return 0;
 }
 
+/**
+ * Convert a TopicExpression string to a struct
+ * @param input The string containing the expression
+ * @return The pointer to a new allocated struct: remember to free it
+ */
+topic_expressions_t *parse_topic_expression(const char *input)
+{
+    char input_copy[MAX_LEN];
+    char *str;
+    int number = 0;
+    int len;
+    int error = 0;
+    topic_expressions_t *out = (topic_expressions_t *) malloc(sizeof(topic_expressions_t));
+    out->topics = NULL;
+
+    if (strlen(input) > MAX_LEN - 1) {
+        free(out);
+        return NULL;
+    }
+    if (strlen(input) <= 3) {
+        free(out);
+        return NULL;
+    }
+
+    strcpy(input_copy, input);
+
+    char *token = strtok(input_copy, "|");
+    while (token != NULL) {
+        number++;
+        len = strlen(token);
+        if (len <= 3) {
+            error = 1;
+            break;
+        }
+
+        out->topics = (topic_expression_t *) realloc(out->topics, number * sizeof(topic_expression_t));
+        out->topics[number - 1].topic = malloc((len + 1) * sizeof(char));
+        out->topics[number - 1].match_sub_tree = 0;
+        str = out->topics[number - 1].topic;
+        strcpy(str, token);
+
+        if (str[len - 3] == '/' && str[len - 2] == '/' && str[len - 1] == '.') {
+            str[len - 3] = '\0';
+            out->topics[number - 1].match_sub_tree = 1;
+        }
+
+        token = strtok(NULL, "|");
+    }
+
+    if (error) {
+        number--;
+        if (number == 0) {
+            free(out);
+            return NULL;
+        }
+    }
+    out->number = number;
+
+    return out;
+}
+
+/**
+ * Free the struct topic_expressions_t
+ * @param p The pointer to the struct
+ */
+void free_topic_expression(topic_expressions_t *p)
+{
+    int i;
+
+    for(i = p->number - 1; i >= 0; i--) {
+        free(p->topics[i].topic);
+    }
+
+    free(p);
+}
+
+/**
+ * Check if a TopicExpression contains a topic
+ * @param topic The topic to find
+ * @param topic_expression The TopicExpression string
+ * @return 1 on success or if topic_expression is empty, 1 if not found
+ */
+int is_topic_in_expression(const char *topic_expression, char *topic)
+{
+    int i;
+    topic_expressions_t *te;
+
+    if ((topic_expression == NULL) || (topic_expression[0] == '\0')) {
+        return 1;
+    }
+
+    te = parse_topic_expression(topic_expression);
+
+    if (te == NULL) return 0;
+
+    for (i = 0; i < te->number; i++) {
+        if (te->topics[i].match_sub_tree) {
+            if (strncmp(te->topics[i].topic, topic, strlen(te->topics[i].topic)) == 0) {
+                free_topic_expression(te);
+                return 1;
+            }
+        } else {
+            if (strcmp(te->topics[i].topic, topic) == 0) {
+                free_topic_expression(te);
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+/**
+ * Thread function to run a reboot
+ * @param arg Not used
+ * @return NULL
+ */
 void *reboot_thread(void *arg)
 {
     sync();

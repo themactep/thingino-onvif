@@ -23,6 +23,7 @@
 #include <limits.h>
 #include <errno.h>
 
+#include "cjson/cJSON.h"
 #include "conf.h"
 #include "utils.h"
 #include "log.h"
@@ -36,6 +37,7 @@ int process_conf_file(char *file)
     char line[MAX_LEN];
     char param[MAX_LEN];
     char value[MAX_LEN];
+    char stmp[MAX_LEN];
 
     int i, errno;
     char *endptr;
@@ -62,6 +64,8 @@ int process_conf_file(char *file)
     service_ctx.scopes = NULL;
     service_ctx.scopes_num = 0;
     service_ctx.ptz_node.enable = 0;
+    service_ctx.relay_outputs = NULL;
+    service_ctx.relay_outputs_num = 0;
     service_ctx.events = NULL;
     service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
@@ -488,6 +492,28 @@ int process_conf_file(char *file)
                 strcpy(service_ctx.ptz_node.get_presets, value);
             }
 
+        //Relay outputs
+        } else if (strcasecmp(param, "idle_state") == 0) {
+            service_ctx.relay_outputs_num++;
+            if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
+                log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
+                return -2;
+            }
+            service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+            if (strcasecmp(value, "close") == 0) {
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
+            } else {
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
+            }
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
+        } else if (strcasecmp(param, "close") == 0) {
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close, value);
+        } else if (strcasecmp(param, "open") == 0) {
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = (char *) malloc(strlen(value) + 1);
+            strcpy(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open, value);
+
         //Events Profile for ONVIF Events Service
         } else if (strcasecmp(param, "events") == 0) {
             if (strcasecmp(value, "1") == 0) {
@@ -500,13 +526,14 @@ int process_conf_file(char *file)
         } else if (strcasecmp(param, "topic") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
                 service_ctx.events_num++;
-                if (service_ctx.events_num >= MAX_EVENTS) {
+                if (service_ctx.events_num > MAX_EVENTS) {
                     log_error("Too many events, max is: %d", MAX_EVENTS);
                     return -2;
                 }
                 service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
                 service_ctx.events[service_ctx.events_num - 1].topic = NULL;
                 service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
+                service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
                 service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
                 service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
                 service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen(value) + 1);
@@ -516,6 +543,11 @@ int process_conf_file(char *file)
             if (service_ctx.events_enable != EVENTS_NONE) {
                 service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen(value) + 1);
                 strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, value);
+            }
+        } else if (strcasecmp(param, "source_type") == 0) {
+            if (service_ctx.events_enable != EVENTS_NONE) {
+                service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen(value) + 1);
+                strcpy(service_ctx.events[service_ctx.events_num - 1].source_type, value);
             }
         } else if (strcasecmp(param, "source_value") == 0) {
             if (service_ctx.events_enable != EVENTS_NONE) {
@@ -529,6 +561,37 @@ int process_conf_file(char *file)
             }
         } else {
             log_warn("Unrecognized option: %s", line);
+        }
+    }
+
+    if (service_ctx.relay_outputs != NULL) {
+        if (service_ctx.events_enable == EVENTS_NONE) service_ctx.events_enable = EVENTS_PULLPOINT;
+
+        for (i = 0; i < service_ctx.relay_outputs_num; i++) {
+            service_ctx.events_num++;
+            if (service_ctx.events_num > MAX_EVENTS) {
+                log_error("Unable to add relay event, too many events, max is: %d", MAX_EVENTS);
+                return -2;
+            }
+            log_debug("Adding event for relay output %d", i);
+            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].topic, "tns1:Device/Trigger/Relay");
+            log_debug("topic: tns1:Device/Trigger/Relay");
+            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen("RelayToken") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, "RelayToken");
+            log_debug("source_name: RelayToken");
+            service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen("tt:ReferenceToken") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_type, "tt:ReferenceToken");
+            log_debug("source_type: tt:ReferenceToken");
+            sprintf(stmp, "RelayOutputToken_%d", i);
+            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(stmp) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, stmp);
+            log_debug("source_value: %s", stmp);
+            sprintf(stmp, "/tmp/onvif_notify_server/relay_output_%d", i);
+            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(stmp) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, stmp);
+            log_debug("input_file: %s", stmp);
         }
     }
 
@@ -560,6 +623,428 @@ int process_conf_file(char *file)
     return 0;
 }
 
+// Remember to free the string
+void get_string_from_json(char **var, cJSON *j, char *name)
+{
+    const cJSON *s = NULL;
+
+    s = cJSON_GetObjectItemCaseSensitive(j, name);
+    if (cJSON_IsString(s) && (s->valuestring != NULL)) {
+        *var = (char *) malloc((strlen(s->valuestring) + 1) * sizeof(char));
+        strcpy(*var, s->valuestring);
+    }
+}
+
+void get_int_from_json(int *var, cJSON *j, char *name)
+{
+    const cJSON *i = NULL;
+
+    i = cJSON_GetObjectItemCaseSensitive(j, name);
+    if (cJSON_IsNumber(i)) {
+        *var = i->valueint;
+    }
+}
+
+void get_double_from_json(double *var, cJSON *j, char *name)
+{
+    const cJSON *d = NULL;
+
+    d = cJSON_GetObjectItemCaseSensitive(j, name);
+    if (cJSON_IsNumber(d)) {
+        *var = d->valuedouble;
+    }
+}
+
+void get_bool_from_json(int *var, cJSON *j, char *name)
+{
+    const cJSON *b = NULL;
+
+    b = cJSON_GetObjectItemCaseSensitive(j, name);
+    if (cJSON_IsTrue(b)) {
+        *var = 1;
+    } else {
+        *var = 0;
+    }
+}
+
+int process_json_conf_file(char *file)
+{
+    FILE *fF;
+    cJSON *value, *item;
+    char *buffer, *tmp;
+    cJSON *json_file;
+
+    int i, json_size;
+    char stmp[MAX_LEN];
+
+    fF = fopen(file, "r");
+    if(fF == NULL)
+        return -1;
+
+    fseek(fF, 0L, SEEK_END);
+    json_size = ftell(fF);
+    fseek(fF, 0L, SEEK_SET);
+
+    buffer = (char *) malloc((json_size + 1) * sizeof(char));
+    if (fread(buffer, 1, json_size, fF) != json_size) {
+        fclose(fF);
+        return -1;
+    }
+    fclose(fF);
+
+    json_file = cJSON_Parse(buffer);
+    if (json_file == NULL) {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL) {
+            log_error("Error before: %s", error_ptr);
+        }
+
+        free(buffer);
+        return -2;
+    }
+
+    // Init variables before reading
+    service_ctx.port = 80;
+    service_ctx.user = NULL;
+    service_ctx.password = NULL;
+    service_ctx.manufacturer = NULL;
+    service_ctx.model = NULL;
+    service_ctx.firmware_ver = NULL;
+    service_ctx.serial_num = NULL;
+    service_ctx.hardware_id = NULL;
+    service_ctx.ifs = NULL;
+    service_ctx.adv_enable_media2 = 0;
+    service_ctx.adv_fault_if_unknown = 0;
+    service_ctx.adv_fault_if_set = 0;
+    service_ctx.adv_synology_nvr = 0;
+    service_ctx.profiles = NULL;
+    service_ctx.profiles_num = 0;
+    service_ctx.scopes = NULL;
+    service_ctx.scopes_num = 0;
+    service_ctx.ptz_node.enable = 0;
+    service_ctx.relay_outputs = NULL;
+    service_ctx.relay_outputs_num = 0;
+    service_ctx.events = NULL;
+    service_ctx.events_enable = EVENTS_NONE;
+    service_ctx.events_num = 0;
+
+    service_ctx.ptz_node.min_step_x = 0;
+    service_ctx.ptz_node.max_step_x = 360.0;
+    service_ctx.ptz_node.min_step_y = 0;
+    service_ctx.ptz_node.max_step_y = 180.0;
+    service_ctx.ptz_node.min_step_z = 0.0;
+    service_ctx.ptz_node.max_step_z = 0.0;
+    service_ctx.ptz_node.get_position = NULL;
+    service_ctx.ptz_node.is_moving = NULL;
+    service_ctx.ptz_node.move_left = NULL;
+    service_ctx.ptz_node.move_right = NULL;
+    service_ctx.ptz_node.move_up = NULL;
+    service_ctx.ptz_node.move_down = NULL;
+    service_ctx.ptz_node.move_in = NULL;
+    service_ctx.ptz_node.move_out = NULL;
+    service_ctx.ptz_node.move_stop = NULL;
+    service_ctx.ptz_node.move_preset = NULL;
+    service_ctx.ptz_node.goto_home_position = NULL;
+    service_ctx.ptz_node.set_preset = NULL;
+    service_ctx.ptz_node.set_home_position = NULL;
+    service_ctx.ptz_node.remove_preset = NULL;
+    service_ctx.ptz_node.jump_to_abs = NULL;
+    service_ctx.ptz_node.jump_to_rel = NULL;
+
+    get_string_from_json(&(service_ctx.model), json_file, "model");
+    get_string_from_json(&(service_ctx.manufacturer), json_file, "manufacturer");
+    get_string_from_json(&(service_ctx.firmware_ver), json_file, "firmware_ver");
+    get_string_from_json(&(service_ctx.hardware_id), json_file, "hardware_id");
+    get_string_from_json(&(service_ctx.serial_num), json_file, "serial_num");
+    get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
+    get_int_from_json(&(service_ctx.port), json_file, "port");
+    value = cJSON_GetObjectItemCaseSensitive(json_file, "scopes");
+    if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
+        cJSON_ArrayForEach(item, value) {
+            service_ctx.scopes_num++;
+            service_ctx.scopes = (char **) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char *));
+            service_ctx.scopes[service_ctx.scopes_num - 1] = (char *) malloc((strlen(item->valuestring) + 1) * sizeof(char));
+            strcpy(service_ctx.scopes[service_ctx.scopes_num - 1], item->valuestring);
+        }
+    }
+    get_string_from_json(&(service_ctx.model), json_file, "user");
+    get_string_from_json(&(service_ctx.model), json_file, "password");
+    get_bool_from_json(&(service_ctx.adv_enable_media2), json_file, "adv_enable_media2");
+    get_bool_from_json(&(service_ctx.adv_fault_if_unknown), json_file, "adv_fault_if_unknown");
+    get_bool_from_json(&(service_ctx.adv_fault_if_set), json_file, "adv_fault_if_set");
+    get_bool_from_json(&(service_ctx.adv_synology_nvr), json_file, "adv_synology_nvr");
+
+    // Print debug
+    log_debug("model: %s", service_ctx.model);
+    log_debug("manufacturer: %s", service_ctx.manufacturer);
+    log_debug("firmware_ver: %s", service_ctx.firmware_ver);
+    log_debug("hardware_id: %s", service_ctx.hardware_id);
+    log_debug("serial_num: %s", service_ctx.serial_num);
+    log_debug("ifs: %s", service_ctx.ifs);
+    log_debug("port: %d", service_ctx.port);
+    log_debug("scopes:");
+    for (i = 0; i < service_ctx.scopes_num; i++) {
+        log_debug("\t%s", service_ctx.scopes[i]);
+    }
+    if (service_ctx.user != NULL) {
+        log_debug("user: %s", service_ctx.user);
+        log_debug("password: ********");
+    }
+    log_debug("adv_enable_media2: %d", service_ctx.adv_enable_media2);
+    log_debug("adv_fault_if_unknown: %d", service_ctx.adv_fault_if_unknown);
+    log_debug("adv_fault_if_set: %d", service_ctx.adv_fault_if_set);
+    log_debug("adv_synology_nvr: %d", service_ctx.adv_synology_nvr);
+    log_debug("");
+
+    value = cJSON_GetObjectItemCaseSensitive(json_file, "profiles");
+    if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
+        cJSON_ArrayForEach(item, value) {
+            service_ctx.profiles_num++;
+            service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
+
+            // Init variables before reading
+            service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
+            service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
+            service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
+            service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
+            service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
+            service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+            service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
+            service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+
+            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
+            get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].width), item, "width");
+            get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].height), item, "height");
+            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url");
+            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl");
+            tmp = NULL;
+            get_string_from_json(&tmp, item, "type");
+            if (tmp != NULL) {
+                if (strcasecmp(tmp, "JPEG") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].type = JPEG;
+                else if (strcasecmp(tmp, "MPEG4") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
+                else if (strcasecmp(tmp, "H264") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+                else if (strcasecmp(tmp, "H265") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].type = H265;
+                free(tmp);
+            }
+            tmp = NULL;
+            get_string_from_json(&tmp, item, "audio_encoder");
+            if (tmp != NULL) {
+                if (strcasecmp(tmp, "NONE") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
+                else if (strcasecmp(tmp, "G711") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
+                else if (strcasecmp(tmp, "G726") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G726;
+                else if (strcasecmp(tmp, "AAC") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
+                free(tmp);
+            }
+            tmp = NULL;
+            get_string_from_json(&tmp, item, "audio_decoder");
+            if (tmp != NULL) {
+                if (strcasecmp(tmp, "NONE") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+                else if (strcasecmp(tmp, "G711") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G711;
+                else if (strcasecmp(tmp, "G726") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
+                else if (strcasecmp(tmp, "AAC") == 0)
+                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
+                free(tmp);
+            }
+
+            // Print debug
+            log_debug("Profile %d", service_ctx.profiles_num - 1);
+            log_debug("\tname: %s", service_ctx.profiles[service_ctx.profiles_num - 1].name);
+            log_debug("\twidth: %d", service_ctx.profiles[service_ctx.profiles_num - 1].width);
+            log_debug("\theight: %d", service_ctx.profiles[service_ctx.profiles_num - 1].height);
+            log_debug("\turl: %s", service_ctx.profiles[service_ctx.profiles_num - 1].url);
+            log_debug("\tsnapurl: %s", service_ctx.profiles[service_ctx.profiles_num - 1].snapurl);
+            log_debug("\ttype: %d", service_ctx.profiles[service_ctx.profiles_num - 1].type);
+            log_debug("\taudio_encoder: %d", service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder);
+            log_debug("\taudio_decoder: %d", service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder);
+            log_debug("");
+        }
+    }
+
+    value = cJSON_GetObjectItemCaseSensitive(json_file, "ptz");
+    if (!cJSON_IsNull(value)) {
+        get_int_from_json(&(service_ctx.ptz_node.enable), value, "enable");
+        get_double_from_json(&(service_ctx.ptz_node.min_step_x), value, "min_step_x");
+        get_double_from_json(&(service_ctx.ptz_node.max_step_x), value, "max_step_x");
+        get_double_from_json(&(service_ctx.ptz_node.min_step_y), value, "min_step_y");
+        get_double_from_json(&(service_ctx.ptz_node.max_step_y), value, "max_step_y");
+        get_double_from_json(&(service_ctx.ptz_node.min_step_z), value, "min_step_z");
+        get_double_from_json(&(service_ctx.ptz_node.max_step_z), value, "max_step_z");
+        get_string_from_json(&(service_ctx.ptz_node.get_position), value, "get_position");
+        get_string_from_json(&(service_ctx.ptz_node.is_moving), value, "is_moving");
+        get_string_from_json(&(service_ctx.ptz_node.move_left), value, "move_left");
+        get_string_from_json(&(service_ctx.ptz_node.move_right), value, "move_right");
+        get_string_from_json(&(service_ctx.ptz_node.move_up), value, "move_up");
+        get_string_from_json(&(service_ctx.ptz_node.move_down), value, "move_down");
+        get_string_from_json(&(service_ctx.ptz_node.move_in), value, "move_in");
+        get_string_from_json(&(service_ctx.ptz_node.move_out), value, "move_out");
+        get_string_from_json(&(service_ctx.ptz_node.move_stop), value, "move_stop");
+        get_string_from_json(&(service_ctx.ptz_node.move_preset), value, "move_preset");
+        get_string_from_json(&(service_ctx.ptz_node.goto_home_position), value, "goto_home_position");
+        get_string_from_json(&(service_ctx.ptz_node.set_preset), value, "set_preset");
+        get_string_from_json(&(service_ctx.ptz_node.set_home_position), value, "set_home_position");
+        get_string_from_json(&(service_ctx.ptz_node.remove_preset), value, "remove_preset");
+        get_string_from_json(&(service_ctx.ptz_node.jump_to_abs), value, "jump_to_abs");
+        get_string_from_json(&(service_ctx.ptz_node.jump_to_rel), value, "jump_to_rel");
+        get_string_from_json(&(service_ctx.ptz_node.get_presets), value, "get_presets");
+
+        // Print debug
+        log_debug("enable: %d", service_ctx.ptz_node.enable);
+        log_debug("min_step_x: %.1f", service_ctx.ptz_node.min_step_x);
+        log_debug("min_step_x: %.1f", service_ctx.ptz_node.max_step_x);
+        log_debug("min_step_x: %.1f", service_ctx.ptz_node.min_step_y);
+        log_debug("min_step_x: %.1f", service_ctx.ptz_node.max_step_y);
+        log_debug("min_step_x: %.1f", service_ctx.ptz_node.min_step_z);
+        log_debug("min_step_x: %.1f", service_ctx.ptz_node.max_step_z);
+        log_debug("get_position: %s", service_ctx.ptz_node.get_position);
+        log_debug("is_moving: %s", service_ctx.ptz_node.is_moving);
+        log_debug("move_left: %s", service_ctx.ptz_node.move_left);
+        log_debug("move_right: %s", service_ctx.ptz_node.move_right);
+        log_debug("move_up: %s", service_ctx.ptz_node.move_up);
+        log_debug("move_down: %s", service_ctx.ptz_node.move_down);
+        log_debug("move_in: %s", service_ctx.ptz_node.move_in);
+        log_debug("move_out: %s", service_ctx.ptz_node.move_out);
+        log_debug("move_stop: %s", service_ctx.ptz_node.move_stop);
+        log_debug("move_preset: %s", service_ctx.ptz_node.move_preset);
+        log_debug("goto_home_position: %s", service_ctx.ptz_node.goto_home_position);
+        log_debug("set_preset: %s", service_ctx.ptz_node.set_preset);
+        log_debug("set_home_position: %s", service_ctx.ptz_node.set_home_position);
+        log_debug("remove_preset: %s", service_ctx.ptz_node.remove_preset);
+        log_debug("jump_to_abs: %s", service_ctx.ptz_node.jump_to_abs);
+        log_debug("jump_to_rel: %s", service_ctx.ptz_node.jump_to_rel);
+        log_debug("get_presets: %s", service_ctx.ptz_node.get_presets);
+        log_debug("");
+    }
+
+    value = cJSON_GetObjectItemCaseSensitive(json_file, "relays");
+    if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
+        log_debug("Relays");
+        log_debug("");
+        cJSON_ArrayForEach(item, value) {
+            service_ctx.relay_outputs_num++;
+            if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
+                log_error("Ignore relay, too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
+                service_ctx.relay_outputs_num--;
+            } else {
+                service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+
+                // Init variables before reading
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
+
+                tmp = NULL;
+                get_string_from_json(&tmp, item, "name");
+                if (tmp != NULL) {
+                    if (strcasecmp(tmp, "close") == 0) {
+                        service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
+                    } else {
+                        service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
+                    }
+                    free(tmp);
+                }
+                get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close");
+                get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
+
+                // Print debug
+                log_debug("Relay: %d", service_ctx.relay_outputs_num - 1);
+                log_debug("\tidle_state: %d", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state);
+                log_debug("\tclose: %s", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close);
+                log_debug("\topen: %s", service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open);
+                log_debug("");
+            }
+        }
+    }
+
+    value = cJSON_GetObjectItemCaseSensitive(json_file, "events");
+    if (!cJSON_IsNull(value)) {
+        get_int_from_json(&(service_ctx.events_enable), value, "enable");
+        log_debug("Events");
+        log_debug("\tenable: %d", service_ctx.events_enable);
+        log_debug("");
+        value = cJSON_GetObjectItemCaseSensitive(value, "events");
+        if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
+            cJSON_ArrayForEach(item, value) {
+                service_ctx.events_num++;
+                if (service_ctx.events_num >= MAX_EVENTS) {
+                    log_error("Ignore event, too many events, max is: %d", MAX_EVENTS);
+                    service_ctx.events_num--;
+                } else {
+                    service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+
+                    // Init variables before reading
+                    service_ctx.events[service_ctx.events_num - 1].topic = NULL;
+                    service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
+                    service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
+                    service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
+                    service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
+
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
+
+                    // Print debug
+                    log_debug("Event: %d", service_ctx.events_num - 1);
+                    log_debug("\ttopic: %s", service_ctx.events[service_ctx.events_num - 1].topic);
+                    log_debug("\tsource_name: %s", service_ctx.events[service_ctx.events_num - 1].source_name);
+                    log_debug("\tsource_type: %s", service_ctx.events[service_ctx.events_num - 1].source_type);
+                    log_debug("\tsource_value: %s", service_ctx.events[service_ctx.events_num - 1].source_value);
+                    log_debug("\tinput_file: %s", service_ctx.events[service_ctx.events_num - 1].input_file);
+                    log_debug("");
+                }
+            }
+        }
+    }
+
+    if (service_ctx.relay_outputs != NULL) {
+        if (service_ctx.events_enable == EVENTS_NONE) service_ctx.events_enable = EVENTS_PULLPOINT;
+
+        for (i = 0; i < service_ctx.relay_outputs_num; i++) {
+            service_ctx.events_num++;
+            if (service_ctx.events_num > MAX_EVENTS) {
+                log_error("Unable to add relay event, too many events, max is: %d", MAX_EVENTS);
+                return -2;
+            }
+            log_debug("Adding event for relay output %d", i);
+            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].topic, "tns1:Device/Trigger/Relay");
+            log_debug("topic: tns1:Device/Trigger/Relay");
+            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen("RelayToken") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, "RelayToken");
+            log_debug("source_name: RelayToken");
+            service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen("tt:ReferenceToken") + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_type, "tt:ReferenceToken");
+            log_debug("source_type: tt:ReferenceToken");
+            sprintf(stmp, "RelayOutputToken_%d", i);
+            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(stmp) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, stmp);
+            log_debug("source_value: %s", stmp);
+            sprintf(stmp, "/tmp/onvif_notify_server/relay_output_%d", i);
+            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(stmp) + 1);
+            strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, stmp);
+            log_debug("input_file: %s", stmp);
+        }
+    }
+
+    cJSON_Delete(json_file);
+    free(buffer);
+
+    return 0;
+}
+
 void free_conf_file()
 {
     int i;
@@ -568,6 +1053,7 @@ void free_conf_file()
         for (i = service_ctx.events_num - 1; i >= 0; i--) {
             if (service_ctx.events[i].input_file != NULL) free(service_ctx.events[i].input_file);
             if (service_ctx.events[i].source_value != NULL) free(service_ctx.events[i].source_value);
+            if (service_ctx.events[i].source_type != NULL) free(service_ctx.events[i].source_type);
             if (service_ctx.events[i].source_name != NULL) free(service_ctx.events[i].source_name);
             if (service_ctx.events[i].topic != NULL) free(service_ctx.events[i].topic);
         }
@@ -591,6 +1077,12 @@ void free_conf_file()
         if (service_ctx.ptz_node.is_moving != NULL) free(service_ctx.ptz_node.is_moving);
         if (service_ctx.ptz_node.get_position != NULL) free(service_ctx.ptz_node.get_position);
     }
+
+    for (i = service_ctx.relay_outputs_num - 1; i >= 0; i--) {
+        if (service_ctx.relay_outputs[i].open != NULL) free(service_ctx.relay_outputs[i].open);
+        if (service_ctx.relay_outputs[i].close != NULL) free(service_ctx.relay_outputs[i].close);
+    }
+    if (service_ctx.relay_outputs != NULL) free(service_ctx.relay_outputs);
 
     for (i = service_ctx.profiles_num - 1; i >= 0; i--) {
         if (service_ctx.profiles[i].snapurl != NULL) free(service_ctx.profiles[i].snapurl);
@@ -671,46 +1163,62 @@ void print_conf_help()
     fprintf(stderr, "\tmove_down=/tmp/sd/yi-hack/bin/ipc_cmd -m down -s %%f\n");
     fprintf(stderr, "\tmove_in=/tmp/sd/yi-hack/bin/ipc_cmd -m in -s %%f\n");
     fprintf(stderr, "\tmove_out=/tmp/sd/yi-hack/bin/ipc_cmd -m out -s %%f\n");
-    fprintf(stderr, "\tmove_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop\n");
+    fprintf(stderr, "\tmove_stop=/tmp/sd/yi-hack/bin/ipc_cmd -m stop -t %s\n");
     fprintf(stderr, "\tmove_preset=/tmp/sd/yi-hack/bin/ipc_cmd -p %%d\n");
     fprintf(stderr, "\tgoto_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -p 0\n");
-    fprintf(stderr, "\tset_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -m %%s\n");
+    fprintf(stderr, "\tset_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a add_preset -n %%d -m %%s\n");
     fprintf(stderr, "\tset_home_position=/tmp/sd/yi-hack/bin/ipc_cmd -H\n");
     fprintf(stderr, "\tremove_preset=/tmp/sd/yi-hack/script/ptz_presets.sh -a del_preset -n %%d\n");
     fprintf(stderr, "\tjump_to_abs=/tmp/sd/yi-hack/bin/ipc_cmd -j %%f,%%f,%%f\n");
     fprintf(stderr, "\tjump_to_rel=/tmp/sd/yi-hack/bin/ipc_cmd -J %%f,%%f,%%f\n");
     fprintf(stderr, "\tget_presets=/tmp/sd/yi-hack/script/ptz_presets.sh -a get_presets\n");
     fprintf(stderr, "\n");
+    fprintf(stderr, "\t#RELAY OUTPUTS\n");
+    fprintf(stderr, "\t#Relay 0\n");
+    fprintf(stderr, "\tidle_state=open\n");
+    fprintf(stderr, "\tclose=/usr/local/bin/set_relay -n 0 -a close\n");
+    fprintf(stderr, "\topen=/usr/local/bin/set_relay -n 0 -a open\n");
+    fprintf(stderr, "\t#Relay 1\n");
+    fprintf(stderr, "\tidle_state=open\n");
+    fprintf(stderr, "\tclose=/usr/local/bin/set_relay -n 1 -a close\n");
+    fprintf(stderr, "\topen=/usr/local/bin/set_relay -n 1 -a open\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "\t#EVENTS\n");
     fprintf(stderr, "\tevents=1\n");
     fprintf(stderr, "\t#Event 0\n");
     fprintf(stderr, "\ttopic=tns1:VideoSource/MotionAlarm\n");
     fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=tt:ReferenceToken\n");
     fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/motion_alarm\n");
     fprintf(stderr, "\t#Event 1\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/PeopleDetect\n");
     fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=xsd:string\n");
     fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/human_detection\n");
     fprintf(stderr, "\t#Event 2\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/VehicleDetect\n");
     fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=xsd:string\n");
     fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/vehicle_detection\n");
     fprintf(stderr, "\t#Event 3\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/DogCatDetect\n");
     fprintf(stderr, "\tsource_name=VideoSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=xsd:string\n");
     fprintf(stderr, "\tsource_value=VideoSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/animal_detection\n");
     fprintf(stderr, "\t#Event 4\n");
     fprintf(stderr, "\ttopic=tns1:RuleEngine/MyRuleDetector/BabyCryingDetect\n");
     fprintf(stderr, "\tsource_name=AudioSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=xsd:string\n");
     fprintf(stderr, "\tsource_value=AudioSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/baby_crying\n");
     fprintf(stderr, "\t#Event 5\n");
     fprintf(stderr, "\ttopic=tns1:AudioAnalytics/Audio/DetectedSound\n");
     fprintf(stderr, "\tsource_name=AudioSourceConfigurationToken\n");
+    fprintf(stderr, "\tsource_type=tt:ReferenceToken\n");
     fprintf(stderr, "\tsource_value=AudioSourceToken\n");
     fprintf(stderr, "\tinput_file=/tmp/sound_detection\n");
 }

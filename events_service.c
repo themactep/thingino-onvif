@@ -64,15 +64,18 @@ int events_create_pull_point_subscription()
 {
     const char *element;
     const char *itt;
+    const char *te;
+    const char *mc;
     time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
-    int i, subscription_id;
+    int i, subscription_id, sub_index;
 
     char my_address[16];
     char my_netmask[16];
     char my_port[8];
     char events_service_address[MAX_LEN];
+    topic_expressions_t *topic_expression;
 
     log_info("CreatePullPointSubscription received");
 
@@ -81,21 +84,14 @@ int events_create_pull_point_subscription()
     if (service_ctx.port != 80)
         sprintf(my_port, ":%d", service_ctx.port);
 
-    // Filter is not supported at the moment
+    // TopicExpression filter is supported
     element = get_element("Filter", "Body");
-    if (element != NULL) {
-        element = get_element("TopicExpression", "Body");
-//        if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
-//            log_error("Invalid filter");
-//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "wsrf-rw:ResourceUnknownFault", "Invalid filter", "");
-//            return -1;
-//        }
-        element = get_element("MessageContent", "Body");
-//        if ((element != NULL) && (strlen(element) > 0)) {
-//            log_error("Invalid filter");
-//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
-//            return -2;
-//        }
+    if (element == NULL) {
+        te = NULL;
+        mc = NULL;
+    } else {
+        te = get_element("TopicExpression", "Body");
+        mc = get_element("MessageContent", "Body");
     }
 
     time(&now);
@@ -131,17 +127,34 @@ int events_create_pull_point_subscription()
             memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
             subs_evts->subscriptions[i].used = SUB_PULL;
             subs_evts->subscriptions[i].expire = expire_time;
+            subs_evts->subscriptions[i].topic_expression[0] = '\0';
+            if ((te != NULL) && (te[0] != '\0')) {
+                if (strlen(te) < sizeof(subs_evts->subscriptions[i].topic_expression) - 1) {
+                    strcpy(subs_evts->subscriptions[i].topic_expression, te);
+                }
+            }
             break;
         }
     }
     sem_memory_post();
-    destroy_shared_memory((void *) subs_evts, 0);
-
-    if (i == MAX_SUBSCRIPTIONS) {
+    sub_index = i;
+    if (sub_index == MAX_SUBSCRIPTIONS) {
         log_error("Reached the maximum number of subscriptions");
         send_fault("events_service", "Receiver", "wsntw:SubscribeCreationFailedFault", "wsntw:SubscribeCreationFailedFault", "Subscribe creation failed fault", "");
         return -4;
     }
+
+    // Force notification with Property "Initialized"
+    sem_memory_wait();
+    for (i = 0; i < service_ctx.events_num; i++) {
+        if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
+            subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
+            subs_evts->events[i].pull_notify |= (1 << sub_index);
+            log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[sub_index].topic_expression);
+        }
+    }
+    sem_memory_post();
+    destroy_shared_memory((void *) subs_evts, 0);
 
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
 
@@ -182,7 +195,9 @@ int events_pull_messages()
     int at_least_one_message;
     int i, c;
     char *endptr;
-    char value[8];
+    char property[32];
+    char data_name[32];
+    char data_value[32];
     char dest_a[] = "stdout";
     char *dest;
     long size, total_size;
@@ -243,7 +258,7 @@ int events_pull_messages()
         return -6;
     }
 
-    // Find subscription
+    // Find subscription index
     sem_memory_wait();
     sub_index = -1;
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
@@ -271,7 +286,7 @@ int events_pull_messages()
     // Set temporary termination time += 10 to avoid termination during this function
     time(&now);
     previous_expire_time = subs_evts->subscriptions[sub_index].expire;
-    subs_evts->subscriptions[sub_index].expire = now + 10;
+    subs_evts->subscriptions[sub_index].expire = now + interval2sec(timeout) + 10;
     sem_memory_post();
     now_p_timeout = now + interval2sec(timeout);
 
@@ -329,25 +344,48 @@ int events_pull_messages()
             if (count >= limit)
                 break;
             if ((subs_evts->events[i].pull_notify & (1 << sub_index))) {
-                if (subs_evts->events[i].is_on) {
-                    strcpy(value, "true");
+                if ((subs_evts->events[i].pull_send_initialized & (1 << sub_index))) {
+                    strcpy(property, "Initialized");
+                    to_iso_date(iso_str_3, sizeof(iso_str_3), now);
                 } else {
-                    strcpy(value, "false");
+                    strcpy(property, "Changed");
+                    to_iso_date(iso_str_3, sizeof(iso_str_3), subs_evts->events[i].e_time);
                 }
-                to_iso_date(iso_str_3, sizeof(iso_str_3), subs_evts->events[i].e_time);
-
-                size = cat(dest, "events_service_files/PullMessages_2.xml", 12,
+                if (subs_evts->events[i].is_on) {
+                    if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                        strcpy(data_value, "active");
+                    } else {
+                        strcpy(data_value, "true");
+                    }
+                } else {
+                    if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                        strcpy(data_value, "inactive");
+                    } else {
+                        strcpy(data_value, "false");
+                    }
+                }
+                if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                    strcpy(data_name, "LogicalState");
+                } else {
+                    strcpy(data_name, "State");
+                }
+                size = cat(dest, "events_service_files/PullMessages_2.xml", 14,
                     "%TOPIC%", service_ctx.events[i].topic,
                     "%UTC_TIME%", iso_str_3,
-                    "%PROPERTY%", "Changed",
+                    "%PROPERTY%", property,
                     "%SOURCE_NAME%", service_ctx.events[i].source_name,
                     "%SOURCE_VALUE%", service_ctx.events[i].source_value,
-                    "%VALUE%", value);
+                    "%DATA_NAME%", data_name,
+                    "%DATA_VALUE%", data_value);
                 if (c == 0) total_size += size;
 
-                if (c == 1) subs_evts->events[i].pull_notify &= ~(1 << sub_index);
+                if (c == 1) {
+                    subs_evts->events[i].pull_send_initialized &= ~(1 << sub_index);
+                    subs_evts->events[i].pull_notify &= ~(1 << sub_index);
+                }
+
+                count++;
             }
-            count++;
         }
 
         size = cat(dest, "events_service_files/PullMessages_3.xml", 0);
@@ -364,13 +402,15 @@ int events_subscribe()
     const char *address;
     const char *element;
     const char *itt;
+    const char *te;
+    const char *mc;
     char msg_uuid[UUID_LEN + 1];
     const char *relates_to_uuid;
     time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
     int i, subsel;
-    int subscription_id;
+    int subscription_id, sub_index;
 
     char my_address[16];
     char my_netmask[16];
@@ -391,21 +431,14 @@ int events_subscribe()
         return -1;
     }
 
-    // Filter is not supported at the moment
+    // TopicExpression filter is supported
     element = get_element("Filter", "Body");
-    if (element != NULL) {
-        element = get_element("TopicExpression", "Body");
-//        if ((element != NULL) && (strstr(element, "VideoSource/MotionAlarm") == NULL) && (strlen(element) > 0)) {
-//            log_error("Invalid filter");
-//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "wsrf-rw:ResourceUnknownFault", "Invalid filter", "");
-//            return -2;
-//        }
-        element = get_element("MessageContent", "Body");
-//        if ((element != NULL) && (strlen(element) > 0)) {
-//            log_error("Invalid filter");
-//            send_fault("events_service", "Receiver", "wsrf-rw:InvalidFilterFault", "", "Invalid filter", "");
-//            return -3;
-//        }
+    if (element == NULL) {
+        te = NULL;
+        mc = NULL;
+    } else {
+        te = get_element("TopicExpression", "Body");
+        mc = get_element("MessageContent", "Body");
     }
 
     time(&now);
@@ -437,24 +470,33 @@ int events_subscribe()
     subscription_id = (subscription_id == 65535) ? 1 : subscription_id + 1;
     for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
         if (subs_evts->subscriptions[i].used == SUB_UNUSED) {
-            if (strlen(address) < CONSUMER_REFERENCE_MAX_SIZE) {
-                subs_evts->subscriptions[i].id = subscription_id;
-                memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
-                strcpy(subs_evts->subscriptions[i].reference, address);
-                subs_evts->subscriptions[i].used = SUB_PUSH;
-                subs_evts->subscriptions[i].expire = expire_time;
+            subs_evts->subscriptions[i].id = subscription_id;
+            memset(subs_evts->subscriptions[i].reference, '\0', CONSUMER_REFERENCE_MAX_SIZE);
+            strncpy(subs_evts->subscriptions[i].reference, address, CONSUMER_REFERENCE_MAX_SIZE - 1);
+            subs_evts->subscriptions[i].used = SUB_PUSH;
+            subs_evts->subscriptions[i].expire = expire_time;
+            subs_evts->subscriptions[i].topic_expression[0] = '\0';
+            if ((te != NULL) && (te[0] != '\0')) {
+                if (strlen(te) < sizeof(subs_evts->subscriptions[i].topic_expression) - 1) {
+                    strcpy(subs_evts->subscriptions[i].topic_expression, te);
+                }
             }
             break;
         }
     }
     sem_memory_post();
-    destroy_shared_memory((void *) subs_evts, 0);
-
-    if (i == MAX_SUBSCRIPTIONS) {
+    sub_index = i;
+    if (sub_index == MAX_SUBSCRIPTIONS) {
         log_error("Reached the maximum number of subscriptions");
         send_fault("events_service", "Receiver", "wsntw:SubscribeCreationFailedFault", "wsntw:SubscribeCreationFailedFault", "Subscribe creation failed fault", "");
         return -5;
     }
+
+    // Force notification with Property "Initialized"
+    sem_memory_wait();
+    subs_evts->subscriptions[sub_index].push_need_sync = 1;
+    sem_memory_post();
+    destroy_shared_memory((void *) subs_evts, 0);
 
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
 
@@ -615,6 +657,8 @@ int events_get_event_properties()
     long size, total_size;
     char dest_a[] = "stdout";
     char *dest;
+    char data_name[32];
+    char data_type[32];
 
     // We need 1st step to evaluate content length
     for (c = 0; c < 2; c++) {
@@ -658,11 +702,22 @@ int events_get_event_properties()
                 return -1;
             }
 
-            size = cat(dest, "events_service_files/GetEventProperties_2.xml", 14,
+            if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+                strcpy(data_name, "LogicalState");
+                strcpy(data_type, "tt:RelayLogicalState");
+            } else {
+                strcpy(data_name, "State");
+                strcpy(data_type, "xsd:boolean");
+            }
+
+            size = cat(dest, "events_service_files/GetEventProperties_2.xml", 20,
                 "%TOPIC_L1_START%", topic_ls[0],
                 "%TOPIC_L2_START%", topic_ls[1],
                 "%TOPIC_L3_START%", topic_ls[2],
                 "%SOURCE_NAME%", service_ctx.events[i].source_name,
+                "%SOURCE_TYPE%", service_ctx.events[i].source_type,
+                "%DATA_NAME%", data_name,
+                "%DATA_TYPE%", data_type,
                 "%TOPIC_L3_END%", topic_le[2],
                 "%TOPIC_L2_END%", topic_le[1],
                 "%TOPIC_L1_END%", topic_le[0]);
@@ -804,10 +859,14 @@ int events_set_synchronization_point()
 
     log_info("SetSynchronizationPoint request received for subscription id=%d, index=%d", sub_id, sub_index);
 
-    subs_evts->subscriptions[sub_index].need_sync = 1;
+    subs_evts->subscriptions[sub_index].push_need_sync = 1;
 
     for (i = 0; i < service_ctx.events_num; i++) {
-        subs_evts->events[i].pull_notify |= (1 << sub_index);
+        if (is_topic_in_expression(subs_evts->subscriptions[sub_index].topic_expression, service_ctx.events[i].topic)) {
+            subs_evts->events[i].pull_send_initialized |= (1 << sub_index);
+            subs_evts->events[i].pull_notify |= (1 << sub_index);
+            log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[sub_index].topic_expression);
+        }
     }
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);

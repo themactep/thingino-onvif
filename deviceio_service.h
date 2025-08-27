@@ -14,14 +14,18 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define DEFAULT_MANUFACTURER "Manufacturer"
-#define DEFAULT_MODEL        "Model"
-#define DEFAULT_FW_VER       "0.0.1"
-#define DEFAULT_SERIAL_NUM   "SN1234567890"
-#define DEFAULT_HW_ID        "HWID"
-#define DEFAULT_IFS          "wlan0"
+#ifndef DEVICEIO_SERVICE_H
+#define DEVICEIO_SERVICE_H
 
-int process_conf_file(char *file);
-int process_json_conf_file(char *file);
-void free_conf_file();
-void print_conf_help();
+int deviceio_get_video_sources();
+int deviceio_get_service_capabilities();
+int deviceio_get_audio_outputs();
+int deviceio_get_audio_sources();
+int deviceio_get_relay_outputs();
+int deviceio_get_relay_output_options();
+int deviceio_set_relay_output_settings();
+int deviceio_set_relay_output_state();
+
+int deviceio_unsupported(const char *method);
+
+#endif //DEVICEIO_SERVICE_H
