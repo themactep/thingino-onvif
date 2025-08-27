@@ -39,12 +39,12 @@
 #include "log.h"
 #include "onvif_simple_server.h"
 
-#define DEFAULT_CONF_FILE "/etc/onvif_simple_server.conf"
+#define DEFAULT_CONF_FILE "/etc/onvif.conf"
 #define DEFAULT_JSON_CONF_FILE "/etc/onvif_simple_server.json"
-#define DEFAULT_LOG_FILE "/var/log/onvif_notify_server.log"
+#define DEFAULT_LOG_FILE "/tmp/notify.log"
 #define DEFAULT_PID_FILE "/var/run/onvif_notify_server.pid"
-#define TEMPLATE_DIR "/etc/onvif_notify_server"
-#define INOTIFY_DIR "/tmp/onvif_notify_server"
+#define TEMPLATE_DIR "/var/www/onvif/notify_files"
+#define INOTIFY_DIR "/run/motion"
 
 #define ALARM_OFF 0
 #define ALARM_ON  1

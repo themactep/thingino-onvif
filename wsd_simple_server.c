@@ -38,8 +38,8 @@
 #define PORT 3702
 #define TYPE "NetworkVideoTransmitter"
 
-#define DEFAULT_LOG_FILE "/var/log/wsd_simple_server.log"
-#define TEMPLATE_DIR "/etc/wsd_simple_server"
+#define DEFAULT_LOG_FILE "/tmp/wsd.log"
+#define TEMPLATE_DIR "/var/www/onvif/wsd_files"
 
 #define RECV_BUFFER_LEN 4096
 
