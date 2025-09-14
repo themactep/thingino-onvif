@@ -1,0 +1,13 @@
+[
+  {
+    "idle_state": "open",
+    "close": "/usr/local/bin/set_relay -n 0 -a close",
+    "open": "/usr/local/bin/set_relay -n 0 -a open"
+  },
+  {
+    "idle_state": "open",
+    "close": "/usr/local/bin/set_relay -n 1 -a close",
+    "open": "/usr/local/bin/set_relay -n 1 -a open"
+  }
+]
+

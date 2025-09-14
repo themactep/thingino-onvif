@@ -1,0 +1,48 @@
+{
+  "enable": 3,
+  "events": [
+    {
+      "topic": "tns1:VideoSource/MotionAlarm",
+      "source_name": "Source",
+      "source_type": "tt:ReferenceToken",
+      "source_value": "VideoSourceToken",
+      "input_file": "/tmp/onvif_notify_server/motion_alarm"
+    },
+    {
+      "topic": "tns1:RuleEngine/MyRuleDetector/PeopleDetect",
+      "source_name": "VideoSourceConfigurationToken",
+      "source_type": "xsd:string",
+      "source_value": "VideoSourceToken",
+      "input_file": "/tmp/onvif_notify_server/human_detection"
+    },
+    {
+      "topic": "tns1:RuleEngine/MyRuleDetector/VehicleDetect",
+      "source_name": "VideoSourceConfigurationToken",
+      "source_type": "xsd:string",
+      "source_value": "VideoSourceToken",
+      "input_file": "/tmp/onvif_notify_server/vehicle_detection"
+    },
+    {
+      "topic": "tns1:RuleEngine/MyRuleDetector/DogCatDetect",
+      "source_name": "VideoSourceConfigurationToken",
+      "source_type": "xsd:string",
+      "source_value": "VideoSourceToken",
+      "input_file": "/tmp/onvif_notify_server/animal_detection"
+    },
+    {
+      "topic": "tns1:RuleEngine/MyRuleDetector/BabyCryingDetect",
+      "source_name": "AudioSourceConfigurationToken",
+      "source_type": "xsd:string",
+      "source_value": "AudioSourceToken",
+      "input_file": "/tmp/onvif_notify_server/baby_crying"
+    },
+    {
+      "topic": "tns1:AudioAnalytics/Audio/DetectedSound",
+      "source_name": "AudioSourceConfigurationToken",
+      "source_type": "tt:ReferenceToken",
+      "source_value": "AudioSourceToken",
+      "input_file": "/tmp/onvif_notify_server/sound_detection"
+    }
+  ]
+}
+
