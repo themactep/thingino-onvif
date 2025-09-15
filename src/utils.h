@@ -95,6 +95,7 @@ int set_audio_codec(char* buffer, int buffer_len, int codec, int ver);
 int construct_uri_with_credentials(
     char* output_buffer, size_t buffer_size, const char* uri_template, const char* address, const char* username, const char* password);
 void utils_set_raw_xml_log_file(const char* path);
+void utils_reset_response_logging();
 topic_expressions_t* parseTopicExpression(const char* input);
 void free_topic_expression(topic_expressions_t* p);
 int is_topic_in_expression(const char* topic_expression, char* topic);

@@ -57,9 +57,16 @@
 
 // Raw XML file logging helpers
 static const char* g_raw_xml_log_file = NULL;
+static int raw_response_started = 0;
+
 void utils_set_raw_xml_log_file(const char* path)
 {
     g_raw_xml_log_file = path;
+}
+
+void utils_reset_response_logging()
+{
+    raw_response_started = 0;
 }
 static void rawlog_append_bytes(const char* data, size_t len)
 {
@@ -74,8 +81,6 @@ static void rawlog_append_bytes(const char* data, size_t len)
         }
     }
 }
-
-static int raw_response_started = 0;
 
 #define SHMOBJ_PATH "/onvif_subscription"
 #define MEM_LOCK_FILE "/sub_mem_lock"
@@ -386,6 +391,12 @@ long cat(char* out, char* filename, int num, ...)
         va_end(valist);
     }
     fclose(file);
+
+    // Add response end marker if we were writing to stdout and had started response logging
+    if (out != NULL && strcmp("stdout", out) == 0 && raw_response_started) {
+        const char* end_hdr = "\n==== RESPONSE END ====\n";
+        rawlog_append_bytes(end_hdr, strlen(end_hdr));
+    }
 
     return ret;
 }

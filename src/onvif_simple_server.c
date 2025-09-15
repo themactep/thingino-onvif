@@ -267,6 +267,8 @@ int main(int argc, char** argv)
     }
     // Raw request logging to file if configured
     if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
+        // Reset response logging flag for this new request
+        utils_reset_response_logging();
         FILE* rf = fopen(service_ctx.raw_xml_log_file, "a");
         if (rf) {
             const char* hdr = "==== REQUEST BEGIN ====\n";
