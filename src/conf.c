@@ -435,6 +435,32 @@ int process_json_conf_file(char* file)
     get_bool_from_json(&(service_ctx.adv_fault_if_set), json_file, "adv_fault_if_set");
     get_bool_from_json(&(service_ctx.adv_synology_nvr), json_file, "adv_synology_nvr");
 
+    // Apply sane defaults for required fields if not provided in config
+    if (service_ctx.manufacturer == NULL) {
+        service_ctx.manufacturer = (char*) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
+        if (service_ctx.manufacturer) strcpy(service_ctx.manufacturer, DEFAULT_MANUFACTURER);
+    }
+    if (service_ctx.model == NULL) {
+        service_ctx.model = (char*) malloc(strlen(DEFAULT_MODEL) + 1);
+        if (service_ctx.model) strcpy(service_ctx.model, DEFAULT_MODEL);
+    }
+    if (service_ctx.firmware_ver == NULL) {
+        service_ctx.firmware_ver = (char*) malloc(strlen(DEFAULT_FW_VER) + 1);
+        if (service_ctx.firmware_ver) strcpy(service_ctx.firmware_ver, DEFAULT_FW_VER);
+    }
+    if (service_ctx.serial_num == NULL) {
+        service_ctx.serial_num = (char*) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
+        if (service_ctx.serial_num) strcpy(service_ctx.serial_num, DEFAULT_SERIAL_NUM);
+    }
+    if (service_ctx.hardware_id == NULL) {
+        service_ctx.hardware_id = (char*) malloc(strlen(DEFAULT_HW_ID) + 1);
+        if (service_ctx.hardware_id) strcpy(service_ctx.hardware_id, DEFAULT_HW_ID);
+    }
+    if (service_ctx.ifs == NULL) {
+        service_ctx.ifs = (char*) malloc(strlen(DEFAULT_IFS) + 1);
+        if (service_ctx.ifs) strcpy(service_ctx.ifs, DEFAULT_IFS);
+    }
+
     // Print debug
     log_debug("model: %s", service_ctx.model);
     log_debug("manufacturer: %s", service_ctx.manufacturer);
@@ -449,7 +475,7 @@ int process_json_conf_file(char* file)
     }
     if (service_ctx.username != NULL) {
         log_debug("username: %s", service_ctx.username);
-        log_debug("password: ********");
+        log_debug("password: %s", service_ctx.password ? service_ctx.password : "(null)");
     }
     // Modular config: load additional configuration from conf_dir (default /etc/onvif.d)
     char* conf_dir = NULL;

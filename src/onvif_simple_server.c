@@ -274,8 +274,8 @@ int main(int argc, char** argv)
             const char* hdr = "==== REQUEST BEGIN ====\n";
             fwrite(hdr, 1, strlen(hdr), rf);
             fwrite(input, 1, (size_t) input_size, rf);
-            const char nl = '\n';
-            fwrite(&nl, 1, 1, rf);
+            const char* end_hdr = "\n==== REQUEST END ====\n";
+            fwrite(end_hdr, 1, strlen(end_hdr), rf);
             fclose(rf);
         } else {
             log_warn("Cannot open raw_xml_log_file %s: %s", service_ctx.raw_xml_log_file, strerror(errno));
@@ -299,14 +299,14 @@ int main(int argc, char** argv)
 
     if (service_ctx.username != NULL) {
         if ((get_element("Security", "Header") != NULL) && (get_element("UsernameToken", "Header") != NULL)) {
-            unsigned long nonce_size = 128;
-            unsigned long auth_size = 128;
-            unsigned long sha1_size = 20;
-            unsigned long digest_size = 128;
             unsigned char nonce[128];
+            unsigned long nonce_size = sizeof(nonce);
             unsigned char auth[128];
+            unsigned long auth_size = sizeof(auth);
             char sha1[20];
+            unsigned long sha1_size = sizeof(sha1);
             char digest[128];
+            unsigned long digest_size = sizeof(digest) - 1; // leave room for NUL terminator
 
             security.enable = 1;
             security.username = get_element("Username", "Header");
@@ -317,7 +317,7 @@ int main(int argc, char** argv)
             }
             security.password = get_element("Password", "Header");
             if (security.password != NULL) {
-                log_debug("Security: password = ********");
+                log_debug("Security: password = %s", security.password);
             } else {
                 auth_error = 2;
             }
@@ -338,17 +338,28 @@ int main(int argc, char** argv)
             if (auth_error == 0) {
                 // Calculate digest and check the password
                 // Digest = B64ENCODE( SHA1( B64DECODE( Nonce ) + Date + Password ) )
-                memcpy(auth, nonce, nonce_size);
-                memcpy(&auth[nonce_size], security.created, strlen(security.created));
-                memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
-                auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
-                hashSHA1(auth, auth_size, sha1, sha1_size);
-                b64_encode(sha1, sha1_size, digest, &digest_size);
-                log_debug("Calculated digest: %s", digest);
-                log_debug("Received digest: %s", security.password);
-
-                if ((strcmp(service_ctx.username, security.username) != 0) || (strcmp(security.password, digest) != 0)) {
+                if (nonce_size + strlen(security.created) + strlen(service_ctx.password) > sizeof(auth)) {
+                    log_error("Authentication data too large");
                     auth_error = 10;
+                } else {
+                    memcpy(auth, nonce, nonce_size);
+                    memcpy(&auth[nonce_size], security.created, strlen(security.created));
+                    memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
+                    auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
+                    hashSHA1((char*)auth, auth_size, sha1, (int)sha1_size);
+                    b64_encode((unsigned char*)sha1, (unsigned int)sha1_size, (unsigned char*)digest, &digest_size);
+                    // Ensure null-termination for safe string operations/logging
+                    if (digest_size >= sizeof(digest)) {
+                        digest[sizeof(digest) - 1] = '\0';
+                    } else {
+                        digest[digest_size] = '\0';
+                    }
+                    log_debug("Calculated digest: %s", digest);
+                    log_debug("Received digest: %s", security.password);
+
+                    if ((strcmp(service_ctx.username, security.username) != 0) || (strcmp(security.password, digest) != 0)) {
+                        auth_error = 10;
+                    }
                 }
             }
         } else {

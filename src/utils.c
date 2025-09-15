@@ -392,11 +392,8 @@ long cat(char* out, char* filename, int num, ...)
     }
     fclose(file);
 
-    // Add response end marker if we were writing to stdout and had started response logging
-    if (out != NULL && strcmp("stdout", out) == 0 && raw_response_started) {
-        const char* end_hdr = "\n==== RESPONSE END ====\n";
-        rawlog_append_bytes(end_hdr, strlen(end_hdr));
-    }
+    // Don't add response end marker here - let the main server handle it
+    // This prevents duplicate end markers when multiple cat() calls are made
 
     return ret;
 }
