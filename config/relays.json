@@ -1,7 +1,12 @@
 [
   {
-    "idle_state": "open",
-    "close": "set_relay -n 0 -a close",
-    "open": "set_relay -n 0 -a open"
+    "idle_state": "close",
+    "close": "ircut off",
+    "open": "ircut on"
+  },
+  {
+    "idle_state": "close",
+    "close": "irled off",
+    "open": "irled on"
   }
 ]
