@@ -15,17 +15,17 @@ OBJECTS_W = $(SRC_DIR)/wsd_simple_server.o $(SRC_DIR)/utils.o $(SRC_DIR)/log.o \
 
 ifdef HAVE_WOLFSSL
 INCLUDE = -DHAVE_WOLFSSL -ffunction-sections -fdata-sections
-LIBS_O = -Wl,--gc-sections -lwolfssl $(LIBS_Z) -lcjson -lpthread -lrt
-LIBS_N = -Wl,--gc-sections -lwolfssl -lcjson -lpthread -lrt
+LIBS_O = -Wl,--gc-sections -lwolfssl $(LIBS_Z) -ljson-c -lpthread -lrt
+LIBS_N = -Wl,--gc-sections -lwolfssl -ljson-c -lpthread -lrt
 else
 ifdef HAVE_MBEDTLS
 INCLUDE = -DHAVE_MBEDTLS -ffunction-sections -fdata-sections
-LIBS_O = -Wl,--gc-sections -lmbedcrypto $(LIBS_Z) -lcjson -lpthread -lrt
-LIBS_N = -Wl,--gc-sections -lmbedcrypto -lcjson -lpthread -lrt
+LIBS_O = -Wl,--gc-sections -lmbedcrypto $(LIBS_Z) -ljson-c -lpthread -lrt
+LIBS_N = -Wl,--gc-sections -lmbedcrypto -ljson-c -lpthread -lrt
 else
 INCLUDE = -ffunction-sections -fdata-sections
-LIBS_O = -Wl,--gc-sections -ltomcrypt $(LIBS_Z) -lcjson -lpthread -lrt
-LIBS_N = -Wl,--gc-sections -ltomcrypt -lcjson -lpthread -lrt
+LIBS_O = -Wl,--gc-sections -ltomcrypt $(LIBS_Z) -ljson-c -lpthread -lrt
+LIBS_N = -Wl,--gc-sections -ltomcrypt -ljson-c -lpthread -lrt
 endif
 endif
 LIBS_W = -Wl,--gc-sections -lpthread

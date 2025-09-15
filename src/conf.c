@@ -16,7 +16,7 @@
 
 #include "conf.h"
 
-#include "cjson/cJSON.h"
+#include <json-c/json.h>
 #include "log.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
@@ -34,37 +34,43 @@
 extern service_context_t service_ctx;
 
 // Remember to free the string
-void get_string_from_json(char** var, cJSON* j, char* name)
+void get_string_from_json(char** var, json_object* j, char* name)
 {
-    const cJSON* s = NULL;
+    json_object* s = NULL;
 
-    s = cJSON_GetObjectItemCaseSensitive(j, name);
-    if (cJSON_IsString(s) && (s->valuestring != NULL)) {
-        *var = (char*) malloc((strlen(s->valuestring) + 1) * sizeof(char));
-        strcpy(*var, s->valuestring);
+    if (json_object_object_get_ex(j, name, &s)) {
+        if (json_object_is_type(s, json_type_string)) {
+            const char* str_val = json_object_get_string(s);
+            if (str_val != NULL) {
+                *var = (char*) malloc((strlen(str_val) + 1) * sizeof(char));
+                strcpy(*var, str_val);
+            }
+        }
     }
 }
 
-void get_int_from_json(int* var, cJSON* j, char* name)
+void get_int_from_json(int* var, json_object* j, char* name)
 {
-    const cJSON* i = NULL;
+    json_object* i = NULL;
 
-    i = cJSON_GetObjectItemCaseSensitive(j, name);
-    if (cJSON_IsNumber(i)) {
-        *var = i->valueint;
+    if (json_object_object_get_ex(j, name, &i)) {
+        if (json_object_is_type(i, json_type_int)) {
+            *var = json_object_get_int(i);
+        }
     }
 }
 
-void get_double_from_json(double* var, cJSON* j, char* name)
+void get_double_from_json(double* var, json_object* j, char* name)
 {
-    const cJSON* d = NULL;
+    json_object* d = NULL;
 
-    d = cJSON_GetObjectItemCaseSensitive(j, name);
-    if (cJSON_IsNumber(d)) {
-        *var = d->valuedouble;
+    if (json_object_object_get_ex(j, name, &d)) {
+        if (json_object_is_type(d, json_type_double)) {
+            *var = json_object_get_double(d);
+        }
     }
 }
-static cJSON* load_json_file(const char* path)
+static json_object* load_json_file(const char* path)
 {
     FILE* f = fopen(path, "r");
     if (!f)
@@ -91,7 +97,7 @@ static cJSON* load_json_file(const char* path)
         return NULL;
     }
     buf[sz] = '\0';
-    cJSON* j = cJSON_Parse(buf);
+    json_object* j = json_tokener_parse(buf);
     free(buf);
     return j;
 }
@@ -100,18 +106,16 @@ static void load_profiles_from_dir(const char* dir)
 {
     char p[PATH_MAX];
     snprintf(p, sizeof(p), "%s/%s", dir, "profiles.json");
-    cJSON* value = load_json_file(p);
+    json_object* value = load_json_file(p);
     if (!value) {
         log_debug("profiles.json not found in %s", dir);
         return;
     }
-    if (!cJSON_IsObject(value)) {
-        cJSON_Delete(value);
+    if (!json_object_is_type(value, json_type_object)) {
+        json_object_put(value);
         return;
     }
-    cJSON* item = value->child;
-    while (item != NULL)
-    {
+    json_object_object_foreach(value, key, item) {
         service_ctx.profiles_num++;
         service_ctx.profiles = (stream_profile_t*) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
         // Init defaults
@@ -172,16 +176,15 @@ static void load_profiles_from_dir(const char* dir)
                   service_ctx.profiles[service_ctx.profiles_num - 1].name,
                   service_ctx.profiles[service_ctx.profiles_num - 1].width,
                   service_ctx.profiles[service_ctx.profiles_num - 1].height);
-        item = item->next;
     }
-    cJSON_Delete(value);
+    json_object_put(value);
 }
 
 static void load_ptz_from_dir(const char* dir)
 {
     char p[PATH_MAX];
     snprintf(p, sizeof(p), "%s/%s", dir, "ptz.json");
-    cJSON* value = load_json_file(p);
+    json_object* value = load_json_file(p);
     if (!value) {
         log_debug("ptz.json not found in %s", dir);
         return;
@@ -210,25 +213,28 @@ static void load_ptz_from_dir(const char* dir)
     get_string_from_json(&(service_ctx.ptz_node.jump_to_abs), value, "jump_to_abs");
     get_string_from_json(&(service_ctx.ptz_node.jump_to_rel), value, "jump_to_rel");
     get_string_from_json(&(service_ctx.ptz_node.get_presets), value, "get_presets");
-    cJSON_Delete(value);
+    json_object_put(value);
 }
 
 static void load_relays_from_dir(const char* dir)
 {
     char p[PATH_MAX];
     snprintf(p, sizeof(p), "%s/%s", dir, "relays.json");
-    cJSON* value = load_json_file(p);
+    json_object* value = load_json_file(p);
     if (!value) {
         log_debug("relays.json not found in %s", dir);
         return;
     }
-    if (!cJSON_IsArray(value)) {
-        cJSON_Delete(value);
+    if (!json_object_is_type(value, json_type_array)) {
+        json_object_put(value);
         return;
     }
-    cJSON* item;
-    cJSON_ArrayForEach(item, value)
-    {
+    json_object* item;
+    size_t array_len = json_object_array_length(value);
+    for (size_t i = 0; i < array_len; i++) {
+        item = json_object_array_get_idx(value, i);
+        if (!item) continue;
+
         service_ctx.relay_outputs_num++;
         if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
             log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
@@ -249,25 +255,29 @@ static void load_relays_from_dir(const char* dir)
         get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close");
         get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
     }
-    cJSON_Delete(value);
+    json_object_put(value);
 }
 
 static void load_events_from_dir(const char* dir)
 {
     char p[PATH_MAX];
     snprintf(p, sizeof(p), "%s/%s", dir, "events.json");
-    cJSON* root = load_json_file(p);
+    json_object* root = load_json_file(p);
 
     if (!root) {
         log_debug("events.json not found in %s", dir);
         return;
     }
     get_int_from_json(&(service_ctx.events_enable), root, "enable");
-    cJSON* value = cJSON_GetObjectItemCaseSensitive(root, "events");
-    if (cJSON_IsArray(value)) {
-        cJSON* item;
-        cJSON_ArrayForEach(item, value)
-        {
+    json_object* value = NULL;
+    json_object_object_get_ex(root, "events", &value);
+    if (value && json_object_is_type(value, json_type_array)) {
+        json_object* item;
+        size_t array_len = json_object_array_length(value);
+        for (size_t i = 0; i < array_len; i++) {
+            item = json_object_array_get_idx(value, i);
+            if (!item) continue;
+
             service_ctx.events_num++;
             if (service_ctx.events_num > MAX_EVENTS) {
                 log_error("Too many events, max is: %d", MAX_EVENTS);
@@ -287,16 +297,19 @@ static void load_events_from_dir(const char* dir)
             get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
         }
     }
-    cJSON_Delete(root);
+    json_object_put(root);
 }
 
-void get_bool_from_json(int* var, cJSON* j, char* name)
+void get_bool_from_json(int* var, json_object* j, char* name)
 {
-    const cJSON* b = NULL;
+    json_object* b = NULL;
 
-    b = cJSON_GetObjectItemCaseSensitive(j, name);
-    if (cJSON_IsTrue(b)) {
-        *var = 1;
+    if (json_object_object_get_ex(j, name, &b)) {
+        if (json_object_is_type(b, json_type_boolean)) {
+            *var = json_object_get_boolean(b) ? 1 : 0;
+        } else {
+            *var = 0;
+        }
     } else {
         *var = 0;
     }
@@ -305,9 +318,9 @@ void get_bool_from_json(int* var, cJSON* j, char* name)
 int process_json_conf_file(char* file)
 {
     FILE* fF;
-    cJSON *value, *item;
+    json_object *value, *item;
     char *buffer, *tmp;
-    cJSON* json_file;
+    json_object* json_file;
 
     int i, json_size;
     char stmp[MAX_LEN];
@@ -327,13 +340,9 @@ int process_json_conf_file(char* file)
     }
     fclose(fF);
 
-    json_file = cJSON_Parse(buffer);
+    json_file = json_tokener_parse(buffer);
     if (json_file == NULL) {
-        const char* error_ptr = cJSON_GetErrorPtr();
-        if (error_ptr != NULL) {
-            log_error("Error before: %s", error_ptr);
-        }
-
+        log_error("Failed to parse JSON configuration file");
         free(buffer);
         return -2;
     }
@@ -404,14 +413,19 @@ int process_json_conf_file(char* file)
             strcpy(service_ctx.raw_xml_log_file, defpath);
     }
 
-    value = cJSON_GetObjectItemCaseSensitive(json_file, "scopes");
-    if ((!cJSON_IsNull(value)) && (cJSON_IsArray(value))) {
-        cJSON_ArrayForEach(item, value)
-        {
-            service_ctx.scopes_num++;
-            service_ctx.scopes = (char**) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char*));
-            service_ctx.scopes[service_ctx.scopes_num - 1] = (char*) malloc((strlen(item->valuestring) + 1) * sizeof(char));
-            strcpy(service_ctx.scopes[service_ctx.scopes_num - 1], item->valuestring);
+    if (json_object_object_get_ex(json_file, "scopes", &value)) {
+        if (json_object_is_type(value, json_type_array)) {
+            size_t array_len = json_object_array_length(value);
+            for (size_t i = 0; i < array_len; i++) {
+                item = json_object_array_get_idx(value, i);
+                if (item && json_object_is_type(item, json_type_string)) {
+                    service_ctx.scopes_num++;
+                    service_ctx.scopes = (char**) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char*));
+                    const char* str_val = json_object_get_string(item);
+                    service_ctx.scopes[service_ctx.scopes_num - 1] = (char*) malloc((strlen(str_val) + 1) * sizeof(char));
+                    strcpy(service_ctx.scopes[service_ctx.scopes_num - 1], str_val);
+                }
+            }
         }
     }
     get_string_from_json(&(service_ctx.username), json_file, "username");
@@ -495,7 +509,7 @@ int process_json_conf_file(char* file)
         }
     }
 
-    cJSON_Delete(json_file);
+    json_object_put(json_file);
     free(buffer);
 
     return 0;
