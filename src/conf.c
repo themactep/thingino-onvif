@@ -339,7 +339,7 @@ int process_json_conf_file(char* file)
 
     // Init variables before reading
     service_ctx.port = 80;
-    service_ctx.user = NULL;
+    service_ctx.username = NULL;
     service_ctx.password = NULL;
     service_ctx.manufacturer = NULL;
     service_ctx.model = NULL;
@@ -413,7 +413,7 @@ int process_json_conf_file(char* file)
             strcpy(service_ctx.scopes[service_ctx.scopes_num - 1], item->valuestring);
         }
     }
-    get_string_from_json(&(service_ctx.user), json_file, "user");
+    get_string_from_json(&(service_ctx.username), json_file, "username");
     get_string_from_json(&(service_ctx.password), json_file, "password");
     get_bool_from_json(&(service_ctx.adv_enable_media2), json_file, "adv_enable_media2");
     get_bool_from_json(&(service_ctx.adv_fault_if_unknown), json_file, "adv_fault_if_unknown");
@@ -432,8 +432,8 @@ int process_json_conf_file(char* file)
     for (i = 0; i < service_ctx.scopes_num; i++) {
         log_debug("\t%s", service_ctx.scopes[i]);
     }
-    if (service_ctx.user != NULL) {
-        log_debug("user: %s", service_ctx.user);
+    if (service_ctx.username != NULL) {
+        log_debug("username: %s", service_ctx.username);
         log_debug("password: ********");
     }
     // Modular config: load additional configuration from conf_dir (default /etc/onvif.d)
@@ -596,8 +596,8 @@ void free_conf_file()
         free(service_ctx.manufacturer);
     if (service_ctx.password != NULL)
         free(service_ctx.password);
-    if (service_ctx.user != NULL)
-        free(service_ctx.user);
+    if (service_ctx.username != NULL)
+        free(service_ctx.username);
     if (service_ctx.raw_xml_log_file != NULL)
         free(service_ctx.raw_xml_log_file);
 }

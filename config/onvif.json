@@ -20,5 +20,5 @@
     "onvif://www.onvif.org/name"
   ],
   "serial_num": "SN1234567890",
-  "user": "admin"
+  "username": "admin"
 }

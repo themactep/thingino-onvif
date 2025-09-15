@@ -92,7 +92,7 @@ typedef struct {
 
 typedef struct {
     int port;
-    char* user;
+    char* username;
     char* password;
 
     //Device Information

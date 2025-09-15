@@ -295,7 +295,7 @@ int main(int argc, char** argv)
 
     log_debug("Method: %s", method);
 
-    if (service_ctx.user != NULL) {
+    if (service_ctx.username != NULL) {
         if ((get_element("Security", "Header") != NULL) && (get_element("UsernameToken", "Header") != NULL)) {
             unsigned long nonce_size = 128;
             unsigned long auth_size = 128;
@@ -345,7 +345,7 @@ int main(int argc, char** argv)
                 log_debug("Calculated digest: %s", digest);
                 log_debug("Received digest: %s", security.password);
 
-                if ((strcmp(service_ctx.user, security.username) != 0) || (strcmp(security.password, digest) != 0)) {
+                if ((strcmp(service_ctx.username, security.username) != 0) || (strcmp(security.password, digest) != 0)) {
                     auth_error = 10;
                 }
             }
