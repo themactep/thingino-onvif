@@ -55,7 +55,7 @@ int device_get_services()
 
     char ebasesubscription[8], epullpoint[8];
 
-    char audio_sources[2], audio_outputs[2];
+    char audio_sources[2], audio_outputs[2], relay_outputs[2];
 
     port[0] = '\0';
     if (service_ctx.port != 80)
@@ -90,6 +90,9 @@ int device_get_services()
     } else {
         sprintf(audio_outputs, "%d", 0);
     }
+
+    sprintf(relay_outputs, "%d", service_ctx.relay_outputs_num);
+    log_debug("DEBUG: device_get_services - relay_outputs_num: %d, relay_outputs string: %s", service_ctx.relay_outputs_num, relay_outputs);
 
     cap = get_element("IncludeCapability", "Body");
     if ((cap != NULL) && (strcasecmp(cap, "true")) == 0) {
