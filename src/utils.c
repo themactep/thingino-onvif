@@ -363,7 +363,7 @@ long cat(char* out, char* filename, int num, ...)
             if (strcmp("stdout", out) == 0) {
                 // Mirror response body to raw XML file if configured
                 if (!raw_response_started) {
-                    const char* hdr = "==== RESPONSE BEGIN ====\n";
+                    const char* hdr = "\n==== RESPONSE BEGIN ====\n";
                     rawlog_append_bytes(hdr, strlen(hdr));
                     raw_response_started = 1;
                 }

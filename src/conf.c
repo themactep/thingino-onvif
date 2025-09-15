@@ -220,27 +220,35 @@ static void load_relays_from_dir(const char* dir)
 {
     char p[PATH_MAX];
     snprintf(p, sizeof(p), "%s/%s", dir, "relays.json");
+    log_debug("DEBUG: Attempting to load relays from: %s", p);
     json_object* value = load_json_file(p);
     if (!value) {
         log_debug("relays.json not found in %s", dir);
         return;
     }
+
+    log_debug("DEBUG: relays.json successfully loaded from %s", dir);
     if (!json_object_is_type(value, json_type_array)) {
+        log_error("DEBUG: relays.json is not a JSON array");
         json_object_put(value);
         return;
     }
+
     json_object* item;
     size_t array_len = json_object_array_length(value);
+    log_debug("DEBUG: Found %zu relay entries in relays.json", array_len);
     for (size_t i = 0; i < array_len; i++) {
         item = json_object_array_get_idx(value, i);
         if (!item) continue;
 
         service_ctx.relay_outputs_num++;
+        log_debug("DEBUG: Processing relay %zu, relay_outputs_num now: %d", i, service_ctx.relay_outputs_num);
         if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
             log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
             service_ctx.relay_outputs_num--;
             continue;
         }
+
         service_ctx.relay_outputs = (relay_output_t*) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
         service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
         service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;

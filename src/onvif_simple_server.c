@@ -271,7 +271,7 @@ int main(int argc, char** argv)
         utils_reset_response_logging();
         FILE* rf = fopen(service_ctx.raw_xml_log_file, "a");
         if (rf) {
-            const char* hdr = "==== REQUEST BEGIN ====\n";
+            const char* hdr = "\n==== REQUEST BEGIN ====\n";
             fwrite(hdr, 1, strlen(hdr), rf);
             fwrite(input, 1, (size_t) input_size, rf);
             const char* end_hdr = "\n==== REQUEST END ====\n";
@@ -633,7 +633,7 @@ int main(int argc, char** argv)
     if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
         FILE* rf = fopen(service_ctx.raw_xml_log_file, "a");
         if (rf) {
-            const char* endm = "==== RESPONSE END ====\n";
+            const char* endm = "\n==== RESPONSE END ====\n";
             fwrite(endm, 1, strlen(endm), rf);
             fclose(rf);
         }
