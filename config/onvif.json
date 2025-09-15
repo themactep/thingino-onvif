@@ -7,7 +7,7 @@
   "firmware_ver": "0.0.1",
   "hardware_id": "HWID",
   "ifs": "wlan0",
-  "loglevel": 3,
+  "loglevel": 5,
   "manufacturer": "Manufacturer",
   "model": "Model",
   "password": "admin",
