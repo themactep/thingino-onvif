@@ -70,32 +70,43 @@ void get_double_from_json(double* var, json_object* j, char* name)
         }
     }
 }
+
 static json_object* load_json_file(const char* path)
 {
     FILE* f = fopen(path, "r");
-    if (!f)
+    if (!f) {
+        log_debug("Failed to open %s", path);
         return NULL;
+    }
+
     if (fseek(f, 0, SEEK_END) != 0) {
+        log_error("Failed to seek %s", path);
         fclose(f);
         return NULL;
     }
+
     long sz = ftell(f);
     if (sz < 0) {
+        log_error("Failed to tell %s", path);
         fclose(f);
         return NULL;
     }
+
     rewind(f);
     char* buf = (char*) malloc((size_t) sz + 1);
     if (!buf) {
+        log_error("Failed to allocate memory for %s", path);
         fclose(f);
         return NULL;
     }
     size_t rd = fread(buf, 1, (size_t) sz, f);
     fclose(f);
     if (rd != (size_t) sz) {
+        log_error("Failed to read %s", path);
         free(buf);
         return NULL;
     }
+
     buf[sz] = '\0';
     json_object* j = json_tokener_parse(buf);
     free(buf);
@@ -111,10 +122,12 @@ static void load_profiles_from_dir(const char* dir)
         log_debug("profiles.json not found in %s", dir);
         return;
     }
+
     if (!json_object_is_type(value, json_type_object)) {
         json_object_put(value);
         return;
     }
+
     json_object_object_foreach(value, key, item) {
         service_ctx.profiles_num++;
         service_ctx.profiles = (stream_profile_t*) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
@@ -189,6 +202,7 @@ static void load_ptz_from_dir(const char* dir)
         log_debug("ptz.json not found in %s", dir);
         return;
     }
+
     get_int_from_json(&(service_ctx.ptz_node.enable), value, "enable");
     get_double_from_json(&(service_ctx.ptz_node.min_step_x), value, "min_step_x");
     get_double_from_json(&(service_ctx.ptz_node.max_step_x), value, "max_step_x");
@@ -281,6 +295,7 @@ static void load_events_from_dir(const char* dir)
         log_debug("events.json not found in %s", dir);
         return;
     }
+
     get_int_from_json(&(service_ctx.events_enable), root, "enable");
     json_object* value = NULL;
     json_object_object_get_ex(root, "events", &value);
@@ -339,8 +354,10 @@ int process_json_conf_file(char* file)
     char stmp[MAX_LEN];
 
     fF = fopen(file, "r");
-    if (fF == NULL)
+    if (fF == NULL) {
+        log_error("Failed to open JSON configuration file");
         return -1;
+    }
 
     fseek(fF, 0L, SEEK_END);
     json_size = ftell(fF);
@@ -348,6 +365,7 @@ int process_json_conf_file(char* file)
 
     buffer = (char*) malloc((json_size + 1) * sizeof(char));
     if (fread(buffer, 1, json_size, fF) != json_size) {
+        log_error("Failed to read JSON configuration file");
         fclose(fF);
         return -1;
     }
@@ -526,6 +544,7 @@ int process_json_conf_file(char* file)
                 log_error("Unable to add relay event, too many events, max is: %d", MAX_EVENTS);
                 return -2;
             }
+
             log_debug("Adding event for relay output %d", i);
             service_ctx.events = (event_t*) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
             service_ctx.events[service_ctx.events_num - 1].topic = (char*) malloc(strlen("tns1:Device/Trigger/Relay") + 1);

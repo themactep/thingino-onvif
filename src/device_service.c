@@ -72,6 +72,7 @@ int device_get_services()
     } else {
         strcpy(epullpoint, "false");
     }
+
     if ((service_ctx.events_enable == EVENTS_BASESUBSCRIPTION) || (service_ctx.events_enable == EVENTS_BOTH)) {
         strcpy(ebasesubscription, "true");
     } else {
@@ -84,6 +85,7 @@ int device_get_services()
     } else {
         sprintf(audio_sources, "%d", 0);
     }
+
     if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
         || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
         sprintf(audio_outputs, "%d", 1);
@@ -119,8 +121,7 @@ int device_get_services()
                             "%RELAY_OUTPUTS%",
                             relay_outputs);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetServices_with_capabilities_no_ptz_no_media2.xml",
@@ -828,8 +829,7 @@ int device_get_capabilities()
                             "%RELAY_OUTPUTS%",
                             relay_outputs);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetCapabilities_ptz.xml",

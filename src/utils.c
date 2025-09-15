@@ -47,40 +47,12 @@
 #endif
 #endif
 
-#ifdef USE_ZLIB
-#include <zlib.h>
-#endif
-
 #include "log.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
 
-// Raw XML file logging helpers
-static const char* g_raw_xml_log_file = NULL;
-static int raw_response_started = 0;
 
-void utils_set_raw_xml_log_file(const char* path)
-{
-    g_raw_xml_log_file = path;
-}
 
-void utils_reset_response_logging()
-{
-    raw_response_started = 0;
-}
-static void rawlog_append_bytes(const char* data, size_t len)
-{
-    if (g_raw_xml_log_file && g_raw_xml_log_file[0] != '\0') {
-        FILE* f = fopen(g_raw_xml_log_file, "a");
-        if (f) {
-            fwrite(data, 1, len, f);
-            fclose(f);
-        } else {
-            // Avoid recursion by not using raw logging on this path
-            log_warn("Cannot open raw_xml_log_file %s", g_raw_xml_log_file);
-        }
-    }
-}
 
 #define SHMOBJ_PATH "/onvif_subscription"
 #define MEM_LOCK_FILE "/sub_mem_lock"
@@ -236,58 +208,87 @@ int sem_memory_post()
     return sem_post(sem_memory_lock);
 }
 
-#ifdef USE_ZLIB
 /**
- * Decompress a gzipped file
- * @param file_in The input file name
- * @param file_out The output file pointer
- * @return 0 on success, negative on error
+ * Generate ONVIF-compliant SOAP fault response
+ * @param out The output type: "stdout", char *ptr or NULL
+ * @param fault_subcode The ONVIF fault subcode (e.g., "ter:ActionNotSupported")
+ * @param fault_reason The human-readable fault reason
+ * @param fault_detail Additional fault details
+ * @return the number of bytes written
  */
-int gzip_d(FILE* file_out, char* file_in)
+// Global flag to indicate if the last cat() call returned a SOAP fault
+int g_last_response_was_soap_fault = 0;
+
+/**
+ * Output appropriate HTTP headers based on whether the response is a SOAP fault
+ * @param content_length The content length to include in headers
+ */
+void output_http_headers(long content_length)
 {
-    char buf[1024];
-    char file_in_gz[MAX_LEN];
-
-    sprintf(file_in_gz, "%s.gz", file_in);
-    gzFile fi;
-    if (access(file_in_gz, F_OK) == 0) {
-        fi = gzopen(file_in_gz, "rb");
-    } else {
-        fi = gzopen(file_in, "rb");
+    if (g_last_response_was_soap_fault) {
+        fprintf(stdout, "Status: 500 Internal Server Error\r\n");
     }
-    if (!fi) {
-        return -1;
-    }
-    if (file_out == NULL) {
-        gzclose(fi);
-        return -2;
-    }
-
-    gzrewind(fi);
-    while (!gzeof(fi)) {
-        int len = gzread(fi, buf, sizeof(buf));
-        if ((len < 0) || ((len == 0) && (!gzeof(fi)))) {
-            gzclose(fi);
-            return -3;
-        }
-        if (fwrite(buf, 1, len, file_out) < 0) {
-            gzclose(fi);
-            return -4;
-        }
-    }
-    gzclose(fi);
-
-    return 0;
+    fprintf(stdout, "Content-type: application/soap+xml\r\n");
+    fprintf(stdout, "Content-Length: %ld\r\n\r\n", content_length);
 }
-#endif
+
+long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail)
+{
+    const char* soap_fault_template =
+        "<?xml version=\"1.0\" ?>"
+        "<soapenv:Envelope xmlns:soapenv=\"http://www.w3.org/2003/05/soap-envelope\""
+        " xmlns:ter=\"http://www.onvif.org/ver10/error\""
+        " xmlns:xs=\"http://www.w3.org/2000/10/XMLSchema\">"
+        "<soapenv:Body>"
+        "<soapenv:Fault>"
+        "<soapenv:Code>"
+        "<soapenv:Value>env:Receiver</soapenv:Value>"
+        "<soapenv:Subcode>"
+        "<soapenv:Value>%s</soapenv:Value>"
+        "</soapenv:Subcode>"
+        "</soapenv:Code>"
+        "<soapenv:Reason>"
+        "<soapenv:Text xml:lang=\"en\">%s</soapenv:Text>"
+        "</soapenv:Reason>"
+        "<soapenv:Node>http://www.w3.org/2003/05/soap-envelope/node/ultimateReceiver</soapenv:Node>"
+        "<soapenv:Role>http://www.w3.org/2003/05/soap-envelope/role/ultimateReceiver</soapenv:Role>"
+        "<soapenv:Detail>"
+        "<soapenv:Text>%s</soapenv:Text>"
+        "</soapenv:Detail>"
+        "</soapenv:Fault>"
+        "</soapenv:Body>"
+        "</soapenv:Envelope>\r\n";
+
+    char soap_fault[4096];
+    int len = snprintf(soap_fault, sizeof(soap_fault), soap_fault_template,
+                      fault_subcode, fault_reason, fault_detail);
+
+    // Set global flag to indicate this is a SOAP fault
+    g_last_response_was_soap_fault = 1;
+
+    if (out == NULL) {
+        // First call - just return size for Content-Length calculation
+        return len;
+    } else if (strcmp(out, "stdout") == 0) {
+        // Second call - output the SOAP fault body only
+        // The service function will handle HTTP status and headers
+        printf("%s", soap_fault);
+        fflush(stdout);
+    } else {
+        // Output to buffer
+        strcpy(out, soap_fault);
+    }
+
+    return len;
+}
 
 /**
  * Read a file line by line and send to output after replacing arguments
- * @param out The output type: "sdout", char *ptr or NULL
+ * @param out The output type: "stdout", char *ptr or NULL
  * @param filename The input file to process
  * @param num The number of variable arguments
  * @param ... The argument list to replace: src1, dst1, src2, dst2, etc...
- * @return the number of processed bytes
+ * @return the number of processed bytes (always >= 0), or 0 on error
  */
 long cat(char* out, char* filename, int num, ...)
 {
@@ -300,25 +301,9 @@ long cat(char* out, char* filename, int num, ...)
     long ret = 0;
     FILE* file;
 
-#ifdef USE_ZLIB
-    file = tmpfile();
-    if (file == NULL) {
-        log_error("Unable to open file %s", filename);
-        return -1;
-    }
-    int gret = gzip_d(file, filename);
-    if (gret != 0) {
-        log_warn("Unable to decompress file %s (code %d); falling back to plain read", filename, gret);
-        fclose(file);
-        file = fopen(filename, "r");
-        if (!file) {
-            log_error("Unable to open file %s", filename);
-            return -3;
-        }
-    } else {
-        rewind(file);
-    }
-#else
+    // Reset SOAP fault flag for normal file operations
+    g_last_response_was_soap_fault = 0;
+
     file = fopen(filename, "r");
     if (!file) {
         // Try absolute onvif web root as fallback
@@ -328,9 +313,10 @@ long cat(char* out, char* filename, int num, ...)
     }
     if (!file) {
         log_error("Unable to open file %s (and fallback under /var/www/onvif)", filename);
-        return -3;
+        // Return ONVIF-compliant SOAP fault instead of empty response
+        return cat_soap_fault(out, "ter:ActionNotSupported", "Optional Action Not Implemented",
+                             "The requested XML template is not available on this device");
     }
-#endif
 
     char line[MAX_CAT_LEN];
 
@@ -361,19 +347,9 @@ long cat(char* out, char* filename, int num, ...)
 
         if ((out != NULL) && (*l != '\0')) {
             if (strcmp("stdout", out) == 0) {
-                // Mirror response body to raw XML file if configured
-                if (!raw_response_started) {
-                    const char* hdr = "\n==== RESPONSE BEGIN ====\n";
-                    rawlog_append_bytes(hdr, strlen(hdr));
-                    raw_response_started = 1;
-                }
                 if (*l != '<') {
-                    // preserve the leading space we print to stdout for non-tag lines
-                    const char sp = ' ';
-                    rawlog_append_bytes(&sp, 1);
                     fprintf(stdout, " ");
                 }
-                rawlog_append_bytes(l, strlen(l));
                 fprintf(stdout, "%s", l);
             } else {
                 if (*l != '<') {
@@ -391,9 +367,6 @@ long cat(char* out, char* filename, int num, ...)
         va_end(valist);
     }
     fclose(file);
-
-    // Don't add response end marker here - let the main server handle it
-    // This prevents duplicate end markers when multiple cat() calls are made
 
     return ret;
 }

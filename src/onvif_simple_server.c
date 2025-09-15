@@ -100,6 +100,7 @@ int main(int argc, char** argv)
     const char* method;
     username_token_t security;
     int auth_error = 0;
+    int conf_file_specified = 0;  // Flag to track if user provided -c parameter
 
     conf_file = (char*) malloc((strlen(DEFAULT_JSON_CONF_FILE) + 1) * sizeof(char));
     strcpy(conf_file, DEFAULT_JSON_CONF_FILE);
@@ -125,6 +126,7 @@ int main(int argc, char** argv)
                 free(conf_file);
                 conf_file = (char*) malloc((strlen(optarg) + 1) * sizeof(char));
                 strcpy(conf_file, optarg);
+                conf_file_specified = 1;  // Mark that user provided config file
             } else {
                 print_usage(argv[0]);
                 exit(EXIT_FAILURE);
@@ -202,19 +204,47 @@ int main(int argc, char** argv)
 
     dump_env();
 
-    log_info("Processing configuration file %s...", conf_file);
-    itmp = process_json_conf_file(conf_file);
+    // Try to find config file: first in same directory as binary, then in /etc/
+    char* final_conf_file = NULL;
+
+    // If no config file specified via -c, try to find it automatically
+    if (!conf_file_specified) {
+        // Get directory of the binary
+        char* binary_dir = dirname(strdup(argv[0]));
+        char local_conf_path[PATH_MAX];
+        snprintf(local_conf_path, sizeof(local_conf_path), "%s/onvif.json", binary_dir);
+
+        // Check if config file exists in binary directory
+        if (access(local_conf_path, F_OK) == 0) {
+            final_conf_file = strdup(local_conf_path);
+            log_info("Found configuration file in binary directory: %s", final_conf_file);
+        } else {
+            // Fall back to /etc/onvif.json
+            final_conf_file = strdup(DEFAULT_JSON_CONF_FILE);
+            log_info("Using default configuration file: %s", final_conf_file);
+        }
+        free(binary_dir);
+    } else {
+        // Config file was specified via -c, use it as-is
+        final_conf_file = strdup(conf_file);
+    }
+
+    log_info("Processing configuration file %s...", final_conf_file);
+    itmp = process_json_conf_file(final_conf_file);
     if (itmp == -1) {
-        log_fatal("Unable to find configuration file %s", conf_file);
+        log_fatal("Unable to find configuration file %s", final_conf_file);
 
         free(conf_file);
+        free(final_conf_file);
         exit(EXIT_FAILURE);
     } else if (itmp < -1) {
-        log_fatal("Wrong syntax in configuration file %s", conf_file);
+        log_fatal("Wrong syntax in configuration file %s", final_conf_file);
 
         free(conf_file);
+        free(final_conf_file);
         exit(EXIT_FAILURE);
     }
+    free(final_conf_file);
     log_info("Completed.");
 
     // Apply log level from config if CLI -d was not provided
@@ -225,8 +255,7 @@ int main(int argc, char** argv)
             log_info("Log level set from config: %d", debug);
         }
     }
-    // Configure utils to log raw responses if enabled in config
-    utils_set_raw_xml_log_file(service_ctx.raw_xml_log_file);
+
 
     tmp = getenv("REQUEST_METHOD");
     if ((tmp == NULL) || (strcmp("POST", tmp) != 0)) {
@@ -267,8 +296,7 @@ int main(int argc, char** argv)
     }
     // Raw request logging to file if configured
     if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
-        // Reset response logging flag for this new request
-        utils_reset_response_logging();
+
         FILE* rf = fopen(service_ctx.raw_xml_log_file, "a");
         if (rf) {
             const char* hdr = "\n==== REQUEST BEGIN ====\n";
@@ -382,7 +410,17 @@ int main(int argc, char** argv)
             log_error("Authentication error");
     }
 
+    // Prepare for atomic response logging
+    FILE* original_stdout = NULL;
+    char* response_buffer = NULL;
+    size_t response_size = 0;
+
     if (auth_error == 0) {
+        // Redirect stdout to capture response for logging
+        if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
+            original_stdout = stdout;
+            stdout = open_memstream(&response_buffer, &response_size);
+        }
         if (strcasecmp("device_service", prog_name) == 0) {
             if (strcasecmp(method, "GetServices") == 0) {
                 device_get_services();
@@ -622,22 +660,44 @@ int main(int argc, char** argv)
         }
     }
 
+    // Restore stdout and write atomic response log
+    if (original_stdout) {
+        fclose(stdout);
+        stdout = original_stdout;
+
+        // Write atomic response log if we captured a response
+        if (response_buffer && response_size > 0) {
+            FILE* rf = fopen(service_ctx.raw_xml_log_file, "a");
+            if (rf) {
+                const char* begin_marker = "\n==== RESPONSE BEGIN ====\n";
+                const char* end_marker = "\n==== RESPONSE END ====\n";
+
+                fwrite(begin_marker, 1, strlen(begin_marker), rf);
+                fwrite(response_buffer, 1, response_size, rf);
+                fwrite(end_marker, 1, strlen(end_marker), rf);
+                fclose(rf);
+
+                log_debug("DEBUG: Wrote atomic response log (%zu bytes)", response_size);
+            }
+
+            // Send the response to actual stdout
+            fwrite(response_buffer, 1, response_size, stdout);
+        }
+
+        if (response_buffer) {
+            free(response_buffer);
+        }
+    }
+
     close_xml();
     free(input);
 
-    free_conf_file();
-
     free(conf_file);
 
-    // Mark end of response in raw XML log (helps diagnose truncated responses)
-    if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
-        FILE* rf = fopen(service_ctx.raw_xml_log_file, "a");
-        if (rf) {
-            const char* endm = "\n==== RESPONSE END ====\n";
-            fwrite(endm, 1, strlen(endm), rf);
-            fclose(rf);
-        }
-    }
+
+
+    // Now safe to free configuration memory
+    free_conf_file();
 
     log_info("Program terminated.");
 

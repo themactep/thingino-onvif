@@ -75,6 +75,11 @@ void destroy_shared_memory(void* shared_area, int destroy_all);
 int sem_memory_wait();
 int sem_memory_post();
 long cat(char* out, char* filename, int num, ...);
+long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail);
+void output_http_headers(long content_length);
+
+// Global flag to indicate if the last cat() call returned a SOAP fault
+extern int g_last_response_was_soap_fault;
 int get_ip_address(char* address, char* netmask, char* name);
 int get_mac_address(char* address, char* name);
 int netmask2prefixlen(char* netmask);
@@ -94,8 +99,7 @@ int set_video_codec(char* buffer, int buffer_len, int codec, int ver);
 int set_audio_codec(char* buffer, int buffer_len, int codec, int ver);
 int construct_uri_with_credentials(
     char* output_buffer, size_t buffer_size, const char* uri_template, const char* address, const char* username, const char* password);
-void utils_set_raw_xml_log_file(const char* path);
-void utils_reset_response_logging();
+
 topic_expressions_t* parseTopicExpression(const char* input);
 void free_topic_expression(topic_expressions_t* p);
 int is_topic_in_expression(const char* topic_expression, char* topic);
