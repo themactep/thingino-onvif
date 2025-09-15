@@ -699,6 +699,7 @@ int device_get_capabilities()
     }
 
     sprintf(relay_outputs, "%d", service_ctx.relay_outputs_num);
+    log_debug("DEBUG: device_get_capabilities - relay_outputs_num: %d, relay_outputs string: %s", service_ctx.relay_outputs_num, relay_outputs);
 
     if (icategory == 1) {
         long size = cat(NULL, "device_service_files/GetDeviceCapabilities.xml", 2, "%DEVICE_SERVICE_ADDRESS%", device_service_address);

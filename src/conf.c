@@ -262,7 +262,12 @@ static void load_relays_from_dir(const char* dir)
         }
         get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close");
         get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
+        log_debug("DEBUG: Relay %d configured - close: %s, open: %s",
+                  service_ctx.relay_outputs_num - 1,
+                  service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close : "(null)",
+                  service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open : "(null)");
     }
+    log_debug("DEBUG: Finished loading relays. Total relay_outputs_num: %d", service_ctx.relay_outputs_num);
     json_object_put(value);
 }
 
