@@ -1,5 +1,5 @@
-[
-  {
+{
+  "stream0": {
     "name": "Profile_0",
     "width": 1920,
     "height": 1080,
@@ -9,7 +9,7 @@
     "audio_encoder": "AAC",
     "audio_decoder": "AAC"
   },
-  {
+  "stream1": {
     "name": "Profile_1",
     "width": 640,
     "height": 360,
@@ -19,5 +19,5 @@
     "audio_encoder": "AAC",
     "audio_decoder": "AAC"
   }
-]
+}
 

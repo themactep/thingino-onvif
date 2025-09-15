@@ -105,12 +105,12 @@ static void load_profiles_from_dir(const char* dir)
         log_debug("profiles.json not found in %s", dir);
         return;
     }
-    if (!cJSON_IsArray(value)) {
+    if (!cJSON_IsObject(value)) {
         cJSON_Delete(value);
         return;
     }
-    cJSON* item;
-    cJSON_ArrayForEach(item, value)
+    cJSON* item = value->child;
+    while (item != NULL)
     {
         service_ctx.profiles_num++;
         service_ctx.profiles = (stream_profile_t*) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
@@ -172,6 +172,7 @@ static void load_profiles_from_dir(const char* dir)
                   service_ctx.profiles[service_ctx.profiles_num - 1].name,
                   service_ctx.profiles[service_ctx.profiles_num - 1].width,
                   service_ctx.profiles[service_ctx.profiles_num - 1].height);
+        item = item->next;
     }
     cJSON_Delete(value);
 }
