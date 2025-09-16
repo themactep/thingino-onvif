@@ -90,6 +90,14 @@ void print_usage(char* progname)
 
 int main(int argc, char** argv)
 {
+    // VERY FIRST THING - write to a file to prove we got here
+    FILE* debug_file = fopen("/tmp/onvif_debug.log", "w");
+    if (debug_file) {
+        fprintf(debug_file, "MAIN STARTED - argc=%d\n", argc);
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
     char* tmp;
     int errno;
     char* endptr;
@@ -102,8 +110,49 @@ int main(int argc, char** argv)
     int auth_error = 0;
     int conf_file_specified = 0;  // Flag to track if user provided -c parameter
 
-    conf_file = (char*) malloc((strlen(DEFAULT_JSON_CONF_FILE) + 1) * sizeof(char));
-    strcpy(conf_file, DEFAULT_JSON_CONF_FILE);
+    // Debug checkpoint 1
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to fprintf stderr\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Don't use stderr in CGI - it might be corrupted
+    // fprintf(stderr, "ONVIF server starting...\n");
+
+    // Debug checkpoint 2
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to malloc conf_file\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Use static buffer instead of malloc to avoid heap issues
+    static char conf_file_buffer[256];
+    strcpy(conf_file_buffer, DEFAULT_JSON_CONF_FILE);
+    conf_file = conf_file_buffer;
+
+    // Debug checkpoint 3
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "conf_file set to static buffer\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Don't use stderr in CGI - it might be corrupted
+    // fprintf(stderr, "Allocated conf_file memory\n");
+    // fprintf(stderr, "Set default config file path\n");
+
+    // Debug checkpoint 4
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to enter while loop\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
 
     while (1) {
         static struct option long_options[] = {{"conf_file", required_argument, 0, 'c'},
@@ -174,6 +223,14 @@ int main(int argc, char** argv)
         }
     }
 
+    // Debug checkpoint 5
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Finished argument parsing\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
     // Check if the service name is sent as a last argument
     if (argc > 1) {
         tmp = argv[argc - 1];
@@ -186,66 +243,179 @@ int main(int argc, char** argv)
     } else {
         tmp = argv[0];
     }
+
+    // Debug checkpoint 6
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to call basename\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
     prog_name = basename(tmp);
+
+    // Debug checkpoint 7
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "basename completed, prog_name=%p\n", (void*)prog_name);
+        if (prog_name) {
+            fprintf(debug_file, "prog_name value: %.20s\n", prog_name);
+        } else {
+            fprintf(debug_file, "prog_name is NULL!\n");
+        }
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Debug checkpoint 8
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to fprintf prog_name to stderr\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Don't use stderr in CGI - it might be corrupted
+    // fprintf(stderr, "Program name determined: %s\n", prog_name ? prog_name : "NULL");
+
+    // Debug checkpoint 9
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Skipped stderr fprintf, continuing...\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
 
     if (conf_file[0] == '\0') {
         print_usage(argv[0]);
-        free(conf_file);
+        // Don't free static buffer: free(conf_file);
         exit(EXIT_SUCCESS);
     }
     if (strlen(conf_file) <= 5) {
         print_usage(argv[0]);
-        free(conf_file);
+        // Don't free static buffer: free(conf_file);
         exit(EXIT_SUCCESS);
     }
 
+    // Debug checkpoint 10
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to initialize logging\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Don't use stderr in CGI
+    // fprintf(stderr, "About to initialize logging\n");
     log_init("onvif_simple_server", LOG_DAEMON, debug, 1);
+    // fprintf(stderr, "Logging initialized\n");
     log_info("Starting program.");
 
+    // Debug checkpoint 11
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Logging initialized, about to dump env\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Don't use stderr in CGI
+    // fprintf(stderr, "About to dump environment\n");
     dump_env();
+    // fprintf(stderr, "Environment dumped\n");
+
+    // Debug checkpoint 12
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Environment dumped, about to find config\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
 
     // Try to find config file: first in same directory as binary, then in /etc/
+    // Don't use stderr in CGI
+    // fprintf(stderr, "About to find configuration file\n");
     char* final_conf_file = NULL;
 
     // If no config file specified via -c, try to find it automatically
     if (!conf_file_specified) {
-        // Get directory of the binary
-        char* binary_dir = dirname(strdup(argv[0]));
+        // Use static buffers to avoid malloc issues in CGI
+        static char argv0_copy[PATH_MAX];
+        static char final_conf_buffer[PATH_MAX];
+        strncpy(argv0_copy, argv[0], sizeof(argv0_copy) - 1);
+        argv0_copy[sizeof(argv0_copy) - 1] = '\0';
+
+        // Get directory of the binary using static buffer
+        char* binary_dir = dirname(argv0_copy);
         char local_conf_path[PATH_MAX];
         snprintf(local_conf_path, sizeof(local_conf_path), "%s/onvif.json", binary_dir);
 
         // Check if config file exists in binary directory
         if (access(local_conf_path, F_OK) == 0) {
-            final_conf_file = strdup(local_conf_path);
+            strncpy(final_conf_buffer, local_conf_path, sizeof(final_conf_buffer) - 1);
+            final_conf_buffer[sizeof(final_conf_buffer) - 1] = '\0';
+            final_conf_file = final_conf_buffer;
             log_info("Found configuration file in binary directory: %s", final_conf_file);
         } else {
             // Fall back to /etc/onvif.json
-            final_conf_file = strdup(DEFAULT_JSON_CONF_FILE);
+            strncpy(final_conf_buffer, DEFAULT_JSON_CONF_FILE, sizeof(final_conf_buffer) - 1);
+            final_conf_buffer[sizeof(final_conf_buffer) - 1] = '\0';
+            final_conf_file = final_conf_buffer;
             log_info("Using default configuration file: %s", final_conf_file);
         }
-        free(binary_dir);
+        // Don't free static buffer: free(binary_dir);
     } else {
-        // Config file was specified via -c, use it as-is
-        final_conf_file = strdup(conf_file);
+        // Config file was specified via -c, use it as-is (it's already a static buffer)
+        final_conf_file = conf_file;
     }
 
     log_info("Processing configuration file %s...", final_conf_file);
+
+    // Debug checkpoint 13
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to process config file\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Don't use stderr in CGI
+    // fprintf(stderr, "About to process configuration file: %s\n", final_conf_file);
     itmp = process_json_conf_file(final_conf_file);
+
+    // Debug checkpoint 14
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Config processed, result=%d\n", itmp);
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Don't use stderr in CGI
+    // fprintf(stderr, "Configuration file processed, result: %d\n", itmp);
     if (itmp == -1) {
         log_fatal("Unable to find configuration file %s", final_conf_file);
 
-        free(conf_file);
-        free(final_conf_file);
+        // Don't free static buffers: free(conf_file);
+        // Don't free static buffers: free(final_conf_file);
         exit(EXIT_FAILURE);
     } else if (itmp < -1) {
         log_fatal("Wrong syntax in configuration file %s", final_conf_file);
 
-        free(conf_file);
-        free(final_conf_file);
+        // Don't free static buffers: free(conf_file);
+        // Don't free static buffers: free(final_conf_file);
         exit(EXIT_FAILURE);
     }
-    free(final_conf_file);
+    // Don't free static buffer: free(final_conf_file);
     log_info("Completed.");
+
+    // Debug checkpoint 14.5
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Config cleanup complete, about to check log level\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
 
     // Apply log level from config if CLI -d was not provided
     if (!debug_cli_set) {
@@ -266,33 +436,73 @@ int main(int argc, char** argv)
         free(conf_file);
         exit(EXIT_FAILURE);
     }
-    int input_size;
-    char* input = (char*) malloc(16 * 1024 * sizeof(char));
-    log_debug("Malloc finished,input pointer points to %p", input);
-    if (input == NULL) {
-        log_fatal("Memory error");
 
-        free(conf_file);
-        exit(EXIT_FAILURE);
+    // Debug checkpoint 15
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to allocate input buffer\n");
+        fflush(debug_file);
+        fclose(debug_file);
     }
+
+    int input_size;
+    // Use static buffer instead of malloc to avoid heap issues
+    static char input_buffer[16 * 1024];
+    char* input = input_buffer;
+    log_debug("Static buffer allocated, input pointer points to %p", input);
+
+    // Debug checkpoint 16
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Input buffer allocated, about to read stdin\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+    // Static buffer can't be NULL
+    // if (input == NULL) {
+    //     log_fatal("Memory error");
+    //     free(conf_file);
+    //     exit(EXIT_FAILURE);
+    // }
+
     input_size = fread(input, 1, 16 * 1024 * sizeof(char), stdin);
+
+    // Debug checkpoint 17
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Read %d bytes from stdin\n", input_size);
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
     if (input_size == 0) {
         log_fatal("Error: input is empty");
-        free(input);
+        // Don't free static buffer: free(input);
+        // Don't free static buffer: free(conf_file);
+        exit(EXIT_FAILURE);
+    }
 
-        free(conf_file);
-        exit(EXIT_FAILURE);
+    // No need to realloc with static buffer - just use what we read
+    // char* temp_input = (char*) realloc(input, input_size * sizeof(char));
+    char* temp_input = input;
+    // Static buffer doesn't need realloc
+    // if (temp_input == NULL) {
+    //     log_fatal("Memory error trying to allocate %d bytes", input_size);
+    //     free(input);  // Free the original input pointer since realloc failed
+    //     free(conf_file);
+    //     exit(EXIT_FAILURE);
+    // }
+    // input = temp_input;  // Only update input if realloc succeeded
+
+    log_debug("Using static buffer, input pointer is %p", input);
+
+    // Debug checkpoint 18
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Input processing complete, about to parse\n");
+        fflush(debug_file);
+        fclose(debug_file);
     }
-    char* temp_input = (char*) realloc(input, input_size * sizeof(char));
-    //realloc returns new address which is not always the same as "input", if not updated the old pointer address causes segmentation fault when trying to use the variable
-    if (temp_input == NULL) {
-        log_fatal("Memory error trying to allocate %d bytes", input_size);
-        free(input);  // Free the original input pointer since realloc failed
-        free(conf_file);
-        exit(EXIT_FAILURE);
-    }
-    input = temp_input;  // Only update input if realloc succeeded
-    log_debug("Realloc finished,input pointer is now pointing to %p", input);
     // Raw request logging to file if configured
     if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
 
@@ -310,22 +520,69 @@ int main(int argc, char** argv)
     }
     log_debug("Url: %s", prog_name);
 
+    // Debug checkpoint 19
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to init XML parsing\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
     // Warning: init_xml changes the input string
     init_xml(input, input_size);
+
+    // Debug checkpoint 20
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "XML initialized, about to get method\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
     method = get_method(1);
     if (method == NULL) {
         log_fatal("XML parsing error");
         close_xml();
-        free(input);
-
-        free(conf_file);
+        // Don't free static buffer: free(input);
+        // Don't free static buffer: free(conf_file);
         exit(EXIT_FAILURE);
+    }
+
+    // Debug checkpoint 21
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Method extracted successfully\n");
+        fflush(debug_file);
+        fclose(debug_file);
     }
 
     log_debug("Method: %s", method);
 
+    // Debug checkpoint 22
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to check authentication\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
     if (service_ctx.username != NULL) {
+        // Debug checkpoint 23
+        debug_file = fopen("/tmp/onvif_debug.log", "a");
+        if (debug_file) {
+            fprintf(debug_file, "Username configured, checking security headers\n");
+            fflush(debug_file);
+            fclose(debug_file);
+        }
+
         if ((get_element("Security", "Header") != NULL) && (get_element("UsernameToken", "Header") != NULL)) {
+            // Debug checkpoint 24
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "Security headers found, processing auth\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
             unsigned char nonce[128];
             unsigned long nonce_size = sizeof(nonce);
             unsigned char auth[128];
@@ -336,44 +593,181 @@ int main(int argc, char** argv)
             unsigned long digest_size = sizeof(digest) - 1; // leave room for NUL terminator
 
             security.enable = 1;
+
+            // Debug checkpoint 25
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "About to extract username\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+
             security.username = get_element("Username", "Header");
             if (security.username != NULL) {
                 log_debug("Security: username = %s", security.username);
             } else {
                 auth_error = 1;
             }
+
+            // Debug checkpoint 26
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "About to extract password\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+
             security.password = get_element("Password", "Header");
+
+            // Debug checkpoint 27
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "Password extracted, about to log it\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+
             if (security.password != NULL) {
+                // Debug checkpoint 28
+                debug_file = fopen("/tmp/onvif_debug.log", "a");
+                if (debug_file) {
+                    fprintf(debug_file, "Password is not NULL, about to log_debug\n");
+                    fflush(debug_file);
+                    fclose(debug_file);
+                }
+
                 log_debug("Security: password = %s", security.password);
+
+                // Debug checkpoint 29
+                debug_file = fopen("/tmp/onvif_debug.log", "a");
+                if (debug_file) {
+                    fprintf(debug_file, "Password log_debug completed\n");
+                    fflush(debug_file);
+                    fclose(debug_file);
+                }
             } else {
                 auth_error = 2;
             }
+
+            // Debug checkpoint 30
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "About to extract nonce\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+
             security.nonce = get_element("Nonce", "Header");
             if (security.nonce != NULL) {
                 log_debug("Security: nonce = %s", security.nonce);
+
+                // Debug checkpoint 31
+                debug_file = fopen("/tmp/onvif_debug.log", "a");
+                if (debug_file) {
+                    fprintf(debug_file, "About to decode nonce\n");
+                    fflush(debug_file);
+                    fclose(debug_file);
+                }
+
                 b64_decode((unsigned char*) security.nonce, strlen(security.nonce), nonce, &nonce_size);
             } else {
                 auth_error = 3;
             }
+
+            // Debug checkpoint 32
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "About to extract created timestamp\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+
             security.created = get_element("Created", "Header");
+
+            // Debug checkpoint 33
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "Created timestamp extracted\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+
             if (security.created != NULL) {
+                // Debug checkpoint 34
+                debug_file = fopen("/tmp/onvif_debug.log", "a");
+                if (debug_file) {
+                    fprintf(debug_file, "Created is not NULL, about to log_debug\n");
+                    fflush(debug_file);
+                    fclose(debug_file);
+                }
+
                 log_debug("Security: created = %s", security.created);
+
+                // Debug checkpoint 35
+                debug_file = fopen("/tmp/onvif_debug.log", "a");
+                if (debug_file) {
+                    fprintf(debug_file, "Created log_debug completed\n");
+                    fflush(debug_file);
+                    fclose(debug_file);
+                }
             } else {
                 auth_error = 4;
             }
 
+            // Debug checkpoint 36
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "About to check auth_error and calculate digest\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+
             if (auth_error == 0) {
+                // Debug checkpoint 37
+                debug_file = fopen("/tmp/onvif_debug.log", "a");
+                if (debug_file) {
+                    fprintf(debug_file, "auth_error is 0, starting digest calculation\n");
+                    fflush(debug_file);
+                    fclose(debug_file);
+                }
+
                 // Calculate digest and check the password
                 // Digest = B64ENCODE( SHA1( B64DECODE( Nonce ) + Date + Password ) )
                 if (nonce_size + strlen(security.created) + strlen(service_ctx.password) > sizeof(auth)) {
                     log_error("Authentication data too large");
                     auth_error = 10;
                 } else {
+                    // Debug checkpoint 38
+                    debug_file = fopen("/tmp/onvif_debug.log", "a");
+                    if (debug_file) {
+                        fprintf(debug_file, "About to copy auth data\n");
+                        fflush(debug_file);
+                        fclose(debug_file);
+                    }
+
                     memcpy(auth, nonce, nonce_size);
                     memcpy(&auth[nonce_size], security.created, strlen(security.created));
                     memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
                     auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
+
+                    // Debug checkpoint 39
+                    debug_file = fopen("/tmp/onvif_debug.log", "a");
+                    if (debug_file) {
+                        fprintf(debug_file, "About to calculate SHA1 hash\n");
+                        fflush(debug_file);
+                        fclose(debug_file);
+                    }
+
                     hashSHA1((char*)auth, auth_size, sha1, (int)sha1_size);
+
+                    // Debug checkpoint 40
+                    debug_file = fopen("/tmp/onvif_debug.log", "a");
+                    if (debug_file) {
+                        fprintf(debug_file, "SHA1 calculated, about to base64 encode\n");
+                        fflush(debug_file);
+                        fclose(debug_file);
+                    }
+
                     b64_encode((unsigned char*)sha1, (unsigned int)sha1_size, (unsigned char*)digest, &digest_size);
                     // Ensure null-termination for safe string operations/logging
                     if (digest_size >= sizeof(digest)) {
@@ -381,11 +775,53 @@ int main(int argc, char** argv)
                     } else {
                         digest[digest_size] = '\0';
                     }
+
+                    // Debug checkpoint 41
+                    debug_file = fopen("/tmp/onvif_debug.log", "a");
+                    if (debug_file) {
+                        fprintf(debug_file, "About to log calculated digest\n");
+                        fflush(debug_file);
+                        fclose(debug_file);
+                    }
+
                     log_debug("Calculated digest: %s", digest);
+
+                    // Debug checkpoint 42
+                    debug_file = fopen("/tmp/onvif_debug.log", "a");
+                    if (debug_file) {
+                        fprintf(debug_file, "Calculated digest logged, about to log received digest\n");
+                        fflush(debug_file);
+                        fclose(debug_file);
+                    }
+
                     log_debug("Received digest: %s", security.password);
+
+                    // Debug checkpoint 43
+                    debug_file = fopen("/tmp/onvif_debug.log", "a");
+                    if (debug_file) {
+                        fprintf(debug_file, "Both digests logged, about to compare\n");
+                        fflush(debug_file);
+                        fclose(debug_file);
+                    }
+
+                    // Debug checkpoint 44
+                    debug_file = fopen("/tmp/onvif_debug.log", "a");
+                    if (debug_file) {
+                        fprintf(debug_file, "About to compare username and digest\n");
+                        fflush(debug_file);
+                        fclose(debug_file);
+                    }
 
                     if ((strcmp(service_ctx.username, security.username) != 0) || (strcmp(security.password, digest) != 0)) {
                         auth_error = 10;
+                    }
+
+                    // Debug checkpoint 45
+                    debug_file = fopen("/tmp/onvif_debug.log", "a");
+                    if (debug_file) {
+                        fprintf(debug_file, "Comparison completed, auth_error=%d\n", auth_error);
+                        fflush(debug_file);
+                        fclose(debug_file);
                     }
                 }
             }
@@ -396,27 +832,126 @@ int main(int argc, char** argv)
         security.enable = 0;
     }
 
+    // Debug checkpoint 46
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Authentication processing complete, checking method exceptions\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
     if ((strcasecmp("device_service", prog_name) == 0)
         && ((strcasecmp("GetSystemDateAndTime", method) == 0) || (strcasecmp("GetUsers", method) == 0) || (strcasecmp("GetCapabilities", method) == 0)
             || (strcasecmp("GetServices", method) == 0) || (strcasecmp("GetServiceCapabilities", method) == 0))) {
         auth_error = 0;
     }
 
-    if (security.enable == 1) {
-        if (auth_error == 0)
-            log_info("Authentication ok");
-        else
-            log_error("Authentication error");
+    // Debug checkpoint 47
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Method exception check complete, about to log auth result\n");
+        fflush(debug_file);
+        fclose(debug_file);
     }
 
+    // Debug checkpoint 48
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to log final auth result\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    if (security.enable == 1) {
+        if (auth_error == 0) {
+            // Skip problematic log_info in CGI: log_info("Authentication ok");
+            // Debug checkpoint 49
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "Authentication OK (skipped log_info)\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+        } else {
+            // Skip problematic log_error in CGI: log_error("Authentication error");
+            // Debug checkpoint 50
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "Authentication ERROR (skipped log_error)\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+        }
+    }
+
+    // Debug checkpoint 51
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Authentication result logged, continuing\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Skip problematic log_debug in CGI: log_debug("DEBUG: Right after authentication check");
+
+    // Debug checkpoint 52
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "About to start method dispatch\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Skip problematic log_debug calls in CGI:
+    // log_debug("DEBUG: About to log authentication details");
+    // log_debug("Authentication completed, auth_error = %d", auth_error);
+    // log_debug("About to process method: %s for service: %s", method ? method : "NULL", prog_name ? prog_name : "NULL");
+
     if (auth_error == 0) {
+        // Debug checkpoint 53
+        debug_file = fopen("/tmp/onvif_debug.log", "a");
+        if (debug_file) {
+            fprintf(debug_file, "auth_error is 0, starting method dispatch\n");
+            fflush(debug_file);
+            fclose(debug_file);
+        }
+
+        // Skip problematic log_debug in CGI: log_debug("Starting method dispatch");
         if (strcasecmp("device_service", prog_name) == 0) {
+            // Debug checkpoint 54
+            debug_file = fopen("/tmp/onvif_debug.log", "a");
+            if (debug_file) {
+                fprintf(debug_file, "Entering device_service branch\n");
+                fflush(debug_file);
+                fclose(debug_file);
+            }
+
+            // Skip problematic log_debug in CGI: log_debug("Entering device_service branch");
             if (strcasecmp(method, "GetServices") == 0) {
                 device_get_services();
             } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 device_get_service_capabilities();
             } else if (strcasecmp(method, "GetDeviceInformation") == 0) {
+                // Debug checkpoint 55
+                debug_file = fopen("/tmp/onvif_debug.log", "a");
+                if (debug_file) {
+                    fprintf(debug_file, "About to call device_get_device_information()\n");
+                    fflush(debug_file);
+                    fclose(debug_file);
+                }
+
+                // Skip problematic log_debug in CGI: log_debug("About to call device_get_device_information()");
                 device_get_device_information();
+
+                // Debug checkpoint 56
+                debug_file = fopen("/tmp/onvif_debug.log", "a");
+                if (debug_file) {
+                    fprintf(debug_file, "device_get_device_information() completed\n");
+                    fflush(debug_file);
+                    fclose(debug_file);
+                }
+
+                // Skip problematic log_debug in CGI: log_debug("device_get_device_information() completed");
             } else if (strcasecmp(method, "GetSystemDateAndTime") == 0) {
                 device_get_system_date_and_time();
             } else if (strcasecmp(method, "SystemReboot") == 0) {
@@ -437,6 +972,7 @@ int main(int argc, char** argv)
                 device_unsupported(method);
             }
         } else if (strcasecmp("deviceio_service", prog_name) == 0) {
+            log_debug("Entering deviceio_service branch");
             if (strcasecmp(method, "GetVideoSources") == 0) {
                 deviceio_get_video_sources();
             } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
@@ -457,6 +993,7 @@ int main(int argc, char** argv)
                 deviceio_unsupported(method);
             }
         } else if (strcasecmp("media_service", prog_name) == 0) {
+            log_debug("Entering media_service branch");
             if (strcasecmp(method, "GetServiceCapabilities") == 0) {
                 media_get_service_capabilities();
             } else if (strcasecmp(method, "GetVideoSources") == 0) {
@@ -649,17 +1186,41 @@ int main(int argc, char** argv)
         }
     }
 
-
+    // Debug checkpoint 57
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "ONVIF method completed, starting cleanup\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
 
     close_xml();
-    free(input);
 
-    free(conf_file);
+    // Debug checkpoint 58
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "XML closed, about to free resources\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Don't free static buffers: free(input);
+    // Don't free static buffers: free(conf_file);
 
     // Now safe to free configuration memory
     free_conf_file();
 
-    log_info("Program terminated.");
+    // Debug checkpoint 59
+    debug_file = fopen("/tmp/onvif_debug.log", "a");
+    if (debug_file) {
+        fprintf(debug_file, "Program terminating successfully\n");
+        fflush(debug_file);
+        fclose(debug_file);
+    }
+
+    // Skip problematic logging in CGI:
+    // log_debug("About to terminate program");
+    // log_info("Program terminated.");
 
     return 0;
 }
