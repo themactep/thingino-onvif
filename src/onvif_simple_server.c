@@ -17,6 +17,7 @@
 #include "onvif_simple_server.h"
 
 #include "conf.h"
+#include "onvif_dispatch.h"
 #include "device_service.h"
 #include "deviceio_service.h"
 #include "events_service.h"
@@ -916,261 +917,33 @@ int main(int argc, char** argv)
             fclose(debug_file);
         }
 
-        // Skip problematic log_debug in CGI: log_debug("Starting method dispatch");
-        if (strcasecmp("device_service", prog_name) == 0) {
-            // Debug checkpoint 54
+        // Debug checkpoint 54
+        debug_file = fopen("/tmp/onvif_debug.log", "a");
+        if (debug_file) {
+            fprintf(debug_file, "About to call dispatch_onvif_method\n");
+            fflush(debug_file);
+            fclose(debug_file);
+        }
+
+        // Use clean dispatch table instead of massive if/else ladder
+        dispatch_onvif_method(prog_name, method);
+
+        // Debug checkpoint 55
+        debug_file = fopen("/tmp/onvif_debug.log", "a");
+        if (debug_file) {
+            fprintf(debug_file, "dispatch_onvif_method completed\n");
+            fflush(debug_file);
+            fclose(debug_file);
+        } else {
+            // Debug checkpoint 56
             debug_file = fopen("/tmp/onvif_debug.log", "a");
             if (debug_file) {
-                fprintf(debug_file, "Entering device_service branch\n");
+                fprintf(debug_file, "Authentication failed, sending auth error\n");
                 fflush(debug_file);
                 fclose(debug_file);
             }
 
-            // Skip problematic log_debug in CGI: log_debug("Entering device_service branch");
-            if (strcasecmp(method, "GetServices") == 0) {
-                device_get_services();
-            } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
-                device_get_service_capabilities();
-            } else if (strcasecmp(method, "GetDeviceInformation") == 0) {
-                // Debug checkpoint 55
-                debug_file = fopen("/tmp/onvif_debug.log", "a");
-                if (debug_file) {
-                    fprintf(debug_file, "About to call device_get_device_information()\n");
-                    fflush(debug_file);
-                    fclose(debug_file);
-                }
-
-                // Skip problematic log_debug in CGI: log_debug("About to call device_get_device_information()");
-                device_get_device_information();
-
-                // Debug checkpoint 56
-                debug_file = fopen("/tmp/onvif_debug.log", "a");
-                if (debug_file) {
-                    fprintf(debug_file, "device_get_device_information() completed\n");
-                    fflush(debug_file);
-                    fclose(debug_file);
-                }
-
-                // Skip problematic log_debug in CGI: log_debug("device_get_device_information() completed");
-            } else if (strcasecmp(method, "GetSystemDateAndTime") == 0) {
-                device_get_system_date_and_time();
-            } else if (strcasecmp(method, "SystemReboot") == 0) {
-                device_system_reboot();
-            } else if (strcasecmp(method, "GetScopes") == 0) {
-                device_get_scopes();
-            } else if (strcasecmp(method, "GetUsers") == 0) {
-                device_get_users();
-            } else if (strcasecmp(method, "GetWsdlUrl") == 0) {
-                device_get_wsdl_url();
-            } else if (strcasecmp(method, "GetCapabilities") == 0) {
-                device_get_capabilities();
-            } else if (strcasecmp(method, "GetNetworkInterfaces") == 0) {
-                device_get_network_interfaces();
-            } else if (strcasecmp(method, "GetDiscoveryMode") == 0) {
-                device_get_discovery_mode();
-            } else {
-                device_unsupported(method);
-            }
-        } else if (strcasecmp("deviceio_service", prog_name) == 0) {
-            log_debug("Entering deviceio_service branch");
-            if (strcasecmp(method, "GetVideoSources") == 0) {
-                deviceio_get_video_sources();
-            } else if (strcasecmp(method, "GetServiceCapabilities") == 0) {
-                deviceio_get_service_capabilities();
-            } else if (strcasecmp(method, "GetAudioOutputs") == 0) {
-                deviceio_get_audio_outputs();
-            } else if (strcasecmp(method, "GetAudioSources") == 0) {
-                deviceio_get_audio_sources();
-            } else if (strcasecmp(method, "GetRelayOutputs") == 0) {
-                deviceio_get_relay_outputs();
-            } else if (strcasecmp(method, "GetRelayOutputOptions") == 0) {
-                deviceio_get_relay_output_options();
-            } else if (strcasecmp(method, "SetRelayOutputSettings") == 0) {
-                deviceio_set_relay_output_settings();
-            } else if (strcasecmp(method, "SetRelayOutputState") == 0) {
-                deviceio_set_relay_output_state();
-            } else {
-                deviceio_unsupported(method);
-            }
-        } else if (strcasecmp("media_service", prog_name) == 0) {
-            log_debug("Entering media_service branch");
-            if (strcasecmp(method, "GetServiceCapabilities") == 0) {
-                media_get_service_capabilities();
-            } else if (strcasecmp(method, "GetVideoSources") == 0) {
-                media_get_video_sources();
-            } else if (strcasecmp(method, "GetVideoSourceConfigurations") == 0) {
-                media_get_video_source_configurations();
-            } else if (strcasecmp(method, "GetVideoSourceConfiguration") == 0) {
-                media_get_video_source_configuration();
-            } else if (strcasecmp(method, "GetCompatibleVideoSourceConfigurations") == 0) {
-                media_get_compatible_video_source_configurations();
-            } else if (strcasecmp(method, "GetVideoSourceConfigurationOptions") == 0) {
-                media_get_video_source_configuration_options();
-            } else if (strcasecmp(method, "GetProfiles") == 0) {
-                media_get_profiles();
-            } else if (strcasecmp(method, "GetProfile") == 0) {
-                media_get_profile();
-            } else if (strcasecmp(method, "CreateProfile") == 0) {
-                media_create_profile();
-            } else if (strcasecmp(method, "GetVideoEncoderConfigurations") == 0) {
-                media_get_video_encoder_configurations();
-            } else if (strcasecmp(method, "GetVideoEncoderConfiguration") == 0) {
-                media_get_video_encoder_configuration();
-            } else if (strcasecmp(method, "GetCompatibleVideoEncoderConfigurations") == 0) {
-                media_get_compatible_video_encoder_configurations();
-            } else if (strcasecmp(method, "GetVideoEncoderConfigurationOptions") == 0) {
-                media_get_video_encoder_configuration_options();
-            } else if (strcasecmp(method, "GetGuaranteedNumberOfVideoEncoderInstances") == 0) {
-                media_get_guaranteed_number_of_video_encoder_instances();
-            } else if (strcasecmp(method, "GetSnapshotUri") == 0) {
-                media_get_snapshot_uri();
-            } else if (strcasecmp(method, "GetStreamUri") == 0) {
-                media_get_stream_uri();
-            } else if (strcasecmp(method, "GetAudioSources") == 0) {
-                media_get_audio_sources();
-            } else if (strcasecmp(method, "GetAudioSourceConfigurations") == 0) {
-                media_get_audio_source_configurations();
-            } else if (strcasecmp(method, "GetAudioSourceConfiguration") == 0) {
-                media_get_audio_source_configuration();
-            } else if (strcasecmp(method, "GetAudioSourceConfigurationOptions") == 0) {
-                media_get_audio_source_configuration_options();
-            } else if (strcasecmp(method, "GetAudioEncoderConfigurations") == 0) {
-                media_get_audio_encoder_configurations();
-            } else if (strcasecmp(method, "GetAudioEncoderConfiguration") == 0) {
-                media_get_audio_encoder_configuration();
-            } else if (strcasecmp(method, "GetAudioEncoderConfigurationOptions") == 0) {
-                media_get_audio_encoder_configuration_options();
-            } else if (strcasecmp(method, "GetAudioDecoderConfigurations") == 0) {
-                media_get_audio_decoder_configurations();
-            } else if (strcasecmp(method, "GetAudioDecoderConfiguration") == 0) {
-                media_get_audio_decoder_configuration();
-            } else if (strcasecmp(method, "GetAudioDecoderConfigurationOptions") == 0) {
-                media_get_audio_decoder_configuration_options();
-            } else if (strcasecmp(method, "GetAudioOutputs") == 0) {
-                media_get_audio_outputs();
-            } else if (strcasecmp(method, "GetAudioOutputConfiguration") == 0) {
-                media_get_audio_output_configuration();
-            } else if (strcasecmp(method, "GetAudioOutputConfigurations") == 0) {
-                media_get_audio_output_configurations();
-            } else if (strcasecmp(method, "GetAudioOutputConfigurationOptions") == 0) {
-                media_get_audio_output_configuration_options();
-            } else if (strcasecmp(method, "GetCompatibleAudioSourceConfigurations") == 0) {
-                media_get_compatible_audio_source_configurations();
-            } else if (strcasecmp(method, "GetCompatibleAudioEncoderConfigurations") == 0) {
-                media_get_compatible_audio_encoder_configurations();
-            } else if (strcasecmp(method, "GetCompatibleAudioDecoderConfigurations") == 0) {
-                media_get_compatible_audio_decoder_configurations();
-            } else if (strcasecmp(method, "GetCompatibleAudioOutputConfigurations") == 0) {
-                media_get_compatible_audio_output_configurations();
-            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetVideoSourceConfiguration") == 0)) {
-                media_set_video_source_configuration();
-            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetAudioSourceConfiguration") == 0)) {
-                media_set_audio_source_configuration();
-            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetVideoEncoderConfiguration") == 0)) {
-                media_set_video_encoder_configuration();
-            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetAudioEncoderConfiguration") == 0)) {
-                media_set_audio_encoder_configuration();
-            } else if ((service_ctx.adv_fault_if_set == 1) && (strcasecmp(method, "SetAudioOutputConfiguration") == 0)) {
-                media_set_audio_output_configuration();
-            } else {
-                media_unsupported(method);
-            }
-        } else if ((service_ctx.adv_enable_media2 == 1) && (strcasecmp("media2_service", prog_name) == 0)) {
-            if (strcasecmp(method, "GetServiceCapabilities") == 0) {
-                media2_get_service_capabilities();
-            } else if (strcasecmp(method, "GetProfiles") == 0) {
-                media2_get_profiles();
-            } else if (strcasecmp(method, "GetVideoSourceModes") == 0) {
-                media2_get_video_source_modes();
-            } else if (strcasecmp(method, "GetVideoSourceConfigurations") == 0) {
-                media2_get_video_source_configurations();
-            } else if (strcasecmp(method, "GetVideoSourceConfigurationOptions") == 0) {
-                media2_get_video_source_configuration_options();
-            } else if (strcasecmp(method, "GetVideoEncoderConfigurations") == 0) {
-                media2_get_video_encoder_configurations();
-            } else if (strcasecmp(method, "GetVideoEncoderConfigurationOptions") == 0) {
-                media2_get_video_encoder_configuration_options();
-            } else if (strcasecmp(method, "GetAudioSourceConfigurations") == 0) {
-                media2_get_audio_source_configurations();
-            } else if (strcasecmp(method, "GetAudioSourceConfigurationOptions") == 0) {
-                media2_get_audio_source_configuration_options();
-            } else if (strcasecmp(method, "GetAudioEncoderConfigurations") == 0) {
-                media2_get_audio_encoder_configurations();
-            } else if (strcasecmp(method, "GetAudioEncoderConfigurationOptions") == 0) {
-                media2_get_audio_encoder_configuration_options();
-            } else if (strcasecmp(method, "GetAudioOutputConfigurations") == 0) {
-                media2_get_audio_output_configurations();
-            } else if (strcasecmp(method, "GetAudioOutputConfigurationOptions") == 0) {
-                media2_get_audio_output_configuration_options();
-            } else if (strcasecmp(method, "GetAudioDecoderConfigurations") == 0) {
-                media2_get_audio_decoder_configurations();
-            } else if (strcasecmp(method, "GetAudioDecoderConfigurationOptions") == 0) {
-                media2_get_audio_decoder_configuration_options();
-            } else if (strcasecmp(method, "GetSnapshotUri") == 0) {
-                media2_get_snapshot_uri();
-            } else if (strcasecmp(method, "GetStreamUri") == 0) {
-                media2_get_stream_uri();
-            } else {
-                media2_unsupported(method);
-            }
-        } else if (strcasecmp("ptz_service", prog_name) == 0) {
-            if (strcasecmp(method, "GetServiceCapabilities") == 0) {
-                ptz_get_service_capabilities();
-            } else if (strcasecmp(method, "GetConfigurations") == 0) {
-                ptz_get_configurations();
-            } else if (strcasecmp(method, "GetConfiguration") == 0) {
-                ptz_get_configuration();
-            } else if (strcasecmp(method, "GetConfigurationOptions") == 0) {
-                ptz_get_configuration_options();
-            } else if (strcasecmp(method, "GetNodes") == 0) {
-                ptz_get_nodes();
-            } else if (strcasecmp(method, "GetNode") == 0) {
-                ptz_get_node();
-            } else if (strcasecmp(method, "GetPresets") == 0) {
-                ptz_get_presets();
-            } else if (strcasecmp(method, "GotoPreset") == 0) {
-                ptz_goto_preset();
-            } else if (strcasecmp(method, "GotoHomePosition") == 0) {
-                ptz_goto_home_position();
-            } else if (strcasecmp(method, "ContinuousMove") == 0) {
-                ptz_continuous_move();
-            } else if (strcasecmp(method, "RelativeMove") == 0) {
-                ptz_relative_move();
-            } else if (strcasecmp(method, "AbsoluteMove") == 0) {
-                ptz_absolute_move();
-            } else if (strcasecmp(method, "Stop") == 0) {
-                ptz_stop();
-            } else if (strcasecmp(method, "GetStatus") == 0) {
-                ptz_get_status();
-            } else if (strcasecmp(method, "SetPreset") == 0) {
-                ptz_set_preset();
-            } else if (strcasecmp(method, "SetHomePosition") == 0) {
-                ptz_set_home_position();
-            } else if (strcasecmp(method, "RemovePreset") == 0) {
-                ptz_remove_preset();
-            } else {
-                ptz_unsupported(method);
-            }
-        } else if (strcasecmp("events_service", prog_name) == 0) {
-            if (strcasecmp(method, "GetServiceCapabilities") == 0) {
-                events_get_service_capabilities();
-            } else if (strcasecmp(method, "CreatePullPointSubscription") == 0) {
-                events_create_pull_point_subscription();
-            } else if (strcasecmp(method, "PullMessages") == 0) {
-                events_pull_messages();
-            } else if (strcasecmp(method, "Subscribe") == 0) {
-                events_subscribe();
-            } else if (strcasecmp(method, "Renew") == 0) {
-                events_renew();
-            } else if (strcasecmp(method, "Unsubscribe") == 0) {
-                events_unsubscribe();
-            } else if (strcasecmp(method, "GetEventProperties") == 0) {
-                events_get_event_properties();
-            } else if (strcasecmp(method, "SetSynchronizationPoint") == 0) {
-                events_set_synchronization_point();
-            } else {
-                events_unsupported(method);
-            }
+            send_authentication_error();
         }
     } else {
         // hack to handle a bug with Synology
