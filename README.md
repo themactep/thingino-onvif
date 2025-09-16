@@ -26,7 +26,6 @@ Small, dependency‑light, and integrated with Thingino’s build, config, and l
 
 ## Debugging
 - Logs: syslog (foreground prints to stderr)
-- Raw SOAP: set onvif.json "raw_xml_log_file" (e.g., /tmp/onvif_raw.log)
 
 ## Templates
 - XML templates installed under /var/www/onvif/* from the xml/ directory

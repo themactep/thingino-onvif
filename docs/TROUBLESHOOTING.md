@@ -30,19 +30,6 @@
 - The server assembles XML from files under `/var/www/onvif/*_files`
 - Verify the path exists in the image and files are present
 
-## Debugging with Raw XML Logging
-Enable full request/response logging by setting in `/etc/onvif.json`:
-```
-{
-  "raw_xml_log_file": "/tmp/onvif_raw.log",
-  "loglevel": 5
-}
-```
-Notes:
-- Writes untruncated SOAP XML to the file (requests and responses)
-- Use temporary or large storage (tmpfs, SD, or network share) to avoid flash wear
-- Disable or rotate when finished debugging
-
 ## Increasing Verbosity
 - Set `loglevel` to higher values (max 5) in `/etc/onvif.json`
 - For foreground runs of `wsd_simple_server`, use `-d <level>`

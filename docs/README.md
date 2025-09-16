@@ -41,13 +41,7 @@ A lightweight ONVIF (Open Network Video Interface Forum) server designed for emb
 
 4) Test discovery from a client (e.g., ONVIF Device Manager). The WS‑Discovery service announces the device; ONVIF operations are served by `onvif_simple_server` via HTTP.
 
-## Raw XML Logging (optional)
-Set `raw_xml_log_file` in `/etc/onvif.json` (default empty). Example:
-```
-{
-  "raw_xml_log_file": "/tmp/onvif_raw.log"
-}
-```
+
 This writes full SOAP requests and responses to that file, useful when syslog truncates long XML messages.
 
 ## Build and Integration

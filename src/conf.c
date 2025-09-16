@@ -206,7 +206,6 @@ int process_json_conf_file(char* file)
     service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
     service_ctx.loglevel = 0;
-    service_ctx.raw_xml_log_file = NULL;
 
     service_ctx.ptz_node.min_step_x = 0;
     service_ctx.ptz_node.max_step_x = 360.0;
@@ -239,13 +238,6 @@ int process_json_conf_file(char* file)
     get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
     get_int_from_json(&(service_ctx.port), json_file, "port");
     get_int_from_json(&(service_ctx.loglevel), json_file, "loglevel");
-    get_string_from_json(&(service_ctx.raw_xml_log_file), json_file, "raw_xml_log_file");
-    if (service_ctx.raw_xml_log_file == NULL) {
-        const char* defpath = "/tmp/onvif_raw.log";
-        service_ctx.raw_xml_log_file = (char*) malloc(strlen(defpath) + 1);
-        if (service_ctx.raw_xml_log_file)
-            strcpy(service_ctx.raw_xml_log_file, defpath);
-    }
 
     if (json_object_object_get_ex(json_file, "scopes", &value)) {
         if (json_object_is_type(value, json_type_array)) {
@@ -480,7 +472,6 @@ int process_json_conf_file(char* file)
     log_debug("adv_fault_if_unknown: %d", service_ctx.adv_fault_if_unknown);
     log_debug("adv_fault_if_set: %d", service_ctx.adv_fault_if_set);
     log_debug("adv_synology_nvr: %d", service_ctx.adv_synology_nvr);
-    log_debug("raw_xml_log_file: %s", service_ctx.raw_xml_log_file ? service_ctx.raw_xml_log_file : "(null)");
     log_debug("");
 
     if (service_ctx.relay_outputs != NULL) {
@@ -620,6 +611,4 @@ void free_conf_file()
         free(service_ctx.password);
     if (service_ctx.username != NULL)
         free(service_ctx.username);
-    if (service_ctx.raw_xml_log_file != NULL)
-        free(service_ctx.raw_xml_log_file);
 }

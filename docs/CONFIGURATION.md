@@ -24,7 +24,6 @@ The main config can reference an alternate directory via `conf_dir` (defaults to
   "user": "",
   "password": "",
   "loglevel": 3,                 // 0=FATAL..5=TRACE
-  "raw_xml_log_file": "/tmp/onvif_raw.log", // optional; omit or empty to disable
   "conf_dir": "/etc/onvif.d"     // where to load modular JSON files from
 }
 ```

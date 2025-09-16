@@ -37,13 +37,13 @@
         }
     },
     "ptz": {
-        "enable": 1,
-        "min_step_x": 0.0,
+        "enable": 0,
+        "min_step_x": 0,
         "max_step_x": 4000,
-        "min_step_y": 0.0,
+        "min_step_y": 0,
         "max_step_y": 2000,
-        "min_step_z": 0.0,
-        "max_step_z": 0.0,
+        "min_step_z": 0,
+        "max_step_z": 0,
         "get_position": "/sbin/motors -p",
         "is_moving": "/sbin/motors -b",
         "move_left": "/sbin/motors -d h -x 0",
@@ -101,6 +101,5 @@
     "adv_fault_if_set": false,
     "adv_fault_if_unknown": false,
     "adv_synology_nvr": false,
-    "loglevel": 5,
-    "raw_xml_log_file": "/tmp/onvif_raw.log"
+    "loglevel": 5
 }

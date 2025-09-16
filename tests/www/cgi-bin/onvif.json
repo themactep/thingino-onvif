@@ -12,7 +12,6 @@
   "model": "Test Model",
   "password": "admin",
   "port": 80,
-  "raw_xml_log_file": "/tmp/onvif_raw.log",
   "scopes": [
     "onvif://www.onvif.org/Profile/Streaming",
     "onvif://www.onvif.org/Profile/T",

@@ -502,21 +502,7 @@ int main(int argc, char** argv)
         fflush(debug_file);
         fclose(debug_file);
     }
-    // Raw request logging to file if configured
-    if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
 
-        FILE* rf = fopen(service_ctx.raw_xml_log_file, "a");
-        if (rf) {
-            const char* hdr = "\n==== REQUEST BEGIN ====\n";
-            fwrite(hdr, 1, strlen(hdr), rf);
-            fwrite(input, 1, (size_t) input_size, rf);
-            const char* end_hdr = "\n==== REQUEST END ====\n";
-            fwrite(end_hdr, 1, strlen(end_hdr), rf);
-            fclose(rf);
-        } else {
-            log_warn("Cannot open raw_xml_log_file %s: %s", service_ctx.raw_xml_log_file, strerror(errno));
-        }
-    }
     log_debug("Url: %s", prog_name);
 
     // Debug checkpoint 19

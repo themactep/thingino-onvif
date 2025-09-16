@@ -8,7 +8,6 @@
 - Modular configuration system finalized:
   - Main: `/etc/onvif.json`
   - Modules: `/etc/onvif.d/{profiles,ptz,relays,events}.json`
-- Raw XML logging support (optional): write full SOAP requests/responses to file when `raw_xml_log_file` is set
 - Syslog-based logging with proper levels (FATAL..TRACE); foreground respects CLI `-d`
 - Removed legacy artifacts:
   - Monolithic `onvif_simple_server.json.example`

@@ -122,7 +122,6 @@ typedef struct {
     int events_enable;
     int events_num;
     int loglevel;           // 0=FATAL..5=TRACE, default 0
-    char* raw_xml_log_file; // path to append raw XML requests/responses (optional)
 } service_context_t;
 
 // Expose global context

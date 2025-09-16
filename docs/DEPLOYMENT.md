@@ -35,7 +35,6 @@ See CONFIGURATION.md for the modular configuration structure. The package instal
 
 ## Logging
 - Syslog is used for operational logs.
-- Optional full SOAP request/response logging: set `raw_xml_log_file` in `/etc/onvif.json`, e.g. `/tmp/onvif_raw.log`. Ensure writable storage (tmpfs, SD card, or network mount).
 - `loglevel`: 0..5 (FATAL..TRACE). CLI `-d` may override the config for foreground debugging.
 
 ## Building within Thingino
