@@ -50,8 +50,6 @@ LIBS_W = -Wl,--gc-sections -lpthread
 # Ensure headers under src/ and ezxml under project root are found
 INCLUDE += -I$(SRC_DIR) -I.
 
-
-
 ifeq ($(STRIP), )
     STRIP=echo
 endif
@@ -65,8 +63,6 @@ debug: clean onvif_simple_server_debug onvif_notify_server_debug wsd_simple_serv
 
 $(SRC_DIR)/log.o: $(SRC_DIR)/log.c $(HEADERS)
 	$(CC) -c $< -std=c99 -fPIC -Os $(INCLUDE) -o $@
-
-
 
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
