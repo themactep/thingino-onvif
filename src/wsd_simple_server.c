@@ -551,10 +551,10 @@ int main(int argc, char** argv)
 
                 log_debug("%s", recv_buffer);
 
-                // Check if it's a Probe message (supports both "Probe" and "NetdevProbe")
+                // Check if it's a Probe message (supports Probe, NetdevProbe, UniviewProbe, etc.)
                 init_xml(recv_buffer, strlen(recv_buffer));
                 method = get_method(1);
-                if ((method == NULL) || (strcasecmp("Probe", method) != 0 && strcasecmp("NetdevProbe", method) != 0)) {
+                if ((method == NULL) || (strstr(method, "Probe") == NULL) || (strstr(method, "ProbeMatches") != NULL)) {
                     log_debug("This is not a Probe message (method: %s)", method ? method : "NULL");
                     close_xml();
                     continue;
