@@ -164,44 +164,16 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
 };
 
 int onvif_dispatch_init(void) {
-    // Skip problematic log_debug in CGI: log_debug("ONVIF dispatch system initialized");
-    FILE* debug_file = fopen("/tmp/onvif_debug.log", "a");
-    if (debug_file) {
-        fprintf(debug_file, "ONVIF dispatch system initialized\n");
-        fflush(debug_file);
-        fclose(debug_file);
-    }
     return 0;
 }
 
 void onvif_dispatch_cleanup(void) {
-    // Skip problematic log_debug in CGI: log_debug("ONVIF dispatch system cleaned up");
-    FILE* debug_file = fopen("/tmp/onvif_debug.log", "a");
-    if (debug_file) {
-        fprintf(debug_file, "ONVIF dispatch system cleaned up\n");
-        fflush(debug_file);
-        fclose(debug_file);
-    }
+    // No cleanup needed for dispatch table
 }
 
 int dispatch_onvif_method(const char* service, const char* method) {
     if (!service || !method) {
-        // Skip problematic log_error in CGI: log_error("Invalid parameters: service=%p, method=%p", service, method);
-        FILE* debug_file = fopen("/tmp/onvif_debug.log", "a");
-        if (debug_file) {
-            fprintf(debug_file, "Invalid parameters: service=%p, method=%p\n", service, method);
-            fflush(debug_file);
-            fclose(debug_file);
-        }
         return -1;
-    }
-
-    // Skip problematic log_debug in CGI: log_debug("Dispatching service='%s' method='%s'", service, method);
-    FILE* debug_file = fopen("/tmp/onvif_debug.log", "a");
-    if (debug_file) {
-        fprintf(debug_file, "Dispatching service='%s' method='%s'\n", service, method);
-        fflush(debug_file);
-        fclose(debug_file);
     }
 
     // Search the dispatch table
@@ -210,63 +182,21 @@ int dispatch_onvif_method(const char* service, const char* method) {
             // Check condition if one exists
             if (entry->condition != NULL) {
                 if (!entry->condition()) {
-                    // Skip problematic log_debug in CGI: log_debug("Condition failed for %s::%s, skipping", service, method);
-                    debug_file = fopen("/tmp/onvif_debug.log", "a");
-                    if (debug_file) {
-                        fprintf(debug_file, "Condition failed for %s::%s, skipping\n", service, method);
-                        fflush(debug_file);
-                        fclose(debug_file);
-                    }
                     continue; // Condition not met, skip this handler
-                }
-                // Skip problematic log_debug in CGI: log_debug("Condition passed for %s::%s", service, method);
-                debug_file = fopen("/tmp/onvif_debug.log", "a");
-                if (debug_file) {
-                    fprintf(debug_file, "Condition passed for %s::%s\n", service, method);
-                    fflush(debug_file);
-                    fclose(debug_file);
                 }
             }
 
-            // Skip problematic log_debug in CGI: log_debug("Found handler for %s::%s", service, method);
-            debug_file = fopen("/tmp/onvif_debug.log", "a");
-            if (debug_file) {
-                fprintf(debug_file, "Found handler for %s::%s\n", service, method);
-                fflush(debug_file);
-                fclose(debug_file);
-            }
             int result = entry->handler();
-            // Skip problematic log_debug in CGI: log_debug("Handler completed for %s::%s with result=%d", service, method, result);
-            debug_file = fopen("/tmp/onvif_debug.log", "a");
-            if (debug_file) {
-                fprintf(debug_file, "Handler completed for %s::%s with result=%d\n", service, method, result);
-                fflush(debug_file);
-                fclose(debug_file);
-            }
             return result;
         }
     }
 
     // No handler found - check for special cases first
-    // Skip problematic log_debug in CGI: log_debug("No handler found for %s::%s, checking special cases", service, method);
-    debug_file = fopen("/tmp/onvif_debug.log", "a");
-    if (debug_file) {
-        fprintf(debug_file, "No handler found for %s::%s, checking special cases\n", service, method);
-        fflush(debug_file);
-        fclose(debug_file);
-    }
 
     // Special case: Synology NVR CreateProfile hack
     if ((service_ctx.adv_synology_nvr == 1) &&
         (strcasecmp("media_service", service) == 0) &&
         (strcasecmp("CreateProfile", method) == 0)) {
-        // Skip problematic log_debug in CGI: log_debug("Synology CreateProfile hack triggered");
-        debug_file = fopen("/tmp/onvif_debug.log", "a");
-        if (debug_file) {
-            fprintf(debug_file, "Synology CreateProfile hack triggered\n");
-            fflush(debug_file);
-            fclose(debug_file);
-        }
         send_fault("media_service",
                    "Receiver",
                    "ter:Action",
@@ -290,13 +220,6 @@ int dispatch_onvif_method(const char* service, const char* method) {
     } else if (strcasecmp("events_service", service) == 0) {
         return events_unsupported(method);
     } else {
-        // Skip problematic log_error in CGI: log_error("Unsupported service: %s", service);
-        debug_file = fopen("/tmp/onvif_debug.log", "a");
-        if (debug_file) {
-            fprintf(debug_file, "Unsupported service: %s\n", service);
-            fflush(debug_file);
-            fclose(debug_file);
-        }
         return device_unsupported(method); // Default fallback
     }
 }
