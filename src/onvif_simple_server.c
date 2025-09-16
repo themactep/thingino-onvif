@@ -256,7 +256,6 @@ int main(int argc, char** argv)
         }
     }
 
-
     tmp = getenv("REQUEST_METHOD");
     if ((tmp == NULL) || (strcmp("POST", tmp) != 0)) {
         fprintf(stdout, "Content-type: text/html\r\n");
@@ -410,27 +409,7 @@ int main(int argc, char** argv)
             log_error("Authentication error");
     }
 
-    // Prepare for atomic response logging (capture via pipe + dup2; musl stdout is const)
-    int saved_stdout_fd = -1;
-    int pipefd[2] = { -1, -1 };
-    char* response_buffer = NULL;
-    size_t response_size = 0;
-
     if (auth_error == 0) {
-        // Redirect stdout to capture response for logging
-        if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
-            fflush(stdout);
-            saved_stdout_fd = dup(STDOUT_FILENO);
-            if (saved_stdout_fd != -1 && pipe(pipefd) == 0) {
-                // Send all stdout writes to the pipe
-                dup2(pipefd[1], STDOUT_FILENO);
-                close(pipefd[1]); // keep only read end
-            } else {
-                log_warn("Failed to setup response capture (dup/pipe)");
-                if (saved_stdout_fd != -1) { close(saved_stdout_fd); saved_stdout_fd = -1; }
-                if (pipefd[0] != -1) { close(pipefd[0]); pipefd[0] = -1; }
-            }
-        }
         if (strcasecmp("device_service", prog_name) == 0) {
             if (strcasecmp(method, "GetServices") == 0) {
                 device_get_services();
@@ -670,54 +649,7 @@ int main(int argc, char** argv)
         }
     }
 
-    // Restore stdout and write atomic response log
-    if (saved_stdout_fd != -1 && pipefd[0] != -1) {
-        fflush(stdout);
-        // Restore stdout to original fd; this also closes the pipe write end
-        dup2(saved_stdout_fd, STDOUT_FILENO);
-        close(saved_stdout_fd);
 
-        // Read captured response from pipe
-        size_t cap = 8192;
-        response_buffer = (char*)malloc(cap);
-        response_size = 0;
-        if (response_buffer) {
-            ssize_t n;
-            for (;;) {
-                if (response_size + 4096 > cap) {
-                    size_t newcap = cap * 2;
-                    char* tmp = (char*)realloc(response_buffer, newcap);
-                    if (!tmp) { free(response_buffer); response_buffer = NULL; break; }
-                    response_buffer = tmp;
-                    cap = newcap;
-                }
-                n = read(pipefd[0], response_buffer + response_size, cap - response_size);
-                if (n <= 0) break;
-                response_size += (size_t)n;
-            }
-        }
-        close(pipefd[0]); pipefd[0] = -1;
-
-        if (response_buffer && response_size > 0) {
-            // Write atomic response log
-            FILE* rf = fopen(service_ctx.raw_xml_log_file, "a");
-            if (rf) {
-                const char* begin_marker = "\n==== RESPONSE BEGIN ====\n";
-                const char* end_marker = "\n==== RESPONSE END ====\n";
-                fwrite(begin_marker, 1, strlen(begin_marker), rf);
-                fwrite(response_buffer, 1, response_size, rf);
-                fwrite(end_marker, 1, strlen(end_marker), rf);
-                fclose(rf);
-                log_debug("DEBUG: Wrote atomic response log (%zu bytes)", response_size);
-            }
-            // Send the response to actual stdout
-            fwrite(response_buffer, 1, response_size, stdout);
-        }
-
-        if (response_buffer) {
-            free(response_buffer);
-        }
-    }
 
     close_xml();
     free(input);
