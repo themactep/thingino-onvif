@@ -40,8 +40,6 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
-#define DEFAULT_JSON_CONF_FILE "/etc/onvif.json"
-
 #define DEFAULT_PID_FILE "/var/run/onvif_notify_server.pid"
 #define TEMPLATE_DIR "/var/www/onvif/notify_files"
 #define INOTIFY_DIR "/run/motion"

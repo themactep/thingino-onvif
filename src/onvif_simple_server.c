@@ -41,8 +41,6 @@
 
 #include <sys/stat.h>
 
-#define DEFAULT_JSON_CONF_FILE "/etc/onvif.json"
-
 service_context_t service_ctx;
 
 int debug = 0;
