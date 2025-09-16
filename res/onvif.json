@@ -1,97 +1,106 @@
 {
-  "conf_dir": "/etc/onvif.d",
-  "loglevel": 5,
-  "ifs": "wlan0",
-  "port": 80,
-  "manufacturer": "Manufacturer",
-  "model": "Model",
-  "hardware_id": "HWID",
-  "firmware_ver": "0.0.1",
-  "raw_xml_log_file": "/tmp/onvif_raw.log",
-  "serial_num": "SN1234567890",
-  "username": "thingino",
-  "password": "thingino",
-  "profiles": {
-    "stream0": {
-      "name": "Profile_0",
-      "width": 1920,
-      "height": 1080,
-      "url": "rtsp://%s/ch0",
-      "snapurl": "http://%s/image.jpg",
-      "type": "H264",
-      "audio_encoder": "AAC",
-      "audio_decoder": "AAC"
+    "model": "Model",
+    "manufacturer": "Manufacturer",
+    "firmware_ver": "0.0.1",
+    "serial_num": "SN1234567890",
+    "hardware_id": "HWID",
+    "ifs": "wlan0",
+    "port": 80,
+    "username": "thingino",
+    "password": "thingino",
+    "scopes": [
+        "onvif://www.onvif.org/Profile/Streaming",
+        "onvif://www.onvif.org/Profile/T",
+        "onvif://www.onvif.org/hardware",
+        "onvif://www.onvif.org/name"
+    ],
+    "profiles": {
+        "stream0": {
+            "name": "Profile_0",
+            "width": 1920,
+            "height": 1080,
+            "url": "rtsp://%s/ch0",
+            "snapurl": "http://%s/image.jpg",
+            "type": "H264",
+            "audio_encoder": "AAC",
+            "audio_decoder": "AAC"
+        },
+        "stream1": {
+            "name": "Profile_1",
+            "width": 640,
+            "height": 360,
+            "url": "rtsp://%s/ch1",
+            "snapurl": "http://%s/image.jpg",
+            "type": "H264",
+            "audio_encoder": "AAC",
+            "audio_decoder": "AAC"
+        }
     },
-    "stream1": {
-      "name": "Profile_1",
-      "width": 640,
-      "height": 360,
-      "url": "rtsp://%s/ch1",
-      "snapurl": "http://%s/image.jpg",
-      "type": "H264",
-      "audio_encoder": "AAC",
-      "audio_decoder": "AAC"
-    }
-  },
-  "ptz": {
-    "enable": 1,
-    "max_step_x": 4000,
-    "min_step_x": 0.0,
-    "max_step_y": 2000,
-    "min_step_y": 0.0,
-    "max_step_z": 0.0,
-    "min_step_z": 0.0,
-    "get_position": "/sbin/motors -p",
-    "is_moving": "/sbin/motors -b",
-    "move_left": "/sbin/motors -d h -x 0",
-    "move_right": "/sbin/motors -d h -x 4000",
-    "move_up": "/sbin/motors -d h -y 0",
-    "move_down": "/sbin/motors -d h -y 2000",
-    "move_stop": "/sbin/motors -d s",
-    "move_preset": "/sbin/ptz_presets %d > /dev/null",
-    "goto_home_position": "/sbin/motors -d b",
-    "set_preset": "/sbin/ptz_presets -a %d %s > /dev/null",
-    "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
-    "jump_to_abs": "/sbin/motors -d h -x %f -y %f",
-    "jump_to_rel": "/sbin/motors -d g -x %f -y %f",
-    "get_presets": "/sbin/ptz_presets -g"
-  },
-  "relays": [
-    {
-      "idle_state": "close",
-      "close": "ircut off",
-      "open": "ircut on"
+    "ptz": {
+        "enable": 1,
+        "min_step_x": 0.0,
+        "max_step_x": 4000,
+        "min_step_y": 0.0,
+        "max_step_y": 2000,
+        "min_step_z": 0.0,
+        "max_step_z": 0.0,
+        "get_position": "/sbin/motors -p",
+        "is_moving": "/sbin/motors -b",
+        "move_left": "/sbin/motors -d h -x 0",
+        "move_right": "/sbin/motors -d h -x 4000",
+        "move_up": "/sbin/motors -d h -y 0",
+        "move_down": "/sbin/motors -d h -y 2000",
+        "move_in": "/sbin/ptz_zoom_in",
+        "move_out": "/sbin/ptz_zoom_out",
+        "move_stop": "/sbin/motors -d s",
+        "move_preset": "/sbin/ptz_presets %d > /dev/null",
+        "goto_home_position": "/sbin/motors -d b",
+        "set_preset": "/sbin/ptz_presets -a %d %s > /dev/null",
+        "set_home_position": "/sbin/ptz_set_home",
+        "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
+        "jump_to_abs": "/sbin/motors -d h -x %f -y %f",
+        "jump_to_rel": "/sbin/motors -d g -x %f -y %f",
+        "get_presets": "/sbin/ptz_presets -g"
     },
-    {
-      "idle_state": "close",
-      "close": "irled off",
-      "open": "irled on"
-    }
-  ],
-  "events_enable": 1,
-  "events": [
-    {
-      "topic": "tns1:VideoSource/MotionAlarm",
-      "source_name": "VideoSourceConfigurationToken",
-      "source_type": "tt:ReferenceToken",
-      "source_value": "VideoSourceToken",
-      "input_file": "/run/motion/motion_alarm"
-    }
-  ],
-  "aux": [
-    { "name": "IRLED ON",  "exec": "irled on"  },
-    { "name": "IRLED OFF", "exec": "irled off" },
-    { "name": "COLOR ON",  "exec": "color on"  },
-    { "name": "COLOR OFF", "exec": "color off" }
-  ],
-  "adv_enable_media2": false,
-  "adv_fault_if_set": false,
-  "adv_fault_if_unknown": false,
-  "adv_synology_nvr": false,
-  "scopes": [
-    "onvif://www.onvif.org/Profile/Streaming",
-    "onvif://www.onvif.org/Profile/T",
-    "onvif://www.onvif.org/hardware",
-    "onvif://www.onvif.org/name"
-  ]
+    "relays": [
+        {
+            "idle_state": "close",
+            "close": "ircut off",
+            "open": "ircut on"
+        },
+        {
+            "idle_state": "close",
+            "close": "irled off",
+            "open": "irled on"
+        }
+    ],
+    "events_enable": 1,
+    "events": [
+        {
+            "topic": "tns1:VideoSource/MotionAlarm",
+            "source_name": "VideoSourceConfigurationToken",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "VideoSourceToken",
+            "input_file": "/run/motion/motion_alarm"
+        },
+        {
+            "topic": "tns1:Device/HardwareFailure",
+            "source_name": "Source",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "HardwareId",
+            "input_file": "/tmp/hardware_failure"
+        }
+    ],
+    "aux": [
+        { "name": "IRLED ON",  "exec": "irled on"  },
+        { "name": "IRLED OFF", "exec": "irled off" },
+        { "name": "COLOR ON",  "exec": "color on"  },
+        { "name": "COLOR OFF", "exec": "color off" }
+    ],
+    "adv_enable_media2": false,
+    "adv_fault_if_set": false,
+    "adv_fault_if_unknown": false,
+    "adv_synology_nvr": false,
+    "loglevel": 5,
+    "raw_xml_log_file": "/tmp/onvif_raw.log"
 }

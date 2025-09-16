@@ -5,14 +5,17 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REQUESTS_DIR="$SCRIPT_DIR/requests"
-#SERVER_URL="http://localhost:8000/onvif/"
-SERVER_URL="http://192.168.88.33:80/onvif/"
+#SERVER_URL="http://localhost:8000/onvif"
+SERVER_URL="http://192.168.88.201:80/onvif"
 USERNAME="thingino"
 PASSWORD="thingino"
 
 TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_SKIPPED=0
+
+# Debug mode - set to true to enable detailed HTTP communication logging
+DEBUG_MODE="${DEBUG_MODE:-true}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -24,9 +27,13 @@ NC='\033[0m' # No Color
 
 echo -e "${BLUE}🧪 Comprehensive ONVIF Test Suite${NC}"
 echo "===================================="
+echo -e "${CYAN}Enhanced with detailed HTTP communication logging${NC}"
+if [[ "$DEBUG_MODE" == "true" ]]; then
+    echo -e "${GREEN}🔍 Debug Mode: ENABLED - Full request/response logging${NC}"
+else
+    echo -e "${YELLOW}🔍 Debug Mode: DISABLED - Set DEBUG_MODE=true for full logging${NC}"
+fi
 echo ""
-
-
 
 # Function to add authentication to SOAP request
 add_authentication() {
@@ -68,7 +75,6 @@ combined = nonce_bytes + timestamp.encode('utf-8') + password.encode('utf-8')
 digest = base64.b64encode(hashlib.sha1(combined).digest()).decode('utf-8')
 print(digest)
 ")
-
             # Create authenticated SOAP request using Python to avoid sed issues
             python3 -c "
 import sys
@@ -143,14 +149,31 @@ run_soap_test() {
     # Add authentication if needed
     local auth_xml_file=$(add_authentication "$xml_file")
 
+    # Display request URL
+    local request_url="$SERVER_URL/$service"
+    echo -e "${BLUE}🌐 Request URL:${NC} $request_url"
+
+    # Display raw XML request (if debug mode enabled)
+    if [[ "$DEBUG_MODE" == "true" ]]; then
+        echo -e "${BLUE}📤 Raw XML Request:${NC}"
+        echo "----------------------------------------"
+        cat "$auth_xml_file" | xmllint --format - 2>/dev/null || cat "$auth_xml_file"
+        echo "----------------------------------------"
+    fi
+
     # Make the SOAP request
     local response
     local http_code
-    response=$(curl -s -w "%{http_code}" -X POST \
-        -H "Content-Type: application/soap+xml" \
-        -H "SOAPAction: \"\"" \
-        -d @"$auth_xml_file" \
-        "$SERVER_URL/$service" 2>/dev/null || echo "ERROR000")
+
+    cmd="curl -s -w \"%{http_code}\" -X POST "
+    cmd="$cmd -H 'Content-Type: application/soap+xml'"
+    cmd="$cmd -H 'SOAPAction: \"\"'"
+    cmd="$cmd -d @\"$auth_xml_file\""
+    cmd="$cmd $request_url"
+
+    echo -e "${BLUE}🔧 cURL Command:${NC} $cmd"
+
+    response=$($cmd 2>/dev/null || echo "ERROR000")
 
     # Clean up temporary file
     rm -f "$auth_xml_file"
@@ -158,6 +181,21 @@ run_soap_test() {
     # Extract HTTP status code
     http_code="${response: -3}"
     response="${response%???}"
+
+    # Display HTTP status code
+    echo -e "${BLUE}📊 HTTP Status Code:${NC} $http_code"
+
+    # Display raw XML response (if debug mode enabled)
+    if [[ "$DEBUG_MODE" == "true" ]]; then
+        echo -e "${BLUE}📥 Raw XML Response:${NC}"
+        echo "========================================"
+        if [[ -n "$response" ]] && [[ "$response" != "ERROR" ]]; then
+            echo "$response" | xmllint --format - 2>/dev/null || echo "$response"
+        else
+            echo -e "${RED}No response received or connection error${NC}"
+        fi
+        echo "========================================"
+    fi
 
     if [[ "$response" == "ERROR" ]] || [[ -z "$response" ]] || [[ "$http_code" != "200" ]]; then
         if [[ "$optional" == "true" ]]; then
@@ -172,28 +210,34 @@ run_soap_test() {
     fi
 
     # Check if response contains expected pattern
-    if [[ -n "$expected_pattern" ]] && [[ "$response" =~ $expected_pattern ]]; then
-        echo -e "${GREEN}✅ PASS: Response contains expected pattern${NC}"
-        ((TESTS_PASSED++))
-    elif [[ -n "$expected_pattern" ]]; then
-        if [[ "$optional" == "true" ]]; then
-            echo -e "${YELLOW}⚠️  SKIP: Optional test - pattern not found: $expected_pattern${NC}"
-            ((TESTS_SKIPPED++))
+    echo -e "${BLUE}🔍 Test Evaluation:${NC}"
+    if [[ -n "$expected_pattern" ]]; then
+        echo "Expected pattern: $expected_pattern"
+        if [[ "$response" =~ $expected_pattern ]]; then
+            echo -e "${GREEN}✅ PASS: Response contains expected pattern${NC}"
+            ((TESTS_PASSED++))
         else
-            echo -e "${RED}❌ FAIL: Response does not contain expected pattern: $expected_pattern${NC}"
-            echo "Response preview: ${response:0:200}..."
-            ((TESTS_FAILED++))
+            if [[ "$optional" == "true" ]]; then
+                echo -e "${YELLOW}⚠️  SKIP: Optional test - pattern not found${NC}"
+                ((TESTS_SKIPPED++))
+            else
+                echo -e "${RED}❌ FAIL: Response does not contain expected pattern${NC}"
+                ((TESTS_FAILED++))
+            fi
+            echo ""
+            return 1
         fi
-        echo ""
-        return 1
     else
-        echo -e "${GREEN}✅ PASS: Got valid response${NC}"
+        echo -e "${GREEN}✅ PASS: Got valid response (no pattern check required)${NC}"
         ((TESTS_PASSED++))
     fi
 
     # Show key parts of response for debugging
+    echo -e "${BLUE}📋 Response Highlights:${NC}"
     show_response_highlights "$response"
 
+    echo ""
+    echo "=================================================="
     echo ""
     return 0
 }
