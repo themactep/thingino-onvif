@@ -1,0 +1,6 @@
+level=INFO file=onvif_simple_server.c line=255 msg="Log level set from config: 4"
+level=DEBUG file=onvif_simple_server.c line=272 msg="Malloc finished,input pointer points to 0x529000000200"
+level=DEBUG file=onvif_simple_server.c line=296 msg="Realloc finished,input pointer is now pointing to 0x511000000680"
+level=DEBUG file=onvif_simple_server.c line=312 msg="Url: media_service"
+level=DEBUG file=onvif_simple_server.c line=326 msg="Method: GetProfiles"
+level=INFO file=onvif_simple_server.c line=730 msg="Program terminated."

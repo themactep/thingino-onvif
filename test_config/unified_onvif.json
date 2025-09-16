@@ -13,8 +13,8 @@
         "onvif://www.onvif.org/type/audio_encoder",
         "onvif://www.onvif.org/hardware/Test_Camera"
     ],
-    "profiles": [
-        {
+    "profiles": {
+        "stream0": {
             "name": "Profile_0",
             "width": 1920,
             "height": 1080,
@@ -23,7 +23,7 @@
             "type": "H264",
             "audio_encoder": "NONE"
         },
-        {
+        "stream1": {
             "name": "Profile_1",
             "width": 1280,
             "height": 720,
@@ -32,7 +32,7 @@
             "type": "H264",
             "audio_encoder": "AAC"
         }
-    ],
+    },
     "ptz": {
         "enable": 1,
         "min_step_x": 0.0,
@@ -92,5 +92,5 @@
     "adv_fault_if_unknown": 0,
     "adv_fault_if_set": 0,
     "adv_synology_nvr": 0,
-    "loglevel": 4
+    "loglevel": 5
 }

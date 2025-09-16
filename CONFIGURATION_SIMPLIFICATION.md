@@ -29,8 +29,8 @@ All configuration is now consolidated into a single `onvif.json` file with the f
     "username": "admin",
     "password": "admin",
     "loglevel": 4,
-    "profiles": [
-        {
+    "profiles": {
+        "stream0": {
             "name": "Profile_0",
             "width": 1920,
             "height": 1080,
@@ -38,8 +38,17 @@ All configuration is now consolidated into a single `onvif.json` file with the f
             "snapurl": "http://192.168.1.100/snapshot.jpg",
             "type": "H264",
             "audio_encoder": "NONE"
+        },
+        "stream1": {
+            "name": "Profile_1",
+            "width": 1280,
+            "height": 720,
+            "url": "rtsp://192.168.1.100:554/stream2",
+            "snapurl": "http://192.168.1.100/snapshot_720.jpg",
+            "type": "H264",
+            "audio_encoder": "AAC"
         }
-    ],
+    },
     "ptz": {
         "enable": 1,
         "min_step_x": 0.0,

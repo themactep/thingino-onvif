@@ -313,12 +313,8 @@ int process_json_conf_file(char* file)
     }
     // Load profiles from main configuration file
     if (json_object_object_get_ex(json_file, "profiles", &value)) {
-        if (json_object_is_type(value, json_type_array)) {
-            size_t array_len = json_object_array_length(value);
-            for (size_t i = 0; i < array_len; i++) {
-                item = json_object_array_get_idx(value, i);
-                if (!item) continue;
-
+        if (json_object_is_type(value, json_type_object)) {
+            json_object_object_foreach(value, key, item) {
                 service_ctx.profiles_num++;
                 service_ctx.profiles = (stream_profile_t*) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
                 // Init defaults
@@ -374,7 +370,7 @@ int process_json_conf_file(char* file)
                         service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
                     free(tmp);
                 }
-                log_debug("Profile %d: %s %dx%d",
+                log_debug("Profile %s (%d): %s %dx%d", key,
                           service_ctx.profiles_num - 1,
                           service_ctx.profiles[service_ctx.profiles_num - 1].name,
                           service_ctx.profiles[service_ctx.profiles_num - 1].width,

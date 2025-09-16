@@ -1,28 +1,18 @@
 {
-  "adv_enable_media2": false,
-  "adv_fault_if_set": false,
-  "adv_fault_if_unknown": false,
-  "adv_synology_nvr": false,
   "conf_dir": "/etc/onvif.d",
-  "firmware_ver": "0.0.1",
-  "hardware_id": "HWID",
-  "ifs": "wlan0",
   "loglevel": 5,
+  "ifs": "wlan0",
+  "port": 80,
   "manufacturer": "Manufacturer",
   "model": "Model",
-  "password": "admin",
-  "port": 80,
+  "hardware_id": "HWID",
+  "firmware_ver": "0.0.1",
   "raw_xml_log_file": "/tmp/onvif_raw.log",
   "serial_num": "SN1234567890",
-  "username": "admin",
-  "scopes": [
-    "onvif://www.onvif.org/Profile/Streaming",
-    "onvif://www.onvif.org/Profile/T",
-    "onvif://www.onvif.org/hardware",
-    "onvif://www.onvif.org/name"
-  ],
-  "profiles": [
-    {
+  "username": "thingino",
+  "password": "thingino",
+  "profiles": {
+    "stream0": {
       "name": "Profile_0",
       "width": 1920,
       "height": 1080,
@@ -32,7 +22,7 @@
       "audio_encoder": "AAC",
       "audio_decoder": "AAC"
     },
-    {
+    "stream1": {
       "name": "Profile_1",
       "width": 640,
       "height": 360,
@@ -42,7 +32,7 @@
       "audio_encoder": "AAC",
       "audio_decoder": "AAC"
     }
-  ],
+  },
   "ptz": {
     "enable": 1,
     "max_step_x": 4000,
@@ -51,19 +41,19 @@
     "min_step_y": 0.0,
     "max_step_z": 0.0,
     "min_step_z": 0.0,
-    "get_position": "motors -p",
-    "is_moving": "motors -b",
-    "move_left": "motors -d h -x 0",
-    "move_right": "motors -d h -x 4000",
-    "move_up": "motors -d h -y 0",
-    "move_down": "motors -d h -y 2000",
-    "move_stop": "motors -d s",
+    "get_position": "/sbin/motors -p",
+    "is_moving": "/sbin/motors -b",
+    "move_left": "/sbin/motors -d h -x 0",
+    "move_right": "/sbin/motors -d h -x 4000",
+    "move_up": "/sbin/motors -d h -y 0",
+    "move_down": "/sbin/motors -d h -y 2000",
+    "move_stop": "/sbin/motors -d s",
     "move_preset": "/sbin/ptz_presets %d > /dev/null",
-    "goto_home_position": "motors -d b",
+    "goto_home_position": "/sbin/motors -d b",
     "set_preset": "/sbin/ptz_presets -a %d %s > /dev/null",
     "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
-    "jump_to_abs": "motors -d h -x %f -y %f",
-    "jump_to_rel": "motors -d g -x %f -y %f",
+    "jump_to_abs": "/sbin/motors -d h -x %f -y %f",
+    "jump_to_rel": "/sbin/motors -d g -x %f -y %f",
     "get_presets": "/sbin/ptz_presets -g"
   },
   "relays": [
@@ -79,21 +69,29 @@
     }
   ],
   "events_enable": 1,
-  "events": {
-    "events": [
-      {
-        "topic": "tns1:VideoSource/MotionAlarm",
-        "source_name": "VideoSourceConfigurationToken",
-        "source_type": "tt:ReferenceToken",
-        "source_value": "VideoSourceToken",
-        "input_file": "/run/motion/motion_alarm"
-      }
-    ]
-  },
+  "events": [
+    {
+      "topic": "tns1:VideoSource/MotionAlarm",
+      "source_name": "VideoSourceConfigurationToken",
+      "source_type": "tt:ReferenceToken",
+      "source_value": "VideoSourceToken",
+      "input_file": "/run/motion/motion_alarm"
+    }
+  ],
   "aux": [
     { "name": "IRLED ON",  "exec": "irled on"  },
     { "name": "IRLED OFF", "exec": "irled off" },
     { "name": "COLOR ON",  "exec": "color on"  },
     { "name": "COLOR OFF", "exec": "color off" }
+  ],
+  "adv_enable_media2": false,
+  "adv_fault_if_set": false,
+  "adv_fault_if_unknown": false,
+  "adv_synology_nvr": false,
+  "scopes": [
+    "onvif://www.onvif.org/Profile/Streaming",
+    "onvif://www.onvif.org/Profile/T",
+    "onvif://www.onvif.org/hardware",
+    "onvif://www.onvif.org/name"
   ]
 }

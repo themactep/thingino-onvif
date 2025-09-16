@@ -596,7 +596,7 @@ char* rtrim_mf(char* s)
     if (iret == 0)
         return s;
     back--;
-    while ((*back == ' ') || (*back == '\t') || (*back == '\n') || (*back == '\r')) {
+    while (back >= s && ((*back == ' ') || (*back == '\t') || (*back == '\n') || (*back == '\r'))) {
         *back = '\0';
         back--;
     }
