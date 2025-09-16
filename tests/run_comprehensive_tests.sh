@@ -6,7 +6,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REQUESTS_DIR="$SCRIPT_DIR/requests"
 #SERVER_URL="http://localhost:8000/onvif"
-SERVER_URL="http://192.168.88.201:80/onvif"
+SERVER_URL="http://192.168.88.201/onvif"
 USERNAME="thingino"
 PASSWORD="thingino"
 
