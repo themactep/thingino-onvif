@@ -65,3 +65,8 @@ tmp/
 # IDE
 .idea/
 .vscode/
+
+# build artefacts
+ onvif_notify_server
+ onvif_simple_server
+ wsd_simple_server
