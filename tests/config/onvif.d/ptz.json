@@ -1,0 +1,23 @@
+{
+  "enable": 1,
+  "max_step_x": 4000,
+  "min_step_x": 0.0,
+  "max_step_y": 2000,
+  "min_step_y": 0.0,
+  "max_step_z": 0.0,
+  "min_step_z": 0.0,
+  "get_position": "motors -p",
+  "is_moving": "motors -b",
+  "move_left": "motors -d h -x 0",
+  "move_right": "motors -d h -x 4000",
+  "move_up": "motors -d h -y 0",
+  "move_down": "motors -d h -y 2000",
+  "move_stop": "motors -d s",
+  "move_preset": "/sbin/ptz_presets %d > /dev/null",
+  "goto_home_position": "motors -d b",
+  "set_preset": "/sbin/ptz_presets -a %d %s > /dev/null",
+  "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
+  "jump_to_abs": "motors -d h -x %f -y %f",
+  "jump_to_rel": "motors -d g -x %f -y %f",
+  "get_presets": "/sbin/ptz_presets -g"
+}

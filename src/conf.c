@@ -364,12 +364,22 @@ int process_json_conf_file(char* file)
     fseek(fF, 0L, SEEK_SET);
 
     buffer = (char*) malloc((json_size + 1) * sizeof(char));
+    if (buffer == NULL) {
+        log_error("Failed to allocate memory for JSON configuration file");
+        fclose(fF);
+        return -1;
+    }
+
     if (fread(buffer, 1, json_size, fF) != json_size) {
         log_error("Failed to read JSON configuration file");
+        free(buffer);
         fclose(fF);
         return -1;
     }
     fclose(fF);
+
+    // Null-terminate the buffer to prevent buffer overflow in json_tokener_parse
+    buffer[json_size] = '\0';
 
     json_file = json_tokener_parse(buffer);
     if (json_file == NULL) {

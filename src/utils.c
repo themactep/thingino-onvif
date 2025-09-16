@@ -330,9 +330,21 @@ long cat(char* out, char* filename, int num, ...)
             pars = strstr(line, par_to_find);
             if (pars != NULL) {
                 pare = pars + strlen(par_to_find);
-                strncpy(new_line, line, pars - line);
-                strcpy(&new_line[pars - line], par_to_sub);
-                strncpy(&new_line[pars + strlen(par_to_sub) - line], pare, line + strlen(line) - pare);
+                size_t prefix_len = pars - line;
+                size_t sub_len = strlen(par_to_sub);
+                size_t suffix_len = line + strlen(line) - pare;
+
+                // Check if the replacement will fit in new_line buffer
+                if (prefix_len + sub_len + suffix_len < MAX_CAT_LEN - 1) {
+                    strncpy(new_line, line, prefix_len);
+                    new_line[prefix_len] = '\0';  // Ensure null termination
+                    strcpy(&new_line[prefix_len], par_to_sub);
+                    strncpy(&new_line[prefix_len + sub_len], pare, suffix_len);
+                    new_line[prefix_len + sub_len + suffix_len] = '\0';  // Ensure null termination
+                } else {
+                    log_error("String replacement would overflow buffer in cat function");
+                    // Keep original line unchanged if replacement would overflow
+                }
             }
             if (new_line[0] != '\0') {
                 strcpy(line, new_line);
@@ -604,7 +616,7 @@ char* trim_mf(char* s)
 int html_escape(char* url, int max_len)
 {
     int i, count = 0;
-    int s_tmp[max_len];
+    char s_tmp[max_len];  // Fixed: should be char array, not int array
     char *f, *t;
 
     memset(s_tmp, '\0', max_len);
@@ -636,60 +648,61 @@ int html_escape(char* url, int max_len)
 
     f = url;
     t = (char*) &s_tmp[0];
-    while (*f != '\0') {
+    while (*f != '\0' && (t - s_tmp) < (max_len - 10)) {  // Leave room for escape sequences
         switch (*f) {
         case '\"':
-            *t = '&';
-            t++;
-            *t = 'q';
-            t++;
-            *t = 'u';
-            t++;
-            *t = 'o';
-            t++;
-            *t = 't';
-            t++;
-            *t = ';';
+            if ((t - s_tmp) < (max_len - 6)) {  // &quot; = 6 chars
+                *t = '&'; t++;
+                *t = 'q'; t++;
+                *t = 'u'; t++;
+                *t = 'o'; t++;
+                *t = 't'; t++;
+                *t = ';';
+            } else {
+                *t = *f;  // Fallback if no room for escape
+            }
             break;
         case '&':
-            *t = '&';
-            t++;
-            *t = 'a';
-            t++;
-            *t = 'm';
-            t++;
-            *t = 'p';
-            t++;
-            *t = ';';
+            if ((t - s_tmp) < (max_len - 5)) {  // &amp; = 5 chars
+                *t = '&'; t++;
+                *t = 'a'; t++;
+                *t = 'm'; t++;
+                *t = 'p'; t++;
+                *t = ';';
+            } else {
+                *t = *f;
+            }
             break;
         case '\'':
-            *t = '&';
-            t++;
-            *t = '#';
-            t++;
-            *t = '3';
-            t++;
-            *t = '9';
-            t++;
-            *t = ';';
+            if ((t - s_tmp) < (max_len - 5)) {  // &#39; = 5 chars
+                *t = '&'; t++;
+                *t = '#'; t++;
+                *t = '3'; t++;
+                *t = '9'; t++;
+                *t = ';';
+            } else {
+                *t = *f;
+            }
             break;
         case '<':
-            *t = '&';
-            t++;
-            *t = 'l';
-            t++;
-            *t = 't';
-            t++;
-            *t = ';';
+            if ((t - s_tmp) < (max_len - 4)) {  // &lt; = 4 chars
+                *t = '&'; t++;
+                *t = 'l'; t++;
+                *t = 't'; t++;
+                *t = ';';
+            } else {
+                *t = *f;
+            }
             break;
         case '>':
-            *t = '&';
-            t++;
-            *t = 'g';
-            t++;
-            *t = 't';
-            t++;
-            *t = ';';
+            if ((t - s_tmp) < (max_len - 4)) {  // &gt; = 4 chars
+                *t = '&'; t++;
+                *t = 'g'; t++;
+                *t = 't'; t++;
+                *t = ';';
+            } else {
+                *t = *f;
+            }
             break;
         default:
             *t = *f;
@@ -697,6 +710,7 @@ int html_escape(char* url, int max_len)
         t++;
         f++;
     }
+    *t = '\0';  // Ensure null termination
 
     strcpy(url, (char*) s_tmp);
 }

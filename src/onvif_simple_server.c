@@ -284,16 +284,16 @@ int main(int argc, char** argv)
         free(conf_file);
         exit(EXIT_FAILURE);
     }
-    input = (char*) realloc(input, input_size * sizeof(char));
-    //realloc returns new address which is not always the same as "input", if not updated the old pointer address causes segmentation fault when trying to use teh variable
-    log_debug("Realloc finished,input pointer is now pointing to %p", input);
-    if (input == NULL) {
+    char* temp_input = (char*) realloc(input, input_size * sizeof(char));
+    //realloc returns new address which is not always the same as "input", if not updated the old pointer address causes segmentation fault when trying to use the variable
+    if (temp_input == NULL) {
         log_fatal("Memory error trying to allocate %d bytes", input_size);
-        free(input);
-
+        free(input);  // Free the original input pointer since realloc failed
         free(conf_file);
         exit(EXIT_FAILURE);
     }
+    input = temp_input;  // Only update input if realloc succeeded
+    log_debug("Realloc finished,input pointer is now pointing to %p", input);
     // Raw request logging to file if configured
     if (service_ctx.raw_xml_log_file && service_ctx.raw_xml_log_file[0] != '\0') {
 

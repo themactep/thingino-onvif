@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2024 roleo.
+ * Copyright (c) 2025 Thingino project.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -260,7 +261,7 @@ int events_pull_messages()
     timeout = get_element("Timeout", "Body");
     if (timeout == NULL) {
         log_error("No Timeout element for PullMessages method");
-        destroy_shared_memory((void*) subs_evts, 0);
+        // Don't call destroy_shared_memory here since subs_evts is still NULL
         send_action_failed_fault("events_service", -3);
         return -3;
     }
@@ -268,7 +269,7 @@ int events_pull_messages()
     message_limit = get_element("MessageLimit", "Body");
     if (message_limit == NULL) {
         log_error("No MessageLimit element for PullMessages method");
-        destroy_shared_memory((void*) subs_evts, 0);
+        // Don't call destroy_shared_memory here since subs_evts is still NULL
         send_action_failed_fault("events_service", -4);
         return -4;
     }
@@ -277,7 +278,7 @@ int events_pull_messages()
     /* Check for various possible errors */
     if ((errno == ERANGE && (limit == LONG_MAX || limit == LONG_MIN)) || (errno != 0 && limit == 0)) {
         log_error("Wrong MessageLimit value for PullMessages method");
-        destroy_shared_memory((void*) subs_evts, 0);
+        // Don't call destroy_shared_memory here since subs_evts is still NULL
         send_action_failed_fault("events_service", -5);
         return -5;
     }

@@ -1,0 +1,12 @@
+[
+  {
+    "idle_state": "close",
+    "close": "ircut off",
+    "open": "ircut on"
+  },
+  {
+    "idle_state": "close",
+    "close": "irled off",
+    "open": "irled on"
+  }
+]

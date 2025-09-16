@@ -1,0 +1,23 @@
+{
+  "stream0": {
+    "name": "Profile_0",
+    "width": 1920,
+    "height": 1080,
+    "url": "rtsp://%s/ch0",
+    "snapurl": "http://%s/image.jpg",
+    "type": "H264",
+    "audio_encoder": "AAC",
+    "audio_decoder": "AAC"
+  },
+  "stream1": {
+    "name": "Profile_1",
+    "width": 640,
+    "height": 360,
+    "url": "rtsp://%s/ch1",
+    "snapurl": "http://%s/image.jpg",
+    "type": "H264",
+    "audio_encoder": "AAC",
+    "audio_decoder": "AAC"
+  }
+}
+

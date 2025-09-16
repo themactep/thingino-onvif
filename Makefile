@@ -58,6 +58,11 @@ endif
 
 all: onvif_simple_server onvif_notify_server wsd_simple_server
 
+# Debug build with AddressSanitizer and debugging symbols
+debug: CFLAGS_DEBUG = -g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -DDEBUG
+debug: LDFLAGS_DEBUG = -fsanitize=address -fsanitize=undefined
+debug: clean onvif_simple_server_debug onvif_notify_server_debug wsd_simple_server_debug
+
 $(SRC_DIR)/log.o: $(SRC_DIR)/log.c $(HEADERS)
 	$(CC) -c $< -std=c99 -fPIC -Os $(INCLUDE) -o $@
 
@@ -81,12 +86,35 @@ wsd_simple_server: $(OBJECTS_W)
 	$(CC) $(OBJECTS_W) $(LIBS_W) -fPIC -Os -o $@
 	$(STRIP) $@
 
-.PHONY: clean
+# Debug build rules
+$(SRC_DIR)/%.debug.o: $(SRC_DIR)/%.c $(HEADERS)
+	$(CC) -c $< $(CFLAGS_DEBUG) $(INCLUDE) -o $@
+
+ezxml/%.debug.o: ezxml/%.c
+	$(CC) -c $< $(CFLAGS_DEBUG) $(INCLUDE) -o $@
+
+$(SRC_DIR)/log.debug.o: $(SRC_DIR)/log.c $(HEADERS)
+	$(CC) -c $< -std=c99 $(CFLAGS_DEBUG) $(INCLUDE) -o $@
+
+OBJECTS_O_DEBUG = $(OBJECTS_O:.o=.debug.o)
+OBJECTS_N_DEBUG = $(OBJECTS_N:.o=.debug.o)
+OBJECTS_W_DEBUG = $(OBJECTS_W:.o=.debug.o)
+
+onvif_simple_server_debug: $(OBJECTS_O_DEBUG)
+	$(CC) $(OBJECTS_O_DEBUG) $(LIBS_O) $(LDFLAGS_DEBUG) -o $@
+
+onvif_notify_server_debug: $(OBJECTS_N_DEBUG)
+	$(CC) $(OBJECTS_N_DEBUG) $(LIBS_N) $(LDFLAGS_DEBUG) -o $@
+
+wsd_simple_server_debug: $(OBJECTS_W_DEBUG)
+	$(CC) $(OBJECTS_W_DEBUG) $(LIBS_W) $(LDFLAGS_DEBUG) -o $@
+
+.PHONY: clean debug
 
 clean:
-	rm -f onvif_simple_server
-	rm -f onvif_notify_server
-	rm -f wsd_simple_server
-	rm -f $(OBJECTS_O)
-	rm -f $(OBJECTS_N)
-	rm -f $(OBJECTS_W)
+	rm -f onvif_simple_server onvif_simple_server_debug
+	rm -f onvif_notify_server onvif_notify_server_debug
+	rm -f wsd_simple_server wsd_simple_server_debug
+	rm -f $(OBJECTS_O) $(OBJECTS_O_DEBUG)
+	rm -f $(OBJECTS_N) $(OBJECTS_N_DEBUG)
+	rm -f $(OBJECTS_W) $(OBJECTS_W_DEBUG)

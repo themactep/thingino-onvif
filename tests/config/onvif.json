@@ -1,0 +1,24 @@
+{
+  "adv_enable_media2": false,
+  "adv_fault_if_set": false,
+  "adv_fault_if_unknown": false,
+  "adv_synology_nvr": false,
+  "conf_dir": ".",
+  "firmware_ver": "0.0.1",
+  "hardware_id": "HWID",
+  "ifs": "lo",
+  "loglevel": 5,
+  "manufacturer": "Test Manufacturer",
+  "model": "Test Model",
+  "password": "admin",
+  "port": 80,
+  "raw_xml_log_file": "/tmp/onvif_raw.log",
+  "scopes": [
+    "onvif://www.onvif.org/Profile/Streaming",
+    "onvif://www.onvif.org/Profile/T",
+    "onvif://www.onvif.org/hardware",
+    "onvif://www.onvif.org/name"
+  ],
+  "serial_num": "SN1234567890",
+  "username": "admin"
+}
