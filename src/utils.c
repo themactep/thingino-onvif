@@ -51,9 +51,6 @@
 #include "onvif_simple_server.h"
 #include "utils.h"
 
-
-
-
 #define SHMOBJ_PATH "/onvif_subscription"
 #define MEM_LOCK_FILE "/sub_mem_lock"
 
@@ -234,34 +231,32 @@ void output_http_headers(long content_length)
 
 long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail)
 {
-    const char* soap_fault_template =
-        "<?xml version=\"1.0\" ?>"
-        "<soapenv:Envelope xmlns:soapenv=\"http://www.w3.org/2003/05/soap-envelope\""
-        " xmlns:ter=\"http://www.onvif.org/ver10/error\""
-        " xmlns:xs=\"http://www.w3.org/2000/10/XMLSchema\">"
-        "<soapenv:Body>"
-        "<soapenv:Fault>"
-        "<soapenv:Code>"
-        "<soapenv:Value>env:Receiver</soapenv:Value>"
-        "<soapenv:Subcode>"
-        "<soapenv:Value>%s</soapenv:Value>"
-        "</soapenv:Subcode>"
-        "</soapenv:Code>"
-        "<soapenv:Reason>"
-        "<soapenv:Text xml:lang=\"en\">%s</soapenv:Text>"
-        "</soapenv:Reason>"
-        "<soapenv:Node>http://www.w3.org/2003/05/soap-envelope/node/ultimateReceiver</soapenv:Node>"
-        "<soapenv:Role>http://www.w3.org/2003/05/soap-envelope/role/ultimateReceiver</soapenv:Role>"
-        "<soapenv:Detail>"
-        "<soapenv:Text>%s</soapenv:Text>"
-        "</soapenv:Detail>"
-        "</soapenv:Fault>"
-        "</soapenv:Body>"
-        "</soapenv:Envelope>\r\n";
+    const char* soap_fault_template = "<?xml version=\"1.0\" ?>"
+                                      "<soapenv:Envelope xmlns:soapenv=\"http://www.w3.org/2003/05/soap-envelope\""
+                                      " xmlns:ter=\"http://www.onvif.org/ver10/error\""
+                                      " xmlns:xs=\"http://www.w3.org/2000/10/XMLSchema\">"
+                                      "<soapenv:Body>"
+                                      "<soapenv:Fault>"
+                                      "<soapenv:Code>"
+                                      "<soapenv:Value>env:Receiver</soapenv:Value>"
+                                      "<soapenv:Subcode>"
+                                      "<soapenv:Value>%s</soapenv:Value>"
+                                      "</soapenv:Subcode>"
+                                      "</soapenv:Code>"
+                                      "<soapenv:Reason>"
+                                      "<soapenv:Text xml:lang=\"en\">%s</soapenv:Text>"
+                                      "</soapenv:Reason>"
+                                      "<soapenv:Node>http://www.w3.org/2003/05/soap-envelope/node/ultimateReceiver</soapenv:Node>"
+                                      "<soapenv:Role>http://www.w3.org/2003/05/soap-envelope/role/ultimateReceiver</soapenv:Role>"
+                                      "<soapenv:Detail>"
+                                      "<soapenv:Text>%s</soapenv:Text>"
+                                      "</soapenv:Detail>"
+                                      "</soapenv:Fault>"
+                                      "</soapenv:Body>"
+                                      "</soapenv:Envelope>\r\n";
 
     char soap_fault[4096];
-    int len = snprintf(soap_fault, sizeof(soap_fault), soap_fault_template,
-                      fault_subcode, fault_reason, fault_detail);
+    int len = snprintf(soap_fault, sizeof(soap_fault), soap_fault_template, fault_subcode, fault_reason, fault_detail);
 
     // Set global flag to indicate this is a SOAP fault
     g_last_response_was_soap_fault = 1;
@@ -314,8 +309,10 @@ long cat(char* out, char* filename, int num, ...)
     if (!file) {
         log_error("Unable to open file %s (and fallback under /var/www/onvif)", filename);
         // Return ONVIF-compliant SOAP fault instead of empty response
-        return cat_soap_fault(out, "ter:ActionNotSupported", "Optional Action Not Implemented",
-                             "The requested XML template is not available on this device");
+        return cat_soap_fault(out,
+                              "ter:ActionNotSupported",
+                              "Optional Action Not Implemented",
+                              "The requested XML template is not available on this device");
     }
 
     char line[MAX_CAT_LEN];
@@ -337,10 +334,10 @@ long cat(char* out, char* filename, int num, ...)
                 // Check if the replacement will fit in new_line buffer
                 if (prefix_len + sub_len + suffix_len < MAX_CAT_LEN - 1) {
                     strncpy(new_line, line, prefix_len);
-                    new_line[prefix_len] = '\0';  // Ensure null termination
+                    new_line[prefix_len] = '\0'; // Ensure null termination
                     strcpy(&new_line[prefix_len], par_to_sub);
                     strncpy(&new_line[prefix_len + sub_len], pare, suffix_len);
-                    new_line[prefix_len + sub_len + suffix_len] = '\0';  // Ensure null termination
+                    new_line[prefix_len + sub_len + suffix_len] = '\0'; // Ensure null termination
                 } else {
                     log_error("String replacement would overflow buffer in cat function");
                     // Keep original line unchanged if replacement would overflow
@@ -616,7 +613,7 @@ char* trim_mf(char* s)
 int html_escape(char* url, int max_len)
 {
     int i, count = 0;
-    char s_tmp[max_len];  // Fixed: should be char array, not int array
+    char s_tmp[max_len]; // Fixed: should be char array, not int array
     char *f, *t;
 
     memset(s_tmp, '\0', max_len);
@@ -648,57 +645,76 @@ int html_escape(char* url, int max_len)
 
     f = url;
     t = (char*) &s_tmp[0];
-    while (*f != '\0' && (t - s_tmp) < (max_len - 10)) {  // Leave room for escape sequences
+    while (*f != '\0' && (t - s_tmp) < (max_len - 10)) { // Leave room for escape sequences
         switch (*f) {
         case '\"':
-            if ((t - s_tmp) < (max_len - 6)) {  // &quot; = 6 chars
-                *t = '&'; t++;
-                *t = 'q'; t++;
-                *t = 'u'; t++;
-                *t = 'o'; t++;
-                *t = 't'; t++;
+            if ((t - s_tmp) < (max_len - 6)) { // &quot; = 6 chars
+                *t = '&';
+                t++;
+                *t = 'q';
+                t++;
+                *t = 'u';
+                t++;
+                *t = 'o';
+                t++;
+                *t = 't';
+                t++;
                 *t = ';';
             } else {
-                *t = *f;  // Fallback if no room for escape
+                *t = *f; // Fallback if no room for escape
             }
             break;
         case '&':
-            if ((t - s_tmp) < (max_len - 5)) {  // &amp; = 5 chars
-                *t = '&'; t++;
-                *t = 'a'; t++;
-                *t = 'm'; t++;
-                *t = 'p'; t++;
+            if ((t - s_tmp) < (max_len - 5)) { // &amp; = 5 chars
+                *t = '&';
+                t++;
+                *t = 'a';
+                t++;
+                *t = 'm';
+                t++;
+                *t = 'p';
+                t++;
                 *t = ';';
             } else {
                 *t = *f;
             }
             break;
         case '\'':
-            if ((t - s_tmp) < (max_len - 5)) {  // &#39; = 5 chars
-                *t = '&'; t++;
-                *t = '#'; t++;
-                *t = '3'; t++;
-                *t = '9'; t++;
+            if ((t - s_tmp) < (max_len - 5)) { // &#39; = 5 chars
+                *t = '&';
+                t++;
+                *t = '#';
+                t++;
+                *t = '3';
+                t++;
+                *t = '9';
+                t++;
                 *t = ';';
             } else {
                 *t = *f;
             }
             break;
         case '<':
-            if ((t - s_tmp) < (max_len - 4)) {  // &lt; = 4 chars
-                *t = '&'; t++;
-                *t = 'l'; t++;
-                *t = 't'; t++;
+            if ((t - s_tmp) < (max_len - 4)) { // &lt; = 4 chars
+                *t = '&';
+                t++;
+                *t = 'l';
+                t++;
+                *t = 't';
+                t++;
                 *t = ';';
             } else {
                 *t = *f;
             }
             break;
         case '>':
-            if ((t - s_tmp) < (max_len - 4)) {  // &gt; = 4 chars
-                *t = '&'; t++;
-                *t = 'g'; t++;
-                *t = 't'; t++;
+            if ((t - s_tmp) < (max_len - 4)) { // &gt; = 4 chars
+                *t = '&';
+                t++;
+                *t = 'g';
+                t++;
+                *t = 't';
+                t++;
                 *t = ';';
             } else {
                 *t = *f;
@@ -710,7 +726,7 @@ int html_escape(char* url, int max_len)
         t++;
         f++;
     }
-    *t = '\0';  // Ensure null termination
+    *t = '\0'; // Ensure null termination
 
     strcpy(url, (char*) s_tmp);
 }

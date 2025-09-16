@@ -33,7 +33,7 @@ typedef struct {
     const char* service;
     const char* method;
     onvif_handler_t handler;
-    onvif_condition_t condition;  // Optional condition function (NULL if always enabled)
+    onvif_condition_t condition; // Optional condition function (NULL if always enabled)
 } onvif_method_entry_t;
 
 /**

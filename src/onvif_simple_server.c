@@ -17,7 +17,6 @@
 #include "onvif_simple_server.h"
 
 #include "conf.h"
-#include "onvif_dispatch.h"
 #include "device_service.h"
 #include "deviceio_service.h"
 #include "events_service.h"
@@ -26,6 +25,7 @@
 #include "log.h"
 #include "media2_service.h"
 #include "media_service.h"
+#include "onvif_dispatch.h"
 #include "ptz_service.h"
 #include "utils.h"
 
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
     const char* method;
     username_token_t security;
     int auth_error = 0;
-    int conf_file_specified = 0;  // Flag to track if user provided -c parameter
+    int conf_file_specified = 0; // Flag to track if user provided -c parameter
 
     // Use static buffer instead of malloc to avoid heap issues
     static char conf_file_buffer[256];
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
                 free(conf_file);
                 conf_file = (char*) malloc((strlen(optarg) + 1) * sizeof(char));
                 strcpy(conf_file, optarg);
-                conf_file_specified = 1;  // Mark that user provided config file
+                conf_file_specified = 1; // Mark that user provided config file
             } else {
                 print_usage(argv[0]);
                 exit(EXIT_FAILURE);
@@ -348,7 +348,6 @@ int main(int argc, char** argv)
     log_debug("Method: %s", method);
 
     if (service_ctx.username != NULL) {
-
         if ((get_element("Security", "Header") != NULL) && (get_element("UsernameToken", "Header") != NULL)) {
             unsigned char nonce[128];
             unsigned long nonce_size = sizeof(nonce);
@@ -371,7 +370,6 @@ int main(int argc, char** argv)
             security.password = get_element("Password", "Header");
 
             if (security.password != NULL) {
-
                 log_debug("Security: password = %s", security.password);
             } else {
                 auth_error = 2;
@@ -389,29 +387,26 @@ int main(int argc, char** argv)
             security.created = get_element("Created", "Header");
 
             if (security.created != NULL) {
-
                 log_debug("Security: created = %s", security.created);
             } else {
                 auth_error = 4;
             }
 
             if (auth_error == 0) {
-
                 // Calculate digest and check the password
                 // Digest = B64ENCODE( SHA1( B64DECODE( Nonce ) + Date + Password ) )
                 if (nonce_size + strlen(security.created) + strlen(service_ctx.password) > sizeof(auth)) {
                     log_error("Authentication data too large");
                     auth_error = 10;
                 } else {
-
                     memcpy(auth, nonce, nonce_size);
                     memcpy(&auth[nonce_size], security.created, strlen(security.created));
                     memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
                     auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
 
-                    hashSHA1((char*)auth, auth_size, sha1, (int)sha1_size);
+                    hashSHA1((char*) auth, auth_size, sha1, (int) sha1_size);
 
-                    b64_encode((unsigned char*)sha1, (unsigned int)sha1_size, (unsigned char*)digest, &digest_size);
+                    b64_encode((unsigned char*) sha1, (unsigned int) sha1_size, (unsigned char*) digest, &digest_size);
                     // Ensure null-termination for safe string operations/logging
                     if (digest_size >= sizeof(digest)) {
                         digest[sizeof(digest) - 1] = '\0';
@@ -457,7 +452,6 @@ int main(int argc, char** argv)
     // log_debug("About to process method: %s for service: %s", method ? method : "NULL", prog_name ? prog_name : "NULL");
 
     if (auth_error == 0) {
-
         // Use clean dispatch table instead of massive if/else ladder
         dispatch_onvif_method(prog_name, method);
     } else {

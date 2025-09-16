@@ -121,7 +121,7 @@ typedef struct {
     event_t* events;
     int events_enable;
     int events_num;
-    int loglevel;           // 0=FATAL..5=TRACE, default 0
+    int loglevel; // 0=FATAL..5=TRACE, default 0
 } service_context_t;
 
 // Expose global context

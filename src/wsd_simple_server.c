@@ -560,7 +560,10 @@ int main(int argc, char** argv)
                 init_xml(recv_buffer, strlen(recv_buffer));
                 method = get_method(1);
                 if ((method == NULL) || (strstr(method, "Probe") == NULL) || (strstr(method, "ProbeMatches") != NULL)) {
-                    log_debug("Rejected non-probe message from %s:%d (method: %s)", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port), method ? method : "NULL");
+                    log_debug("Rejected non-probe message from %s:%d (method: %s)",
+                              inet_ntoa(addr_in.sin_addr),
+                              ntohs(addr_in.sin_port),
+                              method ? method : "NULL");
                     close_xml();
                     continue;
                 }

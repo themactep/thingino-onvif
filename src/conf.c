@@ -16,7 +16,6 @@
 
 #include "conf.h"
 
-#include <json-c/json.h>
 #include "log.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
@@ -29,6 +28,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <json-c/json.h>
 #include <sys/stat.h>
 
 extern service_context_t service_ctx;
@@ -112,14 +112,6 @@ static json_object* load_json_file(const char* path)
     free(buf);
     return j;
 }
-
-
-
-
-
-
-
-
 
 void get_bool_from_json(int* var, json_object* j, char* name)
 {
@@ -264,27 +256,33 @@ int process_json_conf_file(char* file)
     // Apply sane defaults for required fields if not provided in config
     if (service_ctx.manufacturer == NULL) {
         service_ctx.manufacturer = (char*) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
-        if (service_ctx.manufacturer) strcpy(service_ctx.manufacturer, DEFAULT_MANUFACTURER);
+        if (service_ctx.manufacturer)
+            strcpy(service_ctx.manufacturer, DEFAULT_MANUFACTURER);
     }
     if (service_ctx.model == NULL) {
         service_ctx.model = (char*) malloc(strlen(DEFAULT_MODEL) + 1);
-        if (service_ctx.model) strcpy(service_ctx.model, DEFAULT_MODEL);
+        if (service_ctx.model)
+            strcpy(service_ctx.model, DEFAULT_MODEL);
     }
     if (service_ctx.firmware_ver == NULL) {
         service_ctx.firmware_ver = (char*) malloc(strlen(DEFAULT_FW_VER) + 1);
-        if (service_ctx.firmware_ver) strcpy(service_ctx.firmware_ver, DEFAULT_FW_VER);
+        if (service_ctx.firmware_ver)
+            strcpy(service_ctx.firmware_ver, DEFAULT_FW_VER);
     }
     if (service_ctx.serial_num == NULL) {
         service_ctx.serial_num = (char*) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
-        if (service_ctx.serial_num) strcpy(service_ctx.serial_num, DEFAULT_SERIAL_NUM);
+        if (service_ctx.serial_num)
+            strcpy(service_ctx.serial_num, DEFAULT_SERIAL_NUM);
     }
     if (service_ctx.hardware_id == NULL) {
         service_ctx.hardware_id = (char*) malloc(strlen(DEFAULT_HW_ID) + 1);
-        if (service_ctx.hardware_id) strcpy(service_ctx.hardware_id, DEFAULT_HW_ID);
+        if (service_ctx.hardware_id)
+            strcpy(service_ctx.hardware_id, DEFAULT_HW_ID);
     }
     if (service_ctx.ifs == NULL) {
         service_ctx.ifs = (char*) malloc(strlen(DEFAULT_IFS) + 1);
-        if (service_ctx.ifs) strcpy(service_ctx.ifs, DEFAULT_IFS);
+        if (service_ctx.ifs)
+            strcpy(service_ctx.ifs, DEFAULT_IFS);
     }
 
     // Print debug
@@ -306,7 +304,8 @@ int process_json_conf_file(char* file)
     // Load profiles from main configuration file
     if (json_object_object_get_ex(json_file, "profiles", &value)) {
         if (json_object_is_type(value, json_type_object)) {
-            json_object_object_foreach(value, key, item) {
+            json_object_object_foreach(value, key, item)
+            {
                 service_ctx.profiles_num++;
                 service_ctx.profiles = (stream_profile_t*) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
                 // Init defaults
@@ -362,7 +361,8 @@ int process_json_conf_file(char* file)
                         service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
                     free(tmp);
                 }
-                log_debug("Profile %s (%d): %s %dx%d", key,
+                log_debug("Profile %s (%d): %s %dx%d",
+                          key,
                           service_ctx.profiles_num - 1,
                           service_ctx.profiles[service_ctx.profiles_num - 1].name,
                           service_ctx.profiles[service_ctx.profiles_num - 1].width,
@@ -406,7 +406,8 @@ int process_json_conf_file(char* file)
             log_debug("Found %zu relay entries in configuration", array_len);
             for (size_t i = 0; i < array_len; i++) {
                 item = json_object_array_get_idx(value, i);
-                if (!item) continue;
+                if (!item)
+                    continue;
 
                 service_ctx.relay_outputs_num++;
                 log_debug("Processing relay %zu, relay_outputs_num now: %d", i, service_ctx.relay_outputs_num);
@@ -416,7 +417,8 @@ int process_json_conf_file(char* file)
                     continue;
                 }
 
-                service_ctx.relay_outputs = (relay_output_t*) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+                service_ctx.relay_outputs = (relay_output_t*) realloc(service_ctx.relay_outputs,
+                                                                      service_ctx.relay_outputs_num * sizeof(relay_output_t));
                 service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
                 service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
                 service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
@@ -431,8 +433,12 @@ int process_json_conf_file(char* file)
                 get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
                 log_debug("Relay %d configured - close: %s, open: %s",
                           service_ctx.relay_outputs_num - 1,
-                          service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close : "(null)",
-                          service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open : "(null)");
+                          service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close
+                              ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close
+                              : "(null)",
+                          service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open
+                              ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open
+                              : "(null)");
             }
             log_debug("Finished loading relays. Total relay_outputs_num: %d", service_ctx.relay_outputs_num);
         }
@@ -445,7 +451,8 @@ int process_json_conf_file(char* file)
             size_t array_len = json_object_array_length(value);
             for (size_t i = 0; i < array_len; i++) {
                 item = json_object_array_get_idx(value, i);
-                if (!item) continue;
+                if (!item)
+                    continue;
 
                 service_ctx.events_num++;
                 if (service_ctx.events_num > MAX_EVENTS) {

@@ -15,32 +15,34 @@
  */
 
 #include "onvif_dispatch.h"
-#include "onvif_simple_server.h"
+
+#include "conf.h"
 #include "device_service.h"
-#include "media_service.h"
 #include "deviceio_service.h"
-#include "ptz_service.h"
 #include "events_service.h"
-#include "media2_service.h"
 #include "fault.h"
 #include "log.h"
-#include "conf.h"
+#include "media2_service.h"
+#include "media_service.h"
+#include "onvif_simple_server.h"
+#include "ptz_service.h"
 
-#include <string.h>
 #include <stdio.h>
-
-
+#include <string.h>
 
 // Condition functions for conditional methods
-static int condition_adv_fault_if_set(void) {
+static int condition_adv_fault_if_set(void)
+{
     return service_ctx.adv_fault_if_set == 1;
 }
 
-static int condition_adv_enable_media2(void) {
+static int condition_adv_enable_media2(void)
+{
     return service_ctx.adv_enable_media2 == 1;
 }
 
-static int condition_synology_nvr(void) {
+static int condition_synology_nvr(void)
+{
     return service_ctx.adv_synology_nvr == 1;
 }
 
@@ -160,18 +162,20 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"media2_service", "GetStreamUri", media2_get_stream_uri, condition_adv_enable_media2},
 
     // Sentinel entry - marks end of table
-    {NULL, NULL, NULL, NULL}
-};
+    {NULL, NULL, NULL, NULL}};
 
-int onvif_dispatch_init(void) {
+int onvif_dispatch_init(void)
+{
     return 0;
 }
 
-void onvif_dispatch_cleanup(void) {
+void onvif_dispatch_cleanup(void)
+{
     // No cleanup needed for dispatch table
 }
 
-int dispatch_onvif_method(const char* service, const char* method) {
+int dispatch_onvif_method(const char* service, const char* method)
+{
     if (!service || !method) {
         return -1;
     }
@@ -194,9 +198,7 @@ int dispatch_onvif_method(const char* service, const char* method) {
     // No handler found - check for special cases first
 
     // Special case: Synology NVR CreateProfile hack
-    if ((service_ctx.adv_synology_nvr == 1) &&
-        (strcasecmp("media_service", service) == 0) &&
-        (strcasecmp("CreateProfile", method) == 0)) {
+    if ((service_ctx.adv_synology_nvr == 1) && (strcasecmp("media_service", service) == 0) && (strcasecmp("CreateProfile", method) == 0)) {
         send_fault("media_service",
                    "Receiver",
                    "ter:Action",
