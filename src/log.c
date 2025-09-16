@@ -94,7 +94,7 @@ void log_log(int level, const char* file, int line, const char* fmt, ...)
         return; // higher number = more verbose; clamp by max_level
 
     // Format user message once
-    char msgbuf[768];
+    char msgbuf[4096];  // Increased to handle full XML messages (RECV_BUFFER_LEN)
     va_list ap;
     va_start(ap, fmt);
     vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
@@ -112,7 +112,7 @@ void log_log(int level, const char* file, int line, const char* fmt, ...)
         if (*p == '/')
             slash = p + 1; // basename
 
-    char outbuf[1024];
+    char outbuf[4200];  // Increased to accommodate larger msgbuf plus formatting overhead
     snprintf(outbuf, sizeof(outbuf), "level=%s file=%s line=%d msg=\"%s\"", level_str(level), slash, line, msgbuf);
 
     // Emit to syslog
