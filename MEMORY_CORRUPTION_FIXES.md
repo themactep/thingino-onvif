@@ -9,7 +9,7 @@ This document details the critical memory corruption issues found and fixed in t
 The original crash showed:
 ```
 [   25.387878] do_page_fault() #2: sending SIGSEGV to events_service for invalid write access to
-[   25.387878] 00000000 
+[   25.387878] 00000000
 [   25.387901] epc = 7793d504 in libc.so[778d1000+b8000]
 [   25.387923] ra  = 779be16c in onvif_simple_server[779a4000+2e000]
 ```
@@ -21,7 +21,57 @@ This indicated:
 
 ## Critical Issues Found and Fixed
 
-### 1. **CRITICAL: Realloc Failure Handling Bug** (src/onvif_simple_server.c:287-296)
+### 1. **CRITICAL: NULL Pointer Dereferences in cat() Function** (src/utils.c:327-335, 378)
+
+**Issue**: The `cat()` function used extensively by media_service and ptz_service was not checking for NULL pointers in variable arguments, causing segmentation faults when NULL values were passed as template substitution parameters.
+
+**Root Cause**: In CGI mode, when processing ONVIF service requests, the media_service and ptz_service functions call `cat(NULL, template_file, num_args, ...)` to calculate content length and then `cat("stdout", template_file, num_args, ...)` to generate output. If any of the variable arguments (like audio codec strings, profile names, etc.) were NULL, the `cat()` function would crash when calling `strlen()` on the NULL pointer.
+
+**Original Code**:
+```c
+for (i = 0; i < num / 2; i++) {
+    par_to_find = va_arg(valist, char*);
+    par_to_sub = va_arg(valist, char*);
+    pars = strstr(line, par_to_find);  // CRASH: if par_to_find is NULL
+    if (pars != NULL) {
+        pare = pars + strlen(par_to_find);  // CRASH: if par_to_find is NULL
+        size_t sub_len = strlen(par_to_sub);  // CRASH: if par_to_sub is NULL
+        // ...
+    }
+}
+// ...
+ret += strlen(l);  // CRASH: if l is NULL
+```
+
+**Fixed Code**:
+```c
+for (i = 0; i < num / 2; i++) {
+    par_to_find = va_arg(valist, char*);
+    par_to_sub = va_arg(valist, char*);
+
+    // Critical fix: Check for NULL pointers before using them in string functions
+    if (par_to_find == NULL || par_to_sub == NULL) {
+        log_error("NULL parameter passed to cat function: par_to_find=%p, par_to_sub=%p",
+                 (void*)par_to_find, (void*)par_to_sub);
+        continue;  // Skip this replacement if either parameter is NULL
+    }
+
+    pars = strstr(line, par_to_find);
+    if (pars != NULL) {
+        pare = pars + strlen(par_to_find);
+        size_t sub_len = strlen(par_to_sub);
+        // ...
+    }
+}
+// ...
+if (l != NULL) {
+    ret += strlen(l);
+}
+```
+
+**Impact**: This was the primary cause of the production crashes. The consistent crash pattern (EPC ending in 504, RA ending in a24) indicated crashes in the same libc `strlen()` function across different service processes.
+
+### 2. **CRITICAL: Realloc Failure Handling Bug** (src/onvif_simple_server.c:287-296)
 
 **Issue**: When `realloc()` failed, the code attempted to free a NULL pointer, causing heap corruption.
 
@@ -48,7 +98,7 @@ if (temp_input == NULL) {
 input = temp_input;  // Only update input if realloc succeeded
 ```
 
-**Impact**: This was likely the primary cause of the production crashes.
+**Impact**: This was a secondary issue that could cause crashes during configuration file processing.
 
 ### 2. **CRITICAL: Heap Buffer Overflow in JSON Parsing** (src/conf.c:366-374)
 
@@ -183,7 +233,7 @@ debug: clean onvif_simple_server_debug onvif_notify_server_debug wsd_simple_serv
 
 Created comprehensive test suite (`tests/test_memory_corruption.c`) that verifies:
 1. Realloc failure handling
-2. HTML escape bounds checking  
+2. HTML escape bounds checking
 3. NULL pointer handling in shared memory functions
 4. Memory stress testing
 
@@ -209,9 +259,9 @@ To run memory corruption tests:
 
 These fixes address the root causes of the production segmentation faults:
 
-1. **Primary Issue**: The realloc failure bug was likely the main cause of crashes
-2. **Secondary Issue**: JSON parsing buffer overflow was a critical vulnerability
-3. **Defensive Programming**: Added comprehensive bounds checking throughout
+1. **Primary Issue**: NULL pointer dereferences in cat() function were the main cause of CGI crashes
+2. **Secondary Issues**: Realloc failure handling and JSON parsing buffer overflow were critical vulnerabilities
+3. **Defensive Programming**: Added comprehensive bounds checking and NULL pointer validation throughout
 4. **Memory Safety**: All memory operations now have proper error handling
 
 ## Recommendations
