@@ -551,15 +551,15 @@ int main(int argc, char** argv)
 
                 log_debug("%s", recv_buffer);
 
-                // Check if it's a Probe message
+                // Check if it's a Probe message (supports both "Probe" and "NetdevProbe")
                 init_xml(recv_buffer, strlen(recv_buffer));
                 method = get_method(1);
-                if ((method == NULL) || (strcasecmp("Probe", method) != 0)) {
-                    log_debug("This is not a Probe message");
+                if ((method == NULL) || (strcasecmp("Probe", method) != 0 && strcasecmp("NetdevProbe", method) != 0)) {
+                    log_debug("This is not a Probe message (method: %s)", method ? method : "NULL");
                     close_xml();
                     continue;
                 }
-                log_debug("Probe message");
+                log_debug("Probe message (method: %s)", method);
 
                 // Prepare ProbeMatches message
                 msg_number++;
@@ -618,6 +618,9 @@ int main(int argc, char** argv)
                     model,
                     "%ADDRESS%",
                     xaddr);
+
+                // Log the response content for debugging
+                log_debug("ProbeMatches response: %s", message_loop);
 
                 if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr*) &addr_in, sizeof(addr_in)) < 0) {
                     log_error("Error sending ProbeMatches message.\n");
