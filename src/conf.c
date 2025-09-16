@@ -113,220 +113,13 @@ static json_object* load_json_file(const char* path)
     return j;
 }
 
-static void load_profiles_from_dir(const char* dir)
-{
-    char p[PATH_MAX];
-    snprintf(p, sizeof(p), "%s/%s", dir, "profiles.json");
-    json_object* value = load_json_file(p);
-    if (!value) {
-        log_debug("profiles.json not found in %s", dir);
-        return;
-    }
 
-    if (!json_object_is_type(value, json_type_object)) {
-        json_object_put(value);
-        return;
-    }
 
-    json_object_object_foreach(value, key, item) {
-        service_ctx.profiles_num++;
-        service_ctx.profiles = (stream_profile_t*) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
-        // Init defaults
-        service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
-        service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
-        service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
-        service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
-        service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
-        service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
-        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
-        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
-        get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
-        get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].width), item, "width");
-        get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].height), item, "height");
-        get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url");
-        get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl");
-        char* tmp = NULL;
-        get_string_from_json(&tmp, item, "type");
-        if (tmp) {
-            if (!strcasecmp(tmp, "JPEG"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].type = JPEG;
-            else if (!strcasecmp(tmp, "MPEG4"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
-            else if (!strcasecmp(tmp, "H264"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
-            else if (!strcasecmp(tmp, "H265"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].type = H265;
-            free(tmp);
-        }
-        tmp = NULL;
-        get_string_from_json(&tmp, item, "audio_encoder");
-        if (tmp) {
-            if (!strcasecmp(tmp, "NONE"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
-            else if (!strcasecmp(tmp, "G711"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
-            else if (!strcasecmp(tmp, "G726"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G726;
-            else if (!strcasecmp(tmp, "AAC"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
-            free(tmp);
-        }
-        tmp = NULL;
-        get_string_from_json(&tmp, item, "audio_decoder");
-        if (tmp) {
-            if (!strcasecmp(tmp, "NONE"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
-            else if (!strcasecmp(tmp, "G711"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G711;
-            else if (!strcasecmp(tmp, "G726"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
-            else if (!strcasecmp(tmp, "AAC"))
-                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
-            free(tmp);
-        }
-        log_debug("Profile %d: %s %dx%d",
-                  service_ctx.profiles_num - 1,
-                  service_ctx.profiles[service_ctx.profiles_num - 1].name,
-                  service_ctx.profiles[service_ctx.profiles_num - 1].width,
-                  service_ctx.profiles[service_ctx.profiles_num - 1].height);
-    }
-    json_object_put(value);
-}
 
-static void load_ptz_from_dir(const char* dir)
-{
-    char p[PATH_MAX];
-    snprintf(p, sizeof(p), "%s/%s", dir, "ptz.json");
-    json_object* value = load_json_file(p);
-    if (!value) {
-        log_debug("ptz.json not found in %s", dir);
-        return;
-    }
 
-    get_int_from_json(&(service_ctx.ptz_node.enable), value, "enable");
-    get_double_from_json(&(service_ctx.ptz_node.min_step_x), value, "min_step_x");
-    get_double_from_json(&(service_ctx.ptz_node.max_step_x), value, "max_step_x");
-    get_double_from_json(&(service_ctx.ptz_node.min_step_y), value, "min_step_y");
-    get_double_from_json(&(service_ctx.ptz_node.max_step_y), value, "max_step_y");
-    get_double_from_json(&(service_ctx.ptz_node.min_step_z), value, "min_step_z");
-    get_double_from_json(&(service_ctx.ptz_node.max_step_z), value, "max_step_z");
-    get_string_from_json(&(service_ctx.ptz_node.get_position), value, "get_position");
-    get_string_from_json(&(service_ctx.ptz_node.is_moving), value, "is_moving");
-    get_string_from_json(&(service_ctx.ptz_node.move_left), value, "move_left");
-    get_string_from_json(&(service_ctx.ptz_node.move_right), value, "move_right");
-    get_string_from_json(&(service_ctx.ptz_node.move_up), value, "move_up");
-    get_string_from_json(&(service_ctx.ptz_node.move_down), value, "move_down");
-    get_string_from_json(&(service_ctx.ptz_node.move_in), value, "move_in");
-    get_string_from_json(&(service_ctx.ptz_node.move_out), value, "move_out");
-    get_string_from_json(&(service_ctx.ptz_node.move_stop), value, "move_stop");
-    get_string_from_json(&(service_ctx.ptz_node.move_preset), value, "move_preset");
-    get_string_from_json(&(service_ctx.ptz_node.goto_home_position), value, "goto_home_position");
-    get_string_from_json(&(service_ctx.ptz_node.set_preset), value, "set_preset");
-    get_string_from_json(&(service_ctx.ptz_node.set_home_position), value, "set_home_position");
-    get_string_from_json(&(service_ctx.ptz_node.remove_preset), value, "remove_preset");
-    get_string_from_json(&(service_ctx.ptz_node.jump_to_abs), value, "jump_to_abs");
-    get_string_from_json(&(service_ctx.ptz_node.jump_to_rel), value, "jump_to_rel");
-    get_string_from_json(&(service_ctx.ptz_node.get_presets), value, "get_presets");
-    json_object_put(value);
-}
 
-static void load_relays_from_dir(const char* dir)
-{
-    char p[PATH_MAX];
-    snprintf(p, sizeof(p), "%s/%s", dir, "relays.json");
-    log_debug("DEBUG: Attempting to load relays from: %s", p);
-    json_object* value = load_json_file(p);
-    if (!value) {
-        log_debug("relays.json not found in %s", dir);
-        return;
-    }
 
-    log_debug("DEBUG: relays.json successfully loaded from %s", dir);
-    if (!json_object_is_type(value, json_type_array)) {
-        log_error("DEBUG: relays.json is not a JSON array");
-        json_object_put(value);
-        return;
-    }
 
-    json_object* item;
-    size_t array_len = json_object_array_length(value);
-    log_debug("DEBUG: Found %zu relay entries in relays.json", array_len);
-    for (size_t i = 0; i < array_len; i++) {
-        item = json_object_array_get_idx(value, i);
-        if (!item) continue;
-
-        service_ctx.relay_outputs_num++;
-        log_debug("DEBUG: Processing relay %zu, relay_outputs_num now: %d", i, service_ctx.relay_outputs_num);
-        if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
-            log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
-            service_ctx.relay_outputs_num--;
-            continue;
-        }
-
-        service_ctx.relay_outputs = (relay_output_t*) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
-        service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
-        service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
-        service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
-        char* tmp = NULL;
-        get_string_from_json(&tmp, item, "idle_state");
-        if (tmp) {
-            if (!strcasecmp(tmp, "open"))
-                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
-            free(tmp);
-        }
-        get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close");
-        get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
-        log_debug("DEBUG: Relay %d configured - close: %s, open: %s",
-                  service_ctx.relay_outputs_num - 1,
-                  service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close : "(null)",
-                  service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open : "(null)");
-    }
-    log_debug("DEBUG: Finished loading relays. Total relay_outputs_num: %d", service_ctx.relay_outputs_num);
-    json_object_put(value);
-}
-
-static void load_events_from_dir(const char* dir)
-{
-    char p[PATH_MAX];
-    snprintf(p, sizeof(p), "%s/%s", dir, "events.json");
-    json_object* root = load_json_file(p);
-
-    if (!root) {
-        log_debug("events.json not found in %s", dir);
-        return;
-    }
-
-    get_int_from_json(&(service_ctx.events_enable), root, "enable");
-    json_object* value = NULL;
-    json_object_object_get_ex(root, "events", &value);
-    if (value && json_object_is_type(value, json_type_array)) {
-        json_object* item;
-        size_t array_len = json_object_array_length(value);
-        for (size_t i = 0; i < array_len; i++) {
-            item = json_object_array_get_idx(value, i);
-            if (!item) continue;
-
-            service_ctx.events_num++;
-            if (service_ctx.events_num > MAX_EVENTS) {
-                log_error("Too many events, max is: %d", MAX_EVENTS);
-                service_ctx.events_num--;
-                break;
-            }
-            service_ctx.events = (event_t*) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
-            service_ctx.events[service_ctx.events_num - 1].topic = NULL;
-            service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
-            service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
-            service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
-            service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
-        }
-    }
-    json_object_put(root);
-}
 
 void get_bool_from_json(int* var, json_object* j, char* name)
 {
@@ -518,24 +311,177 @@ int process_json_conf_file(char* file)
         log_debug("username: %s", service_ctx.username);
         log_debug("password: %s", service_ctx.password ? service_ctx.password : "(null)");
     }
-    // Modular config: load additional configuration from conf_dir (default /etc/onvif.d)
-    char* conf_dir = NULL;
-    get_string_from_json(&conf_dir, json_file, "conf_dir");
-    if (conf_dir == NULL) {
-        const char* defdir = DEFAULT_CONF_DIR;
-        conf_dir = (char*) malloc(strlen(defdir) + 1);
-        if (conf_dir)
-            strcpy(conf_dir, defdir);
+    // Load profiles from main configuration file
+    if (json_object_object_get_ex(json_file, "profiles", &value)) {
+        if (json_object_is_type(value, json_type_array)) {
+            size_t array_len = json_object_array_length(value);
+            for (size_t i = 0; i < array_len; i++) {
+                item = json_object_array_get_idx(value, i);
+                if (!item) continue;
+
+                service_ctx.profiles_num++;
+                service_ctx.profiles = (stream_profile_t*) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
+                // Init defaults
+                service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
+                service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
+                service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
+                service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
+                service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
+                service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
+                service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
+                get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].width), item, "width");
+                get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].height), item, "height");
+                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url");
+                get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl");
+                char* tmp = NULL;
+                get_string_from_json(&tmp, item, "type");
+                if (tmp) {
+                    if (!strcasecmp(tmp, "JPEG"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].type = JPEG;
+                    else if (!strcasecmp(tmp, "MPEG4"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
+                    else if (!strcasecmp(tmp, "H264"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+                    else if (!strcasecmp(tmp, "H265"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].type = H265;
+                    free(tmp);
+                }
+                tmp = NULL;
+                get_string_from_json(&tmp, item, "audio_encoder");
+                if (tmp) {
+                    if (!strcasecmp(tmp, "NONE"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
+                    else if (!strcasecmp(tmp, "G711"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
+                    else if (!strcasecmp(tmp, "G726"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G726;
+                    else if (!strcasecmp(tmp, "AAC"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
+                    free(tmp);
+                }
+                tmp = NULL;
+                get_string_from_json(&tmp, item, "audio_decoder");
+                if (tmp) {
+                    if (!strcasecmp(tmp, "NONE"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+                    else if (!strcasecmp(tmp, "G711"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G711;
+                    else if (!strcasecmp(tmp, "G726"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
+                    else if (!strcasecmp(tmp, "AAC"))
+                        service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
+                    free(tmp);
+                }
+                log_debug("Profile %d: %s %dx%d",
+                          service_ctx.profiles_num - 1,
+                          service_ctx.profiles[service_ctx.profiles_num - 1].name,
+                          service_ctx.profiles[service_ctx.profiles_num - 1].width,
+                          service_ctx.profiles[service_ctx.profiles_num - 1].height);
+            }
+        }
     }
-    if (conf_dir && conf_dir[0] != '\0') {
-        log_info("Loading modular configuration from %s", conf_dir);
-        load_profiles_from_dir(conf_dir);
-        load_ptz_from_dir(conf_dir);
-        load_relays_from_dir(conf_dir);
-        load_events_from_dir(conf_dir);
+
+    // Load PTZ configuration from main configuration file
+    if (json_object_object_get_ex(json_file, "ptz", &value)) {
+        get_int_from_json(&(service_ctx.ptz_node.enable), value, "enable");
+        get_double_from_json(&(service_ctx.ptz_node.min_step_x), value, "min_step_x");
+        get_double_from_json(&(service_ctx.ptz_node.max_step_x), value, "max_step_x");
+        get_double_from_json(&(service_ctx.ptz_node.min_step_y), value, "min_step_y");
+        get_double_from_json(&(service_ctx.ptz_node.max_step_y), value, "max_step_y");
+        get_double_from_json(&(service_ctx.ptz_node.min_step_z), value, "min_step_z");
+        get_double_from_json(&(service_ctx.ptz_node.max_step_z), value, "max_step_z");
+        get_string_from_json(&(service_ctx.ptz_node.get_position), value, "get_position");
+        get_string_from_json(&(service_ctx.ptz_node.is_moving), value, "is_moving");
+        get_string_from_json(&(service_ctx.ptz_node.move_left), value, "move_left");
+        get_string_from_json(&(service_ctx.ptz_node.move_right), value, "move_right");
+        get_string_from_json(&(service_ctx.ptz_node.move_up), value, "move_up");
+        get_string_from_json(&(service_ctx.ptz_node.move_down), value, "move_down");
+        get_string_from_json(&(service_ctx.ptz_node.move_in), value, "move_in");
+        get_string_from_json(&(service_ctx.ptz_node.move_out), value, "move_out");
+        get_string_from_json(&(service_ctx.ptz_node.move_stop), value, "move_stop");
+        get_string_from_json(&(service_ctx.ptz_node.move_preset), value, "move_preset");
+        get_string_from_json(&(service_ctx.ptz_node.goto_home_position), value, "goto_home_position");
+        get_string_from_json(&(service_ctx.ptz_node.set_preset), value, "set_preset");
+        get_string_from_json(&(service_ctx.ptz_node.set_home_position), value, "set_home_position");
+        get_string_from_json(&(service_ctx.ptz_node.remove_preset), value, "remove_preset");
+        get_string_from_json(&(service_ctx.ptz_node.jump_to_abs), value, "jump_to_abs");
+        get_string_from_json(&(service_ctx.ptz_node.jump_to_rel), value, "jump_to_rel");
+        get_string_from_json(&(service_ctx.ptz_node.get_presets), value, "get_presets");
     }
-    if (conf_dir)
-        free(conf_dir);
+
+    // Load relays configuration from main configuration file
+    if (json_object_object_get_ex(json_file, "relays", &value)) {
+        if (json_object_is_type(value, json_type_array)) {
+            size_t array_len = json_object_array_length(value);
+            log_debug("Found %zu relay entries in configuration", array_len);
+            for (size_t i = 0; i < array_len; i++) {
+                item = json_object_array_get_idx(value, i);
+                if (!item) continue;
+
+                service_ctx.relay_outputs_num++;
+                log_debug("Processing relay %zu, relay_outputs_num now: %d", i, service_ctx.relay_outputs_num);
+                if (service_ctx.relay_outputs_num >= MAX_RELAY_OUTPUTS) {
+                    log_error("Too many relay outputs, max is: %d", MAX_RELAY_OUTPUTS);
+                    service_ctx.relay_outputs_num--;
+                    continue;
+                }
+
+                service_ctx.relay_outputs = (relay_output_t*) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
+                service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
+                char* tmp = NULL;
+                get_string_from_json(&tmp, item, "idle_state");
+                if (tmp) {
+                    if (!strcasecmp(tmp, "open"))
+                        service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_OPEN;
+                    free(tmp);
+                }
+                get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close), item, "close");
+                get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open), item, "open");
+                log_debug("Relay %d configured - close: %s, open: %s",
+                          service_ctx.relay_outputs_num - 1,
+                          service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close : "(null)",
+                          service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open ? service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open : "(null)");
+            }
+            log_debug("Finished loading relays. Total relay_outputs_num: %d", service_ctx.relay_outputs_num);
+        }
+    }
+
+    // Load events configuration from main configuration file
+    if (json_object_object_get_ex(json_file, "events", &value)) {
+        get_int_from_json(&(service_ctx.events_enable), value, "enable");
+        json_object* events_array = NULL;
+        if (json_object_object_get_ex(value, "events", &events_array)) {
+            if (events_array && json_object_is_type(events_array, json_type_array)) {
+                size_t array_len = json_object_array_length(events_array);
+                for (size_t i = 0; i < array_len; i++) {
+                    item = json_object_array_get_idx(events_array, i);
+                    if (!item) continue;
+
+                    service_ctx.events_num++;
+                    if (service_ctx.events_num > MAX_EVENTS) {
+                        log_error("Too many events, max is: %d", MAX_EVENTS);
+                        service_ctx.events_num--;
+                        break;
+                    }
+                    service_ctx.events = (event_t*) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+                    service_ctx.events[service_ctx.events_num - 1].topic = NULL;
+                    service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
+                    service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
+                    service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
+                    service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
+                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
+                }
+            }
+        }
+    }
 
     log_debug("adv_enable_media2: %d", service_ctx.adv_enable_media2);
     log_debug("adv_fault_if_unknown: %d", service_ctx.adv_fault_if_unknown);

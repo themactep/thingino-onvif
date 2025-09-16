@@ -1,0 +1,98 @@
+{
+    "model": "Test Camera",
+    "manufacturer": "Test Manufacturer",
+    "firmware_ver": "1.0.0",
+    "serial_num": "TEST123",
+    "hardware_id": "TEST_HW",
+    "ifs": "lo",
+    "port": 8080,
+    "username": "admin",
+    "password": "admin",
+    "scopes": [
+        "onvif://www.onvif.org/type/video_encoder",
+        "onvif://www.onvif.org/type/audio_encoder",
+        "onvif://www.onvif.org/hardware/Test_Camera"
+    ],
+    "profiles": [
+        {
+            "name": "Profile_0",
+            "width": 1920,
+            "height": 1080,
+            "url": "rtsp://192.168.1.100:554/stream1",
+            "snapurl": "http://192.168.1.100/snapshot.jpg",
+            "type": "H264",
+            "audio_encoder": "NONE"
+        },
+        {
+            "name": "Profile_1",
+            "width": 1280,
+            "height": 720,
+            "url": "rtsp://192.168.1.100:554/stream2",
+            "snapurl": "http://192.168.1.100/snapshot_720.jpg",
+            "type": "H264",
+            "audio_encoder": "AAC"
+        }
+    ],
+    "ptz": {
+        "enable": 1,
+        "min_step_x": 0.0,
+        "max_step_x": 360.0,
+        "min_step_y": 0.0,
+        "max_step_y": 180.0,
+        "min_step_z": 0.0,
+        "max_step_z": 10.0,
+        "get_position": "/usr/bin/ptz_get_position",
+        "is_moving": "/usr/bin/ptz_is_moving",
+        "move_left": "/usr/bin/ptz_move_left",
+        "move_right": "/usr/bin/ptz_move_right",
+        "move_up": "/usr/bin/ptz_move_up",
+        "move_down": "/usr/bin/ptz_move_down",
+        "move_in": "/usr/bin/ptz_zoom_in",
+        "move_out": "/usr/bin/ptz_zoom_out",
+        "move_stop": "/usr/bin/ptz_stop",
+        "move_preset": "/usr/bin/ptz_goto_preset",
+        "goto_home_position": "/usr/bin/ptz_goto_home",
+        "set_preset": "/usr/bin/ptz_set_preset",
+        "set_home_position": "/usr/bin/ptz_set_home",
+        "remove_preset": "/usr/bin/ptz_remove_preset",
+        "jump_to_abs": "/usr/bin/ptz_absolute_move",
+        "jump_to_rel": "/usr/bin/ptz_relative_move",
+        "get_presets": "/usr/bin/ptz_get_presets"
+    },
+    "relays": [
+        {
+            "idle_state": "close",
+            "close": "/usr/bin/relay_1_close",
+            "open": "/usr/bin/relay_1_open"
+        },
+        {
+            "idle_state": "open",
+            "close": "/usr/bin/relay_2_close",
+            "open": "/usr/bin/relay_2_open"
+        }
+    ],
+    "events": {
+        "enable": 1,
+        "events": [
+            {
+                "topic": "tns1:VideoSource/MotionAlarm",
+                "source_name": "VideoSourceConfigurationToken",
+                "source_type": "tt:ReferenceToken",
+                "source_value": "VideoSourceToken",
+                "input_file": "/tmp/motion_alarm"
+            },
+            {
+                "topic": "tns1:Device/HardwareFailure",
+                "source_name": "Source",
+                "source_type": "tt:ReferenceToken",
+                "source_value": "HardwareId",
+                "input_file": "/tmp/hardware_failure"
+            }
+        ]
+    },
+    "adv_enable_media2": 0,
+    "adv_fault_if_unknown": 0,
+    "adv_fault_if_set": 0,
+    "adv_synology_nvr": 0,
+    "loglevel": 4
+}
