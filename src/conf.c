@@ -451,34 +451,31 @@ int process_json_conf_file(char* file)
     }
 
     // Load events configuration from main configuration file
+    get_int_from_json(&(service_ctx.events_enable), json_file, "events_enable");
     if (json_object_object_get_ex(json_file, "events", &value)) {
-        get_int_from_json(&(service_ctx.events_enable), value, "enable");
-        json_object* events_array = NULL;
-        if (json_object_object_get_ex(value, "events", &events_array)) {
-            if (events_array && json_object_is_type(events_array, json_type_array)) {
-                size_t array_len = json_object_array_length(events_array);
-                for (size_t i = 0; i < array_len; i++) {
-                    item = json_object_array_get_idx(events_array, i);
-                    if (!item) continue;
+        if (value && json_object_is_type(value, json_type_array)) {
+            size_t array_len = json_object_array_length(value);
+            for (size_t i = 0; i < array_len; i++) {
+                item = json_object_array_get_idx(value, i);
+                if (!item) continue;
 
-                    service_ctx.events_num++;
-                    if (service_ctx.events_num > MAX_EVENTS) {
-                        log_error("Too many events, max is: %d", MAX_EVENTS);
-                        service_ctx.events_num--;
-                        break;
-                    }
-                    service_ctx.events = (event_t*) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
-                    service_ctx.events[service_ctx.events_num - 1].topic = NULL;
-                    service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
-                    service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
-                    service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
-                    service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
-                    get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
+                service_ctx.events_num++;
+                if (service_ctx.events_num > MAX_EVENTS) {
+                    log_error("Too many events, max is: %d", MAX_EVENTS);
+                    service_ctx.events_num--;
+                    break;
                 }
+                service_ctx.events = (event_t*) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+                service_ctx.events[service_ctx.events_num - 1].topic = NULL;
+                service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
+                service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
+                service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
+                service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
+                get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
+                get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
+                get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
+                get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
+                get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
             }
         }
     }

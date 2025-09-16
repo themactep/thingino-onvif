@@ -1,7 +1,0 @@
-[
-  { "name": "IRLED ON",  "exec": "irled on"  },
-  { "name": "IRLED OFF", "exec": "irled off" },
-  { "name": "COLOR ON",  "exec": "color on"  },
-  { "name": "COLOR OFF", "exec": "color off" }
-]
-

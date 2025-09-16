@@ -71,25 +71,23 @@
             "open": "/usr/bin/relay_2_open"
         }
     ],
-    "events": {
-        "enable": 1,
-        "events": [
-            {
-                "topic": "tns1:VideoSource/MotionAlarm",
-                "source_name": "VideoSourceConfigurationToken",
-                "source_type": "tt:ReferenceToken",
-                "source_value": "VideoSourceToken",
-                "input_file": "/tmp/motion_alarm"
-            },
-            {
-                "topic": "tns1:Device/HardwareFailure",
-                "source_name": "Source",
-                "source_type": "tt:ReferenceToken",
-                "source_value": "HardwareId",
-                "input_file": "/tmp/hardware_failure"
-            }
-        ]
-    },
+    "events_enable": 1,
+    "events": [
+        {
+            "topic": "tns1:VideoSource/MotionAlarm",
+            "source_name": "VideoSourceConfigurationToken",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "VideoSourceToken",
+            "input_file": "/tmp/motion_alarm"
+        },
+        {
+            "topic": "tns1:Device/HardwareFailure",
+            "source_name": "Source",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "HardwareId",
+            "input_file": "/tmp/hardware_failure"
+        }
+    ],
     "adv_enable_media2": 0,
     "adv_fault_if_unknown": 0,
     "adv_fault_if_set": 0,

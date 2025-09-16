@@ -13,12 +13,87 @@
   "password": "admin",
   "port": 80,
   "raw_xml_log_file": "/tmp/onvif_raw.log",
+  "serial_num": "SN1234567890",
+  "username": "admin",
   "scopes": [
     "onvif://www.onvif.org/Profile/Streaming",
     "onvif://www.onvif.org/Profile/T",
     "onvif://www.onvif.org/hardware",
     "onvif://www.onvif.org/name"
   ],
-  "serial_num": "SN1234567890",
-  "username": "admin"
+  "profiles": [
+    {
+      "name": "Profile_0",
+      "width": 1920,
+      "height": 1080,
+      "url": "rtsp://%s/ch0",
+      "snapurl": "http://%s/image.jpg",
+      "type": "H264",
+      "audio_encoder": "AAC",
+      "audio_decoder": "AAC"
+    },
+    {
+      "name": "Profile_1",
+      "width": 640,
+      "height": 360,
+      "url": "rtsp://%s/ch1",
+      "snapurl": "http://%s/image.jpg",
+      "type": "H264",
+      "audio_encoder": "AAC",
+      "audio_decoder": "AAC"
+    }
+  ],
+  "ptz": {
+    "enable": 1,
+    "max_step_x": 4000,
+    "min_step_x": 0.0,
+    "max_step_y": 2000,
+    "min_step_y": 0.0,
+    "max_step_z": 0.0,
+    "min_step_z": 0.0,
+    "get_position": "motors -p",
+    "is_moving": "motors -b",
+    "move_left": "motors -d h -x 0",
+    "move_right": "motors -d h -x 4000",
+    "move_up": "motors -d h -y 0",
+    "move_down": "motors -d h -y 2000",
+    "move_stop": "motors -d s",
+    "move_preset": "/sbin/ptz_presets %d > /dev/null",
+    "goto_home_position": "motors -d b",
+    "set_preset": "/sbin/ptz_presets -a %d %s > /dev/null",
+    "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
+    "jump_to_abs": "motors -d h -x %f -y %f",
+    "jump_to_rel": "motors -d g -x %f -y %f",
+    "get_presets": "/sbin/ptz_presets -g"
+  },
+  "relays": [
+    {
+      "idle_state": "close",
+      "close": "ircut off",
+      "open": "ircut on"
+    },
+    {
+      "idle_state": "close",
+      "close": "irled off",
+      "open": "irled on"
+    }
+  ],
+  "events_enable": 1,
+  "events": {
+    "events": [
+      {
+        "topic": "tns1:VideoSource/MotionAlarm",
+        "source_name": "VideoSourceConfigurationToken",
+        "source_type": "tt:ReferenceToken",
+        "source_value": "VideoSourceToken",
+        "input_file": "/run/motion/motion_alarm"
+      }
+    ]
+  },
+  "aux": [
+    { "name": "IRLED ON",  "exec": "irled on"  },
+    { "name": "IRLED OFF", "exec": "irled off" },
+    { "name": "COLOR ON",  "exec": "color on"  },
+    { "name": "COLOR OFF", "exec": "color off" }
+  ]
 }
