@@ -545,21 +545,26 @@ int main(int argc, char** argv)
         addr_len = sizeof(addr_in); // init address
 
         if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0, (struct sockaddr*) &addr_in, &addr_len) > 0) {
+            // Log source IP address
+            char* source_ip = inet_ntoa(addr_in.sin_addr);
+            log_debug("Received WS-Discovery message from %s:%d", source_ip, ntohs(addr_in.sin_port));
+
             // Check if the message is a response
             if (strstr(recv_buffer, "XAddrs") == NULL) {
                 const char* relates_to_uuid;
 
-                log_debug("%s", recv_buffer);
+                log_debug("Processing request from %s:%d", source_ip, ntohs(addr_in.sin_port));
+                log_debug("Request content: %s", recv_buffer);
 
                 // Check if it's a Probe message (supports Probe, NetdevProbe, UniviewProbe, etc.)
                 init_xml(recv_buffer, strlen(recv_buffer));
                 method = get_method(1);
                 if ((method == NULL) || (strstr(method, "Probe") == NULL) || (strstr(method, "ProbeMatches") != NULL)) {
-                    log_debug("This is not a Probe message (method: %s)", method ? method : "NULL");
+                    log_debug("Rejected non-probe message from %s:%d (method: %s)", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port), method ? method : "NULL");
                     close_xml();
                     continue;
                 }
-                log_debug("Probe message (method: %s)", method);
+                log_debug("Accepted probe message from %s:%d (method: %s)", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port), method);
 
                 // Prepare ProbeMatches message
                 msg_number++;
@@ -623,12 +628,15 @@ int main(int argc, char** argv)
                 log_debug("ProbeMatches response: %s", message_loop);
 
                 if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr*) &addr_in, sizeof(addr_in)) < 0) {
-                    log_error("Error sending ProbeMatches message.\n");
+                    log_error("Error sending ProbeMatches message to %s:%d", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
                     free(message_loop);
                     continue;
                 }
                 free(message_loop);
-                log_info("Sent.");
+                log_info("ProbeMatches sent to %s:%d", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
+            } else {
+                // This is a response message (contains XAddrs)
+                log_debug("Received response message from %s:%d (ignoring)", source_ip, ntohs(addr_in.sin_port));
             }
         }
     }
