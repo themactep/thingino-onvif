@@ -40,7 +40,7 @@
 
 #define DEFAULT_CONF_FILE "/etc/onvif_simple_server.conf"
 #define DEFAULT_JSON_CONF_FILE "/etc/onvif_simple_server.json"
-#define DEFAULT_LOG_FILE "/var/log/onvif_simple_server.log"
+#define DEFAULT_LOG_FILE "/tmp/onvif_simple_server.log"
 #define DEBUG_FILE "/tmp/onvif_simple_server.debug"
 
 #define ROTATION_LOG_LENGTH 3
