@@ -32,8 +32,7 @@ int media_get_service_capabilities()
 {
     long size = cat(NULL, "media_service_files/GetServiceCapabilities.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "media_service_files/GetServiceCapabilities.xml", 0);
 }
@@ -47,8 +46,7 @@ int media_get_video_sources()
     sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
     long size = cat(NULL, "media_service_files/GetVideoSources.xml", 4, "%WIDTH%", stmp_w, "%HEIGHT%", stmp_h);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "media_service_files/GetVideoSources.xml", 4, "%WIDTH%", stmp_w, "%HEIGHT%", stmp_h);
 }
@@ -63,8 +61,7 @@ int media_get_video_source_configurations()
     long size
         = cat(NULL, "media_service_files/GetVideoSourceConfigurations.xml", 6, "%PROFILES_NUM%", profiles_num, "%WIDTH%", stmp_w, "%HEIGHT%", stmp_h);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "media_service_files/GetVideoSourceConfigurations.xml",
@@ -101,8 +98,7 @@ int media_get_video_source_configuration()
                         "%HEIGHT%",
                         stmp_h);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetVideoSourceConfiguration.xml",
@@ -142,8 +138,7 @@ int media_get_compatible_video_source_configurations()
                     "%PROFILE_TYPE",
                     "High");
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "media_service_files/GetCompatibleVideoSourceConfigurations.xml",
@@ -181,8 +176,7 @@ int media_get_video_source_configuration_options()
         sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
         long size = cat(NULL, "media_service_files/GetVideoSourceConfigurationOptions.xml", 4, "%WIDTH%", stmp_w, "%HEIGHT%", stmp_h);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetVideoSourceConfigurationOptions.xml", 4, "%WIDTH%", stmp_w, "%HEIGHT%", stmp_h);
 
@@ -221,8 +215,7 @@ int media_get_profiles()
                 dest = NULL;
             } else {
                 dest = dest_a;
-                fprintf(stdout, "Content-type: application/soap+xml\r\n");
-                fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+                output_http_headers(size);
             }
 
             size = cat(dest, "media_service_files/GetProfiles_header.xml", 0);
@@ -291,8 +284,7 @@ int media_get_profiles()
                 dest = NULL;
             } else {
                 dest = dest_a;
-                fprintf(stdout, "Content-type: application/soap+xml\r\n");
-                fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+                output_http_headers(size);
             }
 
             size = cat(dest, "media_service_files/GetProfiles_header.xml", 0);
@@ -413,8 +405,7 @@ int media_get_profiles()
     } else {
         long size = cat(NULL, "media_service_files/GetProfiles_none.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetProfiles_none.xml", 0);
     }
@@ -453,8 +444,7 @@ int media_get_profile()
                 dest = NULL;
             } else {
                 dest = dest_a;
-                fprintf(stdout, "Content-type: application/soap+xml\r\n");
-                fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+                output_http_headers(size);
             }
 
             size = cat(dest, "media_service_files/GetProfile_header.xml", 2, "%PROFILE%", profile_token);
@@ -523,8 +513,7 @@ int media_get_profile()
                 dest = NULL;
             } else {
                 dest = dest_a;
-                fprintf(stdout, "Content-type: application/soap+xml\r\n");
-                fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+                output_http_headers(size);
             }
 
             size = cat(dest, "media_service_files/GetProfile_header.xml", 2, "%PROFILE%", profile_token);
@@ -617,8 +606,7 @@ int media_get_video_encoder_configurations()
         sprintf(stmp_h_h, "%d", service_ctx.profiles[0].height);
         long size = cat(NULL, "media_service_files/GetVideoEncoderConfigurations_high.xml", 4, "%WIDTH_HIGH%", stmp_w_h, "%HEIGHT_HIGH%", stmp_h_h);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetVideoEncoderConfigurations_high.xml", 4, "%WIDTH_HIGH%", stmp_w_h, "%HEIGHT_HIGH%", stmp_h_h);
 
@@ -639,8 +627,7 @@ int media_get_video_encoder_configurations()
                         "%HEIGHT_LOW%",
                         stmp_h_l);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetVideoEncoderConfigurations_both.xml",
@@ -686,8 +673,7 @@ int media_get_video_encoder_configuration()
                         "%PROFILE_TYPE%",
                         "High");
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetVideoEncoderConfiguration.xml",
@@ -716,8 +702,7 @@ int media_get_video_encoder_configuration()
                         "%PROFILE_TYPE%",
                         "Main");
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetVideoEncoderConfiguration.xml",
@@ -762,8 +747,7 @@ int media_get_compatible_video_encoder_configurations()
                         "%PROFILE_TYPE%",
                         "High");
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetCompatibleVideoEncoderConfigurations.xml",
@@ -792,8 +776,7 @@ int media_get_compatible_video_encoder_configurations()
                         "%PROFILE_TYPE%",
                         "Main");
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetCompatibleVideoEncoderConfigurations.xml",
@@ -836,8 +819,7 @@ int media_get_video_encoder_configuration_options()
         long size
             = cat(NULL, "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6, "%WIDTH%", stmp_w, "%HEIGHT%", stmp_h, "%PROFILE%", "High");
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetVideoEncoderConfigurationOptions.xml",
@@ -855,8 +837,7 @@ int media_get_video_encoder_configuration_options()
         long size
             = cat(NULL, "media_service_files/GetVideoEncoderConfigurationOptions.xml", 6, "%WIDTH%", stmp_w, "%HEIGHT%", stmp_h, "%PROFILE%", "Main");
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetVideoEncoderConfigurationOptions.xml",
@@ -889,8 +870,7 @@ int media_get_guaranteed_number_of_video_encoder_instances()
     if (strncasecmp("VideoSourceConfigToken", configuration_token, 22) == 0) {
         long size = cat(NULL, "media_service_files/GetGuaranteedNumberOfVideoEncoderInstances.xml", 4, "%TOTAL_NUMBER%", stmp, "%NUMBER_H264%", stmp);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetGuaranteedNumberOfVideoEncoderInstances.xml", 4, "%TOTAL_NUMBER%", stmp, "%NUMBER_H264%", stmp);
 
@@ -937,8 +917,7 @@ int media_get_snapshot_uri()
 
         long size = cat(NULL, "media_service_files/GetSnapshotUri.xml", 2, "%URI%", line);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetSnapshotUri.xml", 2, "%URI%", line);
 
@@ -962,8 +941,7 @@ int media_get_snapshot_uri()
 
         long size = cat(NULL, "media_service_files/GetSnapshotUri.xml", 2, "%URI%", line);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetSnapshotUri.xml", 2, "%URI%", line);
 
@@ -1009,8 +987,7 @@ int media_get_stream_uri()
 
         long size = cat(NULL, "media_service_files/GetStreamUri.xml", 2, "%URI%", line);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetStreamUri.xml", 2, "%URI%", line);
 
@@ -1033,8 +1010,7 @@ int media_get_stream_uri()
 
         long size = cat(NULL, "media_service_files/GetStreamUri.xml", 2, "%URI%", line);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetStreamUri.xml", 2, "%URI%", line);
 
@@ -1049,8 +1025,7 @@ int media_get_audio_sources()
     if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) || (service_ctx.profiles[1].audio_encoder != AUDIO_NONE)) {
         long size = cat(NULL, "media_service_files/GetAudioSources.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetAudioSources.xml", 0);
     } else {
@@ -1089,8 +1064,7 @@ int media_get_audio_source_configurations()
     if (profiles_num > 0) {
         long size = cat(NULL, "media_service_files/GetAudioSourceConfigurations.xml", 2, "%PROFILES_NUM%", s_profiles_num);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetAudioSourceConfigurations.xml", 2, "%PROFILES_NUM%", s_profiles_num);
     } else {
@@ -1136,8 +1110,7 @@ int media_get_audio_source_configuration()
         if (profiles_num > 0) {
             long size = cat(NULL, "media_service_files/GetAudioSourceConfiguration.xml", 2, "%PROFILES_NUM%", s_profiles_num);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetAudioSourceConfiguration.xml", 2, "%PROFILES_NUM%", s_profiles_num);
         } else {
@@ -1184,8 +1157,7 @@ int media_get_audio_source_configuration_options()
     if ((profile_token == NULL) && (configuration_token == NULL)) {
         long size = cat(NULL, "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
     }
@@ -1194,8 +1166,7 @@ int media_get_audio_source_configuration_options()
         || (strcasecmp("AudioSourceConfigToken", token) == 0)) {
         long size = cat(NULL, "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetAudioSourceConfigurationOptions.xml", 0);
 
@@ -1252,8 +1223,7 @@ int media_get_audio_encoder_configuration()
 
     long size = cat(NULL, "media_service_files/GetAudioEncoderConfiguration.xml", 4, "%PROFILE%", token, "%AUDIO_ENCODING%", audio_encoder);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "media_service_files/GetAudioEncoderConfiguration.xml", 4, "%PROFILE%", token, "%AUDIO_ENCODING%", audio_encoder);
 }
@@ -1284,8 +1254,7 @@ int media_get_audio_encoder_configurations()
                             "%AUDIO_ENCODING%",
                             audio_encoder_high);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "media_service_files/GetAudioEncoderConfigurations.xml",
@@ -1318,8 +1287,7 @@ int media_get_audio_encoder_configurations()
                             "%AUDIO_ENCODING_LOW%",
                             audio_encoder_low);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "media_service_files/GetAudioEncoderConfigurations_both.xml",
@@ -1340,8 +1308,7 @@ int media_get_audio_encoder_configurations()
                             "%AUDIO_ENCODING%",
                             audio_encoder_high);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "media_service_files/GetAudioEncoderConfigurations.xml",
@@ -1362,8 +1329,7 @@ int media_get_audio_encoder_configurations()
                             "%AUDIO_ENCODING%",
                             audio_encoder_low);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "media_service_files/GetAudioEncoderConfigurations.xml",
@@ -1474,8 +1440,7 @@ int media_get_audio_encoder_configuration_options()
                     "%SAMPLERATE%",
                     samplerate);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "media_service_files/GetAudioEncoderConfigurationOptions.xml",
@@ -1505,8 +1470,7 @@ int media_get_audio_decoder_configuration()
         if (service_ctx.profiles[0].audio_decoder != AUDIO_NONE) {
             long size = cat(NULL, "media_service_files/GetAudioDecoderConfiguration.xml", 2, "%PROFILE%", token);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetAudioDecoderConfiguration.xml", 2, "%PROFILE%", token);
 
@@ -1524,8 +1488,7 @@ int media_get_audio_decoder_configuration()
         if (service_ctx.profiles[1].audio_decoder != AUDIO_NONE) {
             long size = cat(NULL, "media_service_files/GetAudioDecoderConfiguration.xml", 2, "%PROFILE%", token);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetAudioDecoderConfiguration.xml", 2, "%PROFILE%", token);
 
@@ -1551,8 +1514,7 @@ int media_get_audio_decoder_configurations()
         if (service_ctx.profiles[0].audio_decoder != AUDIO_NONE) {
             long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations.xml", 2, "%PROFILE%", "Profile_0");
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetAudioDecoderConfigurations.xml", 2, "%PROFILE%", "Profile_0");
         } else {
@@ -1568,24 +1530,21 @@ int media_get_audio_decoder_configurations()
         if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)) {
             long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations_both.xml", 0);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetAudioDecoderConfigurations_both.xml", 0);
 
         } else if (service_ctx.profiles[0].audio_decoder != AUDIO_NONE) {
             long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations.xml", 2, "%PROFILE%", "Profile_0");
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetAudioDecoderConfigurations.xml", 2, "%PROFILE%", "Profile_0");
 
         } else if (service_ctx.profiles[1].audio_decoder != AUDIO_NONE) {
             long size = cat(NULL, "media_service_files/GetAudioDecoderConfigurations.xml", 2, "%PROFILE%", "Profile_1");
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetAudioDecoderConfigurations.xml", 2, "%PROFILE%", "Profile_1");
 
@@ -1648,8 +1607,7 @@ int media_get_audio_decoder_configuration_options()
                         "%SAMPLERATE%",
                         samplerate);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "media_service_files/GetAudioDecoderConfigurationOptions.xml",
@@ -1678,8 +1636,7 @@ int media_get_audio_outputs()
         || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
         long size = cat(NULL, "media_service_files/GetAudioOutputs.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetAudioOutputs.xml", 0);
 
@@ -1704,8 +1661,7 @@ int media_get_audio_output_configuration()
 
         long size = cat(NULL, "media_service_files/GetAudioOutputConfiguration.xml", 2, "%PROFILES_NUM%", profiles_num);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetAudioOutputConfiguration.xml", 2, "%PROFILES_NUM%", profiles_num);
     } else {
@@ -1729,8 +1685,7 @@ int media_get_audio_output_configurations()
 
         long size = cat(NULL, "media_service_files/GetAudioOutputConfigurations.xml", 2, "%PROFILES_NUM%", profiles_num);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetAudioOutputConfigurations.xml", 2, "%PROFILES_NUM%", profiles_num);
     } else {
@@ -1750,8 +1705,7 @@ int media_get_audio_output_configuration_options()
         || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
         long size = cat(NULL, "media_service_files/GetAudioOutputConfigurationOptions.xml", 0);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetAudioOutputConfigurationOptions.xml", 0);
 
@@ -1783,8 +1737,7 @@ int media_get_compatible_audio_source_configurations()
 
         long size = cat(NULL, "media_service_files/GetCompatibleAudioSourceConfigurations.xml", 2, "%PROFILES_NUM%", profiles_num);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetCompatibleAudioSourceConfigurations.xml", 2, "%PROFILES_NUM%", profiles_num);
 
@@ -1820,8 +1773,7 @@ int media_get_compatible_audio_encoder_configurations()
                             "%AUDIO_ENCODING%",
                             audio_encoder);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "media_service_files/GetCompatibleAudioEncoderConfigurations.xml",
@@ -1852,8 +1804,7 @@ int media_get_compatible_audio_encoder_configurations()
                             "%AUDIO_ENCODING%",
                             audio_encoder);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "media_service_files/GetCompatibleAudioEncoderConfigurations.xml",
@@ -1892,8 +1843,7 @@ int media_get_compatible_audio_decoder_configurations()
         if (service_ctx.profiles[0].audio_decoder != AUDIO_NONE) {
             long size = cat(NULL, "media_service_files/GetCompatibleAudioDecoderConfigurations.xml", 2, "%PROFILE%", profile_token);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetCompatibleAudioDecoderConfigurations.xml", 2, "%PROFILE%", profile_token);
         } else {
@@ -1909,8 +1859,7 @@ int media_get_compatible_audio_decoder_configurations()
         if (service_ctx.profiles[1].audio_decoder != AUDIO_NONE) {
             long size = cat(NULL, "media_service_files/GetCompatibleAudioDecoderConfigurations.xml", 2, "%PROFILE%", profile_token);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "media_service_files/GetCompatibleAudioDecoderConfigurations.xml", 2, "%PROFILE%", profile_token);
         } else {
@@ -1939,8 +1888,7 @@ int media_get_compatible_audio_output_configurations()
         || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
         long size = cat(NULL, "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 2, "%PROFILES_NUM%", profiles_num);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 2, "%PROFILES_NUM%", profiles_num);
 

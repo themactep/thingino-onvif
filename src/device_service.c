@@ -170,8 +170,7 @@ int device_get_services()
                             "%RELAY_OUTPUTS%",
                             relay_outputs);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetServices_with_capabilities_no_ptz_media2.xml",
@@ -222,8 +221,7 @@ int device_get_services()
                             "%RELAY_OUTPUTS%",
                             relay_outputs);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetServices_with_capabilities_ptz_no_media2.xml",
@@ -276,8 +274,7 @@ int device_get_services()
                             "%RELAY_OUTPUTS%",
                             relay_outputs);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetServices_with_capabilities_ptz_media2.xml",
@@ -319,8 +316,7 @@ int device_get_services()
                             "%DEVICEIO_SERVICE_ADDRESS%",
                             deviceio_service_address);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetServices_no_ptz_no_media2.xml",
@@ -349,8 +345,7 @@ int device_get_services()
                             "%DEVICEIO_SERVICE_ADDRESS%",
                             deviceio_service_address);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetServices_no_ptz_media2.xml",
@@ -381,8 +376,7 @@ int device_get_services()
                             "%DEVICEIO_SERVICE_ADDRESS%",
                             deviceio_service_address);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetServices_ptz_no_media2.xml",
@@ -415,8 +409,7 @@ int device_get_services()
                             "%DEVICEIO_SERVICE_ADDRESS%",
                             deviceio_service_address);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetServices_ptz_media2.xml",
@@ -441,8 +434,7 @@ int device_get_service_capabilities()
 {
     long size = cat(NULL, "device_service_files/GetServiceCapabilities.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "device_service_files/GetServiceCapabilities.xml", 0);
 }
@@ -463,8 +455,7 @@ int device_get_device_information()
                     "%HARDWARE_ID%",
                     service_ctx.hardware_id);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "device_service_files/GetDeviceInformation.xml",
@@ -523,8 +514,7 @@ int device_get_system_date_and_time()
                     "%DAY%",
                     day);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "device_service_files/GetSystemDateAndTime.xml",
@@ -552,8 +542,7 @@ int device_system_reboot()
 
     long size = cat(NULL, "device_service_files/SystemReboot.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     ret = cat("stdout", "device_service_files/SystemReboot.xml", 0);
     fflush(stdout);
@@ -590,8 +579,7 @@ int device_get_scopes()
 
     long size = cat(NULL, "device_service_files/GetScopes.xml", 2, "%SCOPES%", scopes);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     ret = cat("stdout", "device_service_files/GetScopes.xml", 2, "%SCOPES%", scopes);
     free(scopes);
@@ -609,8 +597,7 @@ int device_get_wsdl_url()
 {
     long size = cat(NULL, "device_service_files/GetWsdlUrl.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "device_service_files/GetWsdlUrl.xml", 0);
 }
@@ -705,23 +692,20 @@ int device_get_capabilities()
     if (icategory == 1) {
         long size = cat(NULL, "device_service_files/GetDeviceCapabilities.xml", 2, "%DEVICE_SERVICE_ADDRESS%", device_service_address);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "device_service_files/GetDeviceCapabilities.xml", 2, "%DEVICE_SERVICE_ADDRESS%", device_service_address);
     } else if (icategory == 2) {
         long size = cat(NULL, "device_service_files/GetMediaCapabilities.xml", 2, "%MEDIA_SERVICE_ADDRESS%", media_service_address);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout", "device_service_files/GetMediaCapabilities.xml", 2, "%MEDIA_SERVICE_ADDRESS%", media_service_address);
     } else if (icategory == 4) {
         if (service_ctx.ptz_node.enable == 1) {
             long size = cat(NULL, "device_service_files/GetPTZCapabilities.xml", 2, "%PTZ_SERVICE_ADDRESS%", ptz_service_address);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout", "device_service_files/GetPTZCapabilities.xml", 2, "%PTZ_SERVICE_ADDRESS%", ptz_service_address);
         } else {
@@ -744,8 +728,7 @@ int device_get_capabilities()
                         "%EVENTS_PULLPOINT%",
                         epullpoint);
 
-        fprintf(stdout, "Content-type: application/soap+xml\r\n");
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+        output_http_headers(size);
 
         return cat("stdout",
                    "device_service_files/GetEventsCapabilities.xml",
@@ -780,8 +763,7 @@ int device_get_capabilities()
                             "%RELAY_OUTPUTS%",
                             relay_outputs);
 
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+            output_http_headers(size);
 
             return cat("stdout",
                        "device_service_files/GetCapabilities_no_ptz.xml",
@@ -896,8 +878,7 @@ int device_get_network_interfaces()
                     "%NETMASK%",
                     sprefix_len);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "device_service_files/GetNetworkInterfaces.xml",
@@ -918,8 +899,7 @@ int device_get_discovery_mode()
 {
     long size = cat(NULL, "device_service_files/GetDiscoveryMode.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "device_service_files/GetDiscoveryMode.xml", 0);
 }

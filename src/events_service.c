@@ -58,8 +58,7 @@ int events_get_service_capabilities()
                     "%EVENTS_PULLPOINT%",
                     epullpoint);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "events_service_files/GetServiceCapabilities.xml",
@@ -194,8 +193,7 @@ int events_create_pull_point_subscription()
                     "%TERMINATION_TIME%",
                     iso_str_2);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "events_service_files/CreatePullPointSubscription.xml",
@@ -364,8 +362,7 @@ int events_pull_messages()
             dest = NULL;
         } else {
             dest = dest_a;
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", total_size);
+            output_http_headers(size);
         }
 
         size = cat(dest, "events_service_files/PullMessages_1.xml", 4, "%CURRENT_TIME%", iso_str, "%TERMINATION_TIME%", iso_str_2);
@@ -577,8 +574,7 @@ int events_subscribe()
                     "%TERMINATION_TIME%",
                     iso_str_2);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "events_service_files/Subscribe.xml",
@@ -711,8 +707,7 @@ int events_renew()
                     "%TERMINATION_TIME%",
                     iso_str_2);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout",
                "events_service_files/Renew.xml",
@@ -746,8 +741,7 @@ int events_get_event_properties()
             dest = NULL;
         } else {
             dest = dest_a;
-            fprintf(stdout, "Content-type: application/soap+xml\r\n");
-            fprintf(stdout, "Content-Length: %ld\r\n\r\n", total_size);
+            output_http_headers(size);
         }
 
         size = cat(dest, "events_service_files/GetEventProperties_1.xml", 0);
@@ -894,8 +888,7 @@ int events_unsubscribe()
 
     long size = cat(NULL, "events_service_files/Unsubscribe.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "events_service_files/Unsubscribe.xml", 0);
 }
@@ -969,8 +962,7 @@ int events_set_synchronization_point()
 
     long size = cat(NULL, "events_service_files/SetSynchronizationPoint.xml", 0);
 
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "events_service_files/SetSynchronizationPoint.xml", 0);
 }
