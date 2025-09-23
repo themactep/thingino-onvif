@@ -613,7 +613,7 @@ char* trim_mf(char* s)
 int html_escape(char* url, int max_len)
 {
     int i, count = 0;
-    char s_tmp[max_len]; // Fixed: should be char array, not int array
+    char s_tmp[max_len];
     char *f, *t;
 
     memset(s_tmp, '\0', max_len);

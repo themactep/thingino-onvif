@@ -657,18 +657,15 @@ int main(int argc, char** argv)
     // Open file log
     log_init("onvif_notify_server", LOG_DAEMON, debug, foreground);
     log_info("Starting program.");
-
     log_debug("pid_file = %s", pid_file);
 
     // Checking pid file
     if (check_pid(pid_file) == 1) {
         log_fatal("Program is already running.\n");
-
         exit(EXIT_FAILURE);
     }
     if (create_pid(pid_file) < 0) {
         log_fatal("Error creating pid file %s\n", pid_file);
-
         exit(EXIT_FAILURE);
     }
 
@@ -677,12 +674,10 @@ int main(int argc, char** argv)
     itmp = process_json_conf_file(conf_file);
     if (itmp == -1) {
         log_fatal("Unable to find configuration file %s", conf_file);
-
         free(conf_file);
         exit(EXIT_FAILURE);
     } else if (itmp < -1) {
         log_fatal("Wrong syntax in configuration file %s", conf_file);
-
         free(conf_file);
         exit(EXIT_FAILURE);
     }
@@ -705,13 +700,11 @@ int main(int argc, char** argv)
             closedir(dirptr);
         } else {
             log_fatal("Unable to open directory %s", TEMPLATE_DIR);
-
             free(conf_file);
             exit(EXIT_FAILURE);
         }
     } else {
         log_fatal("Unable to open directory %s", TEMPLATE_DIR);
-
         free(conf_file);
         exit(EXIT_FAILURE);
     }
@@ -724,13 +717,11 @@ int main(int argc, char** argv)
             closedir(dirptr);
         } else {
             log_fatal("Unable to open directory %s", INOTIFY_DIR);
-
             free(conf_file);
             exit(EXIT_FAILURE);
         }
     } else {
         log_fatal("Unable to open directory %s", INOTIFY_DIR);
-
         free(conf_file);
         exit(EXIT_FAILURE);
     }
@@ -740,7 +731,6 @@ int main(int argc, char** argv)
     if (subs_evts == NULL) {
         log_fatal("Unable to create shared memory.");
         unlink(pid_file);
-
         exit(EXIT_FAILURE);
     }
     sem_memory_wait();
@@ -761,7 +751,6 @@ int main(int argc, char** argv)
             log_fatal("Unable to init inotify interface");
             destroy_shared_memory(subs_evts, 1);
             unlink(pid_file);
-
             exit(EXIT_FAILURE);
         }
     }
@@ -776,7 +765,6 @@ int main(int argc, char** argv)
             close(fd);
             destroy_shared_memory(subs_evts, 1);
             unlink(pid_file);
-
             exit(EXIT_FAILURE);
         }
 

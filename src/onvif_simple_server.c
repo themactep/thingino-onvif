@@ -187,11 +187,7 @@ int main(int argc, char** argv)
     } else {
         tmp = argv[0];
     }
-
     prog_name = basename(tmp);
-
-    // Don't use stderr in CGI - it might be corrupted
-    // fprintf(stderr, "Program name determined: %s\n", prog_name ? prog_name : "NULL");
 
     if (conf_file[0] == '\0') {
         print_usage(argv[0]);
@@ -204,20 +200,12 @@ int main(int argc, char** argv)
         exit(EXIT_SUCCESS);
     }
 
-    // Don't use stderr in CGI
-    // fprintf(stderr, "About to initialize logging\n");
     log_init("onvif_simple_server", LOG_DAEMON, debug, 1);
-    // fprintf(stderr, "Logging initialized\n");
     log_info("Starting program.");
 
-    // Don't use stderr in CGI
-    // fprintf(stderr, "About to dump environment\n");
     dump_env();
-    // fprintf(stderr, "Environment dumped\n");
 
     // Try to find config file: first in same directory as binary, then in /etc/
-    // Don't use stderr in CGI
-    // fprintf(stderr, "About to find configuration file\n");
     char* final_conf_file = NULL;
 
     // If no config file specified via -c, try to find it automatically
@@ -254,12 +242,8 @@ int main(int argc, char** argv)
 
     log_info("Processing configuration file %s...", final_conf_file);
 
-    // Don't use stderr in CGI
-    // fprintf(stderr, "About to process configuration file: %s\n", final_conf_file);
     itmp = process_json_conf_file(final_conf_file);
 
-    // Don't use stderr in CGI
-    // fprintf(stderr, "Configuration file processed, result: %d\n", itmp);
     if (itmp == -1) {
         log_fatal("Unable to find configuration file %s", final_conf_file);
 

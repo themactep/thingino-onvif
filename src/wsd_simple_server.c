@@ -413,12 +413,10 @@ int main(int argc, char** argv)
     // Checking pid file
     if (check_pid(pid_file) == 1) {
         log_fatal("Program is already running.\n");
-
         exit(EXIT_FAILURE);
     }
     if (create_pid(pid_file) < 0) {
         log_fatal("Error creating pid file %s\n", pid_file);
-
         exit(EXIT_FAILURE);
     }
 
@@ -430,12 +428,10 @@ int main(int argc, char** argv)
             closedir(dirptr);
         } else {
             log_fatal("Unable to open directory %s", TEMPLATE_DIR);
-
             exit(EXIT_FAILURE);
         }
     } else {
         log_fatal("Unable to open directory %s", TEMPLATE_DIR);
-
         exit(EXIT_FAILURE);
     }
 
@@ -452,14 +448,12 @@ int main(int argc, char** argv)
 
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
         log_fatal("Unable to create socket.\n");
-
         exit(EXIT_FAILURE);
     }
 
     if (bind(sock, (struct sockaddr*) &addr_in, sizeof(addr_in)) == -1) {
         log_fatal("Unable to bind socket\n");
         shutdown(sock, SHUT_RDWR);
-
         exit(EXIT_FAILURE);
     }
 
@@ -468,7 +462,6 @@ int main(int argc, char** argv)
     if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mr, sizeof(mr)) == -1) {
         log_fatal("Error joining multicast group\n");
         shutdown(sock, SHUT_RDWR);
-
         exit(EXIT_FAILURE);
     }
 
@@ -503,7 +496,6 @@ int main(int argc, char** argv)
     if (message == NULL) {
         log_fatal("Malloc error.\n");
         shutdown(sock, SHUT_RDWR);
-
         exit(EXIT_FAILURE);
     }
 
@@ -528,7 +520,6 @@ int main(int argc, char** argv)
         log_fatal("Error sending Hello message.\n");
         free(message);
         shutdown(sock, SHUT_RDWR);
-
         exit(EXIT_FAILURE);
     }
     free(message);
