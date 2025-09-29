@@ -23,6 +23,7 @@ Small, dependency‑light, and integrated with Thingino’s build, config, and l
 - **Local Development**:
     Use `./build.sh` script (builds jct and mxml libraries locally)
     Use `make distclean` to remove all local artifacts and repositories
+    Run `./setup-hooks.sh` to install git hooks for automatic code formatting
 - **Cross-Compilation**:
     `./build.sh mipsel-linux-` (toolchain must be in PATH)
 - See [docs/BUILD.md](docs/BUILD.md) for detailed build instructions and cross-compilation setup
@@ -45,7 +46,7 @@ Small, dependency‑light, and integrated with Thingino’s build, config, and l
 - **Migration**: [MIGRATION_SUMMARY.md](docs/MIGRATION_SUMMARY.md), [MXML_MIGRATION.md](docs/MXML_MIGRATION.md)
 - **Configuration**: [CONFIGURATION.md](docs/CONFIGURATION.md), [API.md](docs/API.md)
 - **Operations**: [DEPLOYMENT.md](docs/DEPLOYMENT.md), [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
-- **Development**: [CHANGELOG.md](docs/CHANGELOG.md), [README.md](docs/README.md)
+- **Development**: [CHANGELOG.md](docs/CHANGELOG.md), [README.md](docs/README.md), [GIT_HOOKS.md](docs/GIT_HOOKS.md)
 
 ## Attribution & License
 - Upstream author: roleoroleo — https://github.com/roleoroleo/onvif_simple_server

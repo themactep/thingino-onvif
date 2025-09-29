@@ -99,7 +99,7 @@ PenaltyBreakFirstLessLess: 400
 PenaltyBreakString:      600
 PenaltyExcessCharacter:  50
 PenaltyReturnTypeOnItsOwnLine: 300
-PointerAlignment:      Left
+PointerAlignment:      Right
 ReflowComments:        false
 SortIncludes:          CaseSensitive
 SortUsingDeclarations: true

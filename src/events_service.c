@@ -17,9 +17,9 @@
 
 #include "events_service.h"
 
-#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
+#include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
 
@@ -33,7 +33,7 @@
 
 extern service_context_t service_ctx;
 
-shm_t* subs_evts;
+shm_t *subs_evts;
 
 int events_get_service_capabilities()
 {
@@ -71,10 +71,10 @@ int events_get_service_capabilities()
 
 int events_create_pull_point_subscription()
 {
-    const char* element;
-    const char* itt;
-    const char* te;
-    const char* mc;
+    const char *element;
+    const char *itt;
+    const char *te;
+    const char *mc;
     time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
@@ -84,7 +84,7 @@ int events_create_pull_point_subscription()
     char my_netmask[16];
     char my_port[8];
     char events_service_address[MAX_LEN];
-    topic_expressions_t* topic_expression;
+    topic_expressions_t *topic_expression;
 
     log_info("CreatePullPointSubscription received");
 
@@ -116,7 +116,7 @@ int events_create_pull_point_subscription()
         }
     }
 
-    subs_evts = (shm_t*) create_shared_memory(0);
+    subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_fault("events_service",
@@ -174,7 +174,7 @@ int events_create_pull_point_subscription()
         }
     }
     sem_memory_post();
-    destroy_shared_memory((void*) subs_evts, 0);
+    destroy_shared_memory((void *) subs_evts, 0);
 
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
 
@@ -208,8 +208,8 @@ int events_create_pull_point_subscription()
 
 int events_pull_messages()
 {
-    const char* timeout;
-    const char* message_limit;
+    const char *timeout;
+    const char *message_limit;
     int limit, count;
     time_t now, now_p_timeout, previous_expire_time, expire_time;
     char iso_str[21];
@@ -217,18 +217,18 @@ int events_pull_messages()
     char iso_str_3[21];
 
     int qs_size;
-    char* qs_string;
-    char* sub_id_s;
+    char *qs_string;
+    char *sub_id_s;
     int sub_id, sub_index;
 
     int at_least_one_message;
     int i, c;
-    char* endptr;
+    char *endptr;
     char property[32];
     char data_name[32];
     char data_value[32];
     char dest_a[] = "stdout";
-    char* dest;
+    char *dest;
     long size, total_size;
 
     // Initialize subs_evts to NULL to prevent crashes in error paths
@@ -244,7 +244,7 @@ int events_pull_messages()
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
-    sub_id_s = (char*) malloc((qs_size + 1) * sizeof(char));
+    sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
     memset(sub_id_s, '\0', qs_size + 1);
     strncpy(sub_id_s, qs_string, qs_size);
     sub_id = atoi(sub_id_s);
@@ -280,7 +280,7 @@ int events_pull_messages()
 
     log_debug("Pull message request with timeout %d seconds and message limit %d", interval2sec(timeout), limit);
 
-    subs_evts = (shm_t*) create_shared_memory(0);
+    subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault("events_service", -6);
@@ -298,7 +298,7 @@ int events_pull_messages()
     }
     if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
         sem_memory_post();
-        destroy_shared_memory((void*) subs_evts, 0);
+        destroy_shared_memory((void *) subs_evts, 0);
         log_error("Sub index out of range for PullMessages method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -7;
@@ -306,7 +306,7 @@ int events_pull_messages()
 
     if (subs_evts->subscriptions[sub_index].used != SUB_PULL) {
         sem_memory_post();
-        destroy_shared_memory((void*) subs_evts, 0);
+        destroy_shared_memory((void *) subs_evts, 0);
         log_error("This subscription is not a Real-time Pull-Point Notification Interface");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -8;
@@ -430,20 +430,20 @@ int events_pull_messages()
             total_size += size;
     }
     sem_memory_post();
-    destroy_shared_memory((void*) subs_evts, 0);
+    destroy_shared_memory((void *) subs_evts, 0);
 
     return total_size;
 }
 
 int events_subscribe()
 {
-    const char* address;
-    const char* element;
-    const char* itt;
-    const char* te;
-    const char* mc;
+    const char *address;
+    const char *element;
+    const char *itt;
+    const char *te;
+    const char *mc;
     char msg_uuid[UUID_LEN + 1];
-    const char* relates_to_uuid;
+    const char *relates_to_uuid;
     time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
@@ -492,7 +492,7 @@ int events_subscribe()
         }
     }
 
-    subs_evts = (shm_t*) create_shared_memory(0);
+    subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault("events_service", -4);
@@ -539,7 +539,7 @@ int events_subscribe()
     sem_memory_wait();
     subs_evts->subscriptions[sub_index].push_need_sync = 1;
     sem_memory_post();
-    destroy_shared_memory((void*) subs_evts, 0);
+    destroy_shared_memory((void *) subs_evts, 0);
 
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
 
@@ -590,17 +590,17 @@ int events_subscribe()
 
 int events_renew()
 {
-    const char* tt;
+    const char *tt;
     char msg_uuid[UUID_LEN + 1];
-    const char* relates_to_uuid;
+    const char *relates_to_uuid;
     time_t now, expire_time;
     char iso_str[21];
     char iso_str_2[21];
 
     int i;
     int qs_size;
-    char* qs_string;
-    char* sub_id_s;
+    char *qs_string;
+    char *sub_id_s;
     int sub_id, sub_index;
 
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
@@ -613,7 +613,7 @@ int events_renew()
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
-    sub_id_s = (char*) malloc((qs_size + 1) * sizeof(char));
+    sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
     memset(sub_id_s, '\0', qs_size + 1);
     strncpy(sub_id_s, qs_string, qs_size);
     sub_id = atoi(sub_id_s);
@@ -644,7 +644,7 @@ int events_renew()
         }
     }
 
-    subs_evts = (shm_t*) create_shared_memory(0);
+    subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault("events_service", -4);
@@ -662,7 +662,7 @@ int events_renew()
     }
     if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
         sem_memory_post();
-        destroy_shared_memory((void*) subs_evts, 0);
+        destroy_shared_memory((void *) subs_evts, 0);
         log_error("Sub index (%d) out of range for Renew method", sub_index);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -5;
@@ -670,14 +670,14 @@ int events_renew()
 
     if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
         sem_memory_post();
-        destroy_shared_memory((void*) subs_evts, 0);
+        destroy_shared_memory((void *) subs_evts, 0);
         log_error("This subscription is empty or expired");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -6;
     }
     subs_evts->subscriptions[sub_index].expire = expire_time;
     sem_memory_post();
-    destroy_shared_memory((void*) subs_evts, 0);
+    destroy_shared_memory((void *) subs_evts, 0);
 
     gen_uuid(msg_uuid);
     relates_to_uuid = get_element("MessageID", "Header");
@@ -725,10 +725,10 @@ int events_get_event_properties()
     char topic[1024];
     char topic_ls[3][256];
     char topic_le[3][256];
-    char* token;
+    char *token;
     long size, total_size;
     char dest_a[] = "stdout";
-    char* dest;
+    char *dest;
     char data_name[32];
     char data_type[32];
 
@@ -820,8 +820,8 @@ int events_get_event_properties()
 int events_unsubscribe()
 {
     int qs_size;
-    char* qs_string;
-    char* sub_id_s;
+    char *qs_string;
+    char *sub_id_s;
     int sub_id, sub_index;
     int i;
 
@@ -836,7 +836,7 @@ int events_unsubscribe()
         return -1;
     }
 
-    sub_id_s = (char*) malloc((qs_size + 1) * sizeof(char));
+    sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
     memset(sub_id_s, '\0', qs_size + 1);
     strncpy(sub_id_s, qs_string, qs_size);
     sub_id = atoi(sub_id_s);
@@ -847,7 +847,7 @@ int events_unsubscribe()
         return -2;
     }
 
-    subs_evts = (shm_t*) create_shared_memory(0);
+    subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault("events_service", -3);
@@ -865,7 +865,7 @@ int events_unsubscribe()
     }
     if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
         sem_memory_post();
-        destroy_shared_memory((void*) subs_evts, 0);
+        destroy_shared_memory((void *) subs_evts, 0);
         log_error("sub index out of range for PullMessages method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -4;
@@ -873,13 +873,13 @@ int events_unsubscribe()
 
     if (subs_evts->subscriptions[sub_index].used == SUB_UNUSED) {
         sem_memory_post();
-        destroy_shared_memory((void*) subs_evts, 0);
+        destroy_shared_memory((void *) subs_evts, 0);
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -5;
     }
     memset(&(subs_evts->subscriptions[sub_index]), '\0', sizeof(subscription_shm_t));
     sem_memory_post();
-    destroy_shared_memory((void*) subs_evts, 0);
+    destroy_shared_memory((void *) subs_evts, 0);
 
     log_debug("Subscription data: subscription index %d", sub_index);
 
@@ -894,8 +894,8 @@ int events_set_synchronization_point()
 {
     int i;
     int qs_size;
-    char* qs_string;
-    char* sub_id_s;
+    char *qs_string;
+    char *sub_id_s;
     int sub_id, sub_index;
 
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
@@ -907,7 +907,7 @@ int events_set_synchronization_point()
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
-    sub_id_s = (char*) malloc((qs_size + 1) * sizeof(char));
+    sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
     memset(sub_id_s, '\0', qs_size + 1);
     strncpy(sub_id_s, qs_string, qs_size);
     sub_id = atoi(sub_id_s);
@@ -918,7 +918,7 @@ int events_set_synchronization_point()
         return -2;
     }
 
-    subs_evts = (shm_t*) create_shared_memory(0);
+    subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
         log_error("No shared memory found, is onvif_notify_server running?");
         send_action_failed_fault("events_service", -3);
@@ -936,7 +936,7 @@ int events_set_synchronization_point()
     }
     if ((sub_index < 0) || (sub_index >= MAX_SUBSCRIPTIONS)) {
         sem_memory_post();
-        destroy_shared_memory((void*) subs_evts, 0);
+        destroy_shared_memory((void *) subs_evts, 0);
         log_error("sub index out of range for PullMessages method");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -4;
@@ -955,7 +955,7 @@ int events_set_synchronization_point()
         }
     }
     sem_memory_post();
-    destroy_shared_memory((void*) subs_evts, 0);
+    destroy_shared_memory((void *) subs_evts, 0);
 
     long size = cat(NULL, "events_service_files/SetSynchronizationPoint.xml", 0);
 
@@ -964,11 +964,11 @@ int events_set_synchronization_point()
     return cat("stdout", "events_service_files/SetSynchronizationPoint.xml", 0);
 }
 
-int events_unsupported(const char* method)
+int events_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
         send_action_failed_fault("events_service", -1);
     else
-        send_empty_response("tev", (char*) method);
+        send_empty_response("tev", (char *) method);
     return -1;
 }

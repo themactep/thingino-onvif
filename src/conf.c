@@ -22,57 +22,57 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <json_config.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <json_config.h>
 #include <sys/stat.h>
 
 extern service_context_t service_ctx;
 
 // Remember to free the string
-void get_string_from_json(char** var, JsonValue* j, char* name)
+void get_string_from_json(char **var, JsonValue *j, char *name)
 {
-    JsonValue* s = get_object_item(j, name);
+    JsonValue *s = get_object_item(j, name);
 
     if (s && s->type == JSON_STRING) {
-        const char* str_val = s->value.string;
+        const char *str_val = s->value.string;
         if (str_val != NULL) {
-            *var = (char*) malloc((strlen(str_val) + 1) * sizeof(char));
+            *var = (char *) malloc((strlen(str_val) + 1) * sizeof(char));
             strcpy(*var, str_val);
         }
     }
 }
 
-void get_int_from_json(int* var, JsonValue* j, char* name)
+void get_int_from_json(int *var, JsonValue *j, char *name)
 {
-    JsonValue* i = get_object_item(j, name);
+    JsonValue *i = get_object_item(j, name);
 
     if (i && i->type == JSON_NUMBER) {
-        *var = (int)i->value.number;
+        *var = (int) i->value.number;
     }
 }
 
-void get_double_from_json(double* var, JsonValue* j, char* name)
+void get_double_from_json(double *var, JsonValue *j, char *name)
 {
-    JsonValue* d = get_object_item(j, name);
+    JsonValue *d = get_object_item(j, name);
 
     if (d && d->type == JSON_NUMBER) {
         *var = d->value.number;
     }
 }
 
-void get_loglevel_from_json(int* var, JsonValue* j, char* name)
+void get_loglevel_from_json(int *var, JsonValue *j, char *name)
 {
-    JsonValue* l = get_object_item(j, name);
+    JsonValue *l = get_object_item(j, name);
 
     if (l) {
         if (l->type == JSON_NUMBER) {
             // Handle numeric log level (backward compatibility)
-            int level = (int)l->value.number;
+            int level = (int) l->value.number;
             if (level >= LOG_LVL_FATAL && level <= LOG_LVL_TRACE) {
                 *var = level;
             } else {
@@ -80,7 +80,7 @@ void get_loglevel_from_json(int* var, JsonValue* j, char* name)
             }
         } else if (l->type == JSON_STRING) {
             // Handle textual log level
-            const char* level_str = l->value.string;
+            const char *level_str = l->value.string;
             int level = log_level_from_string(level_str);
             if (level >= 0) {
                 *var = level;
@@ -91,11 +91,9 @@ void get_loglevel_from_json(int* var, JsonValue* j, char* name)
     }
 }
 
-
-
-void get_bool_from_json(int* var, JsonValue* j, char* name)
+void get_bool_from_json(int *var, JsonValue *j, char *name)
 {
-    JsonValue* b = get_object_item(j, name);
+    JsonValue *b = get_object_item(j, name);
 
     if (b && b->type == JSON_BOOL) {
         *var = b->value.boolean ? 1 : 0;
@@ -104,11 +102,11 @@ void get_bool_from_json(int* var, JsonValue* j, char* name)
     }
 }
 
-int process_json_conf_file(char* file)
+int process_json_conf_file(char *file)
 {
     JsonValue *value, *item;
     char *tmp;
-    JsonValue* json_file;
+    JsonValue *json_file;
 
     int i;
     char stmp[MAX_LEN];
@@ -184,9 +182,9 @@ int process_json_conf_file(char* file)
             item = get_array_item(value, i);
             if (item && item->type == JSON_STRING) {
                 service_ctx.scopes_num++;
-                service_ctx.scopes = (char**) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char*));
-                const char* str_val = item->value.string;
-                service_ctx.scopes[service_ctx.scopes_num - 1] = (char*) malloc((strlen(str_val) + 1) * sizeof(char));
+                service_ctx.scopes = (char **) realloc(service_ctx.scopes, service_ctx.scopes_num * sizeof(char *));
+                const char *str_val = item->value.string;
+                service_ctx.scopes[service_ctx.scopes_num - 1] = (char *) malloc((strlen(str_val) + 1) * sizeof(char));
                 strcpy(service_ctx.scopes[service_ctx.scopes_num - 1], str_val);
             }
         }
@@ -200,32 +198,32 @@ int process_json_conf_file(char* file)
 
     // Apply sane defaults for required fields if not provided in config
     if (service_ctx.manufacturer == NULL) {
-        service_ctx.manufacturer = (char*) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
+        service_ctx.manufacturer = (char *) malloc(strlen(DEFAULT_MANUFACTURER) + 1);
         if (service_ctx.manufacturer)
             strcpy(service_ctx.manufacturer, DEFAULT_MANUFACTURER);
     }
     if (service_ctx.model == NULL) {
-        service_ctx.model = (char*) malloc(strlen(DEFAULT_MODEL) + 1);
+        service_ctx.model = (char *) malloc(strlen(DEFAULT_MODEL) + 1);
         if (service_ctx.model)
             strcpy(service_ctx.model, DEFAULT_MODEL);
     }
     if (service_ctx.firmware_ver == NULL) {
-        service_ctx.firmware_ver = (char*) malloc(strlen(DEFAULT_FW_VER) + 1);
+        service_ctx.firmware_ver = (char *) malloc(strlen(DEFAULT_FW_VER) + 1);
         if (service_ctx.firmware_ver)
             strcpy(service_ctx.firmware_ver, DEFAULT_FW_VER);
     }
     if (service_ctx.serial_num == NULL) {
-        service_ctx.serial_num = (char*) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
+        service_ctx.serial_num = (char *) malloc(strlen(DEFAULT_SERIAL_NUM) + 1);
         if (service_ctx.serial_num)
             strcpy(service_ctx.serial_num, DEFAULT_SERIAL_NUM);
     }
     if (service_ctx.hardware_id == NULL) {
-        service_ctx.hardware_id = (char*) malloc(strlen(DEFAULT_HW_ID) + 1);
+        service_ctx.hardware_id = (char *) malloc(strlen(DEFAULT_HW_ID) + 1);
         if (service_ctx.hardware_id)
             strcpy(service_ctx.hardware_id, DEFAULT_HW_ID);
     }
     if (service_ctx.ifs == NULL) {
-        service_ctx.ifs = (char*) malloc(strlen(DEFAULT_IFS) + 1);
+        service_ctx.ifs = (char *) malloc(strlen(DEFAULT_IFS) + 1);
         if (service_ctx.ifs)
             strcpy(service_ctx.ifs, DEFAULT_IFS);
     }
@@ -249,13 +247,13 @@ int process_json_conf_file(char* file)
     // Load profiles from main configuration file
     value = get_object_item(json_file, "profiles");
     if (value && value->type == JSON_OBJECT) {
-        JsonKeyValue* kv = value->value.object_head;
+        JsonKeyValue *kv = value->value.object_head;
         while (kv) {
-            const char* key = kv->key;
+            const char *key = kv->key;
             item = kv->value;
 
             service_ctx.profiles_num++;
-            service_ctx.profiles = (stream_profile_t*) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
+            service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
             // Init defaults
             service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
             service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
@@ -270,7 +268,7 @@ int process_json_conf_file(char* file)
             get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].height), item, "height");
             get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url");
             get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl");
-            char* tmp = NULL;
+            char *tmp = NULL;
             get_string_from_json(&tmp, item, "type");
             if (tmp) {
                 if (!strcasecmp(tmp, "JPEG"))
@@ -367,12 +365,11 @@ int process_json_conf_file(char* file)
                 continue;
             }
 
-            service_ctx.relay_outputs = (relay_output_t*) realloc(service_ctx.relay_outputs,
-                                                                  service_ctx.relay_outputs_num * sizeof(relay_output_t));
+            service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
-            char* tmp = NULL;
+            char *tmp = NULL;
             get_string_from_json(&tmp, item, "idle_state");
             if (tmp) {
                 if (!strcasecmp(tmp, "open"))
@@ -409,7 +406,7 @@ int process_json_conf_file(char* file)
                 service_ctx.events_num--;
                 break;
             }
-            service_ctx.events = (event_t*) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
             service_ctx.events[service_ctx.events_num - 1].topic = NULL;
             service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
             service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
@@ -441,22 +438,22 @@ int process_json_conf_file(char* file)
             }
 
             log_debug("Adding event for relay output %d", i);
-            service_ctx.events = (event_t*) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
-            service_ctx.events[service_ctx.events_num - 1].topic = (char*) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
+            service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
+            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].topic, "tns1:Device/Trigger/Relay");
             log_debug("topic: tns1:Device/Trigger/Relay");
-            service_ctx.events[service_ctx.events_num - 1].source_name = (char*) malloc(strlen("RelayToken") + 1);
+            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen("RelayToken") + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, "RelayToken");
             log_debug("source_name: RelayToken");
-            service_ctx.events[service_ctx.events_num - 1].source_type = (char*) malloc(strlen("tt:ReferenceToken") + 1);
+            service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen("tt:ReferenceToken") + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].source_type, "tt:ReferenceToken");
             log_debug("source_type: tt:ReferenceToken");
             sprintf(stmp, "RelayOutputToken_%d", i);
-            service_ctx.events[service_ctx.events_num - 1].source_value = (char*) malloc(strlen(stmp) + 1);
+            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(stmp) + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, stmp);
             log_debug("source_value: %s", stmp);
             sprintf(stmp, "/tmp/onvif_notify_server/relay_output_%d", i);
-            service_ctx.events[service_ctx.events_num - 1].input_file = (char*) malloc(strlen(stmp) + 1);
+            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(stmp) + 1);
             strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, stmp);
             log_debug("input_file: %s", stmp);
         }

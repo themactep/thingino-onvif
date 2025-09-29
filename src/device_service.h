@@ -29,6 +29,6 @@ int device_get_capabilities();
 int device_get_network_interfaces();
 int device_get_discovery_mode();
 
-int device_unsupported(const char* method);
+int device_unsupported(const char *method);
 
 #endif //DEVICE_SERVICE_H

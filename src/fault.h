@@ -17,10 +17,10 @@
 #ifndef FAULT_H
 #define FAULT_H
 
-int send_empty_response(char* ns, char* method);
-int send_fault(char* service, char* rec_send, char* subcode, char* subcode_ex, char* reason, char* detail);
-int send_pull_messages_fault(char* timeout, char* message_limit);
-int send_action_failed_fault(char* service, int code);
+int send_empty_response(char *ns, char *method);
+int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, char *reason, char *detail);
+int send_pull_messages_fault(char *timeout, char *message_limit);
+int send_action_failed_fault(char *service, int code);
 int send_authentication_error();
 
 #endif //FAULT_H

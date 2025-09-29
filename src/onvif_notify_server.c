@@ -56,14 +56,14 @@
 
 #define PID_SIZE 32
 
-shm_t* subs_evts;
+shm_t *subs_evts;
 service_context_t service_ctx;
 
 // Global variables
-char* conf_file;
+char *conf_file;
 int debug;
 int exit_main;
-sem_t* sem_shmem;
+sem_t *sem_shmem;
 subscription_shm_t saved_subscriptions[MAX_SUBSCRIPTIONS];
 
 int daemonize(int flags)
@@ -120,9 +120,9 @@ int daemonize(int flags)
     return 0;
 }
 
-int check_pid(char* file_name)
+int check_pid(char *file_name)
 {
-    FILE* f;
+    FILE *f;
     long pid;
     char pid_buffer[PID_SIZE];
 
@@ -147,9 +147,9 @@ int check_pid(char* file_name)
     return 0;
 }
 
-int create_pid(char* file_name)
+int create_pid(char *file_name)
 {
-    FILE* f;
+    FILE *f;
     char pid_buffer[PID_SIZE];
 
     f = fopen(file_name, "w");
@@ -214,14 +214,14 @@ void signal_handler(int signal)
     }
 }
 
-int send_notify(char* reference, int alarm_index, time_t e_time, char* property, char* value)
+int send_notify(char *reference, int alarm_index, time_t e_time, char *property, char *value)
 {
     char host[1024];
     int port = 80;
     char page[1024];
     char header_fmt[] = "POST %s HTTP/1.1\r\nHost: %s\r\nContent-Type: application/soap+xml\r\nContent-Length: %s\r\n\r\n";
-    char* header;
-    char* message;
+    char *header;
+    char *message;
     int size;
     char size_string[8];
     char template_file[1024];
@@ -257,7 +257,7 @@ int send_notify(char* reference, int alarm_index, time_t e_time, char* property,
         return -1;
     }
 
-    if (connect(sockfd, (struct sockaddr*) &remote, sizeof(remote)) != 0) {
+    if (connect(sockfd, (struct sockaddr *) &remote, sizeof(remote)) != 0) {
         log_error("Connection failed");
         return -2;
     }
@@ -282,14 +282,14 @@ int send_notify(char* reference, int alarm_index, time_t e_time, char* property,
                value);
     sprintf(size_string, "%d", size);
 
-    header = (char*) malloc((strlen(header_fmt) + strlen(page) + strlen(host) + strlen(size_string) + 4) * sizeof(char));
+    header = (char *) malloc((strlen(header_fmt) + strlen(page) + strlen(host) + strlen(size_string) + 4) * sizeof(char));
     if (header == NULL) {
         log_error("Malloc error.\n");
         return -3;
     }
     sprintf(header, header_fmt, page, host, size_string);
 
-    message = (char*) malloc((size + strlen(header) + 1) * sizeof(char));
+    message = (char *) malloc((size + strlen(header) + 1) * sizeof(char));
     if (message == NULL) {
         log_error("Malloc error.\n");
         free(header);
@@ -313,7 +313,7 @@ int send_notify(char* reference, int alarm_index, time_t e_time, char* property,
         "%VALUE%",
         value);
 
-    if (sendto(sockfd, message, strlen(message), 0, (struct sockaddr*) &remote, sizeof(remote)) < 0) {
+    if (sendto(sockfd, message, strlen(message), 0, (struct sockaddr *) &remote, sizeof(remote)) < 0) {
         log_error("Error sending Notify message.\n");
         free(header);
         free(message);
@@ -403,7 +403,7 @@ void check_subscriptions_status()
     memcpy(saved_subscriptions, subs_evts->subscriptions, sizeof(subscription_shm_t) * MAX_SUBSCRIPTIONS);
 }
 
-void* sync_events_thread(void* arg)
+void *sync_events_thread(void *arg)
 {
     int i;
 
@@ -426,7 +426,7 @@ void* sync_events_thread(void* arg)
     }
 }
 
-int handle_inotify_events(int fd, char* dir)
+int handle_inotify_events(int fd, char *dir)
 {
     /* Some systems cannot read integer variables if they are not
        properly aligned. On other systems, incorrect alignment may
@@ -435,13 +435,13 @@ int handle_inotify_events(int fd, char* dir)
        struct inotify_event. */
 
     char buf[4096] __attribute__((aligned(__alignof__(struct inotify_event))));
-    const struct inotify_event* event;
+    const struct inotify_event *event;
     ssize_t len;
     int i, j;
     int sub_count;
     char input_file[1024], value[8];
     time_t now;
-    char* ptr;
+    char *ptr;
 
     /* Loop while events can be read from inotify file descriptor. */
     for (;;) {
@@ -461,7 +461,7 @@ int handle_inotify_events(int fd, char* dir)
 
         /* Loop over all events in the buffer. */
         for (ptr = buf; ptr < buf + len; ptr += sizeof(struct inotify_event) + event->len) {
-            event = (const struct inotify_event*) ptr;
+            event = (const struct inotify_event *) ptr;
 
             /* Print event type. */
             if (((event->mask & IN_CREATE) || (event->mask & IN_DELETE)) && ((event->mask & IN_ISDIR) == 0) && (event->len)) {
@@ -513,7 +513,7 @@ int handle_inotify_events(int fd, char* dir)
     }
 }
 
-void print_usage(char* progname)
+void print_usage(char *progname)
 {
     fprintf(stderr, "\nUsage: %s [-c JSON_CONF_FILE] [-p PID_FILE] [-f] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-c JSON_CONF_FILE, --conf_file JSON_CONF_FILE\n");
@@ -528,10 +528,10 @@ void print_usage(char* progname)
     fprintf(stderr, "\t\tprint this help\n");
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     int errno;
-    char* endptr;
+    char *endptr;
     int c, i, j, ret, itmp;
     char pid_file[1024];
     int foreground;
@@ -547,7 +547,7 @@ int main(int argc, char** argv)
     time_t now;
     int sub_count;
 
-    conf_file = (char*) malloc((strlen(DEFAULT_JSON_CONF_FILE) + 1) * sizeof(char));
+    conf_file = (char *) malloc((strlen(DEFAULT_JSON_CONF_FILE) + 1) * sizeof(char));
     strcpy(conf_file, DEFAULT_JSON_CONF_FILE);
 
     strcpy(pid_file, DEFAULT_PID_FILE);
@@ -575,7 +575,7 @@ int main(int argc, char** argv)
             /* Check for various possible errors */
             if (strlen(optarg) < MAX_LEN - 1) {
                 free(conf_file);
-                conf_file = (char*) malloc((strlen(optarg) + 1) * sizeof(char));
+                conf_file = (char *) malloc((strlen(optarg) + 1) * sizeof(char));
                 strcpy(conf_file, optarg);
             } else {
                 print_usage(argv[0]);
@@ -685,7 +685,7 @@ int main(int argc, char** argv)
     // Check if TEMPLATE_DIR exists
     if (access(TEMPLATE_DIR, F_OK) != -1) {
         // file exists
-        DIR* dirptr;
+        DIR *dirptr;
         if ((dirptr = opendir(TEMPLATE_DIR)) != NULL) {
             closedir(dirptr);
         } else {
@@ -702,7 +702,7 @@ int main(int argc, char** argv)
     // Check if INOTIFY_DIR exists
     if (access(INOTIFY_DIR, F_OK) != -1) {
         // file exists
-        DIR* dirptr;
+        DIR *dirptr;
         if ((dirptr = opendir(INOTIFY_DIR)) != NULL) {
             closedir(dirptr);
         } else {
@@ -717,7 +717,7 @@ int main(int argc, char** argv)
     }
 
     // Open shared memory
-    subs_evts = (shm_t*) create_shared_memory(1);
+    subs_evts = (shm_t *) create_shared_memory(1);
     if (subs_evts == NULL) {
         log_fatal("Unable to create shared memory.");
         unlink(pid_file);

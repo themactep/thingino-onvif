@@ -16,9 +16,9 @@
 
 #include "device_service.h"
 
-#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
+#include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
 
@@ -51,7 +51,7 @@ int device_get_services()
     char events_service_address[MAX_LEN];
     char deviceio_service_address[MAX_LEN];
     char port[8];
-    const char* cap;
+    const char *cap;
 
     char ebasesubscription[8], epullpoint[8];
 
@@ -475,11 +475,11 @@ int device_get_device_information()
 int device_get_system_date_and_time()
 {
     time_t timestamp = time(NULL);
-    struct tm* tm = gmtime(&timestamp);
+    struct tm *tm = gmtime(&timestamp);
 
     char isfalse[] = "false";
     char istrue[] = "true";
-    char* dst = isfalse;
+    char *dst = isfalse;
     char hour[3];
     char minute[3];
     char second[3];
@@ -559,7 +559,7 @@ int device_get_scopes()
     int i;
     size_t count = (size_t) service_ctx.scopes_num;
     size_t alloc = count > 0 ? count * MAX_LEN : 1;
-    char* scopes = (char*) malloc(alloc);
+    char *scopes = (char *) malloc(alloc);
     char line[MAX_LEN];
     int ret;
 
@@ -622,7 +622,7 @@ int device_get_capabilities()
     char deviceio_service_address[MAX_LEN];
     char port[8];
     int icategory;
-    const char* category;
+    const char *category;
 
     char ebasesubscription[8], epullpoint[8];
 
@@ -904,11 +904,11 @@ int device_get_discovery_mode()
     return cat("stdout", "device_service_files/GetDiscoveryMode.xml", 0);
 }
 
-int device_unsupported(const char* method)
+int device_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
         send_action_failed_fault("device_service", -1);
     else
-        send_empty_response("tds", (char*) method);
+        send_empty_response("tds", (char *) method);
     return -1;
 }

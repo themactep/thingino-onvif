@@ -54,7 +54,7 @@
 #define SHMOBJ_PATH "/onvif_subscription"
 #define MEM_LOCK_FILE "/sub_mem_lock"
 
-sem_t* sem_memory_lock = SEM_FAILED;
+sem_t *sem_memory_lock = SEM_FAILED;
 
 /**
  * Open a semaphore
@@ -88,11 +88,11 @@ void sem_memory_close()
  * @param create Set to 1 if the memory must be created, 0 if not
  * @return a pointer to the shared memory
  */
-void* create_shared_memory(int create)
+void *create_shared_memory(int create)
 {
     int shmfd, rc;
     int shared_seg_size = sizeof(shm_t);
-    char* shared_area; /* the pointer to the shared segment */
+    char *shared_area; /* the pointer to the shared segment */
 
     /* creating the shared memory object.
     int shm_open(const char *name, int oflag, mode_t mode);
@@ -138,7 +138,7 @@ void* create_shared_memory(int create)
     }
 
     /* requesting the shared segment */
-    shared_area = (char*) mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
+    shared_area = (char *) mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
     if (shared_area == MAP_FAILED /* is ((void*)-1) */) {
         log_error("mmap() failed");
         shm_unlink(SHMOBJ_PATH);
@@ -161,7 +161,7 @@ void* create_shared_memory(int create)
  * @param shared_area Pointer to the shared memory
  * @param destroy_all Set to 1 to unlink the file
  */
-void destroy_shared_memory(void* shared_area, int destroy_all)
+void destroy_shared_memory(void *shared_area, int destroy_all)
 {
     int shared_seg_size = sizeof(shm_t);
 
@@ -229,9 +229,9 @@ void output_http_headers(long content_length)
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", content_length);
 }
 
-long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail)
+long cat_soap_fault(char *out, const char *fault_subcode, const char *fault_reason, const char *fault_detail)
 {
-    const char* soap_fault_template = "<?xml version=\"1.0\" ?>"
+    const char *soap_fault_template = "<?xml version=\"1.0\" ?>"
                                       "<soapenv:Envelope xmlns:soapenv=\"http://www.w3.org/2003/05/soap-envelope\""
                                       " xmlns:ter=\"http://www.onvif.org/ver10/error\""
                                       " xmlns:xs=\"http://www.w3.org/2000/10/XMLSchema\">"
@@ -285,16 +285,16 @@ long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reas
  * @param ... The argument list to replace: src1, dst1, src2, dst2, etc...
  * @return the number of processed bytes (always >= 0), or 0 on error
  */
-long cat(char* out, char* filename, int num, ...)
+long cat(char *out, char *filename, int num, ...)
 {
     va_list valist;
     char new_line[MAX_CAT_LEN];
-    char* l;
-    char* ptr = out;
+    char *l;
+    char *ptr = out;
     char *pars, *pare, *par_to_find, *par_to_sub;
     int i;
     long ret = 0;
-    FILE* file;
+    FILE *file;
 
     // Reset SOAP fault flag for normal file operations
     g_last_response_was_soap_fault = 0;
@@ -322,8 +322,8 @@ long cat(char* out, char* filename, int num, ...)
 
         memset(new_line, '\0', sizeof(new_line));
         for (i = 0; i < num / 2; i++) {
-            par_to_find = va_arg(valist, char*);
-            par_to_sub = va_arg(valist, char*);
+            par_to_find = va_arg(valist, char *);
+            par_to_sub = va_arg(valist, char *);
             pars = strstr(line, par_to_find);
             if (pars != NULL) {
                 pare = pars + strlen(par_to_find);
@@ -387,12 +387,12 @@ long cat(char* out, char* filename, int num, ...)
  * @param address String that will contain the address
  * @return 0 on success, negative on error
  */
-int get_ip_address(char* address, char* netmask, char* name)
+int get_ip_address(char *address, char *netmask, char *name)
 {
     struct ifaddrs *ifaddr, *ifa;
     int family, s;
-    char* host;
-    char* mask;
+    char *host;
+    char *mask;
     struct sockaddr_in *sa, *san;
     int found = 0;
 
@@ -406,10 +406,10 @@ int get_ip_address(char* address, char* netmask, char* name)
             continue;
 
         if ((strcmp(ifa->ifa_name, name) == 0) && (ifa->ifa_addr->sa_family == AF_INET)) {
-            sa = (struct sockaddr_in*) ifa->ifa_addr;
-            inet_ntop(AF_INET, &(((struct sockaddr_in*) sa)->sin_addr), address, 16);
-            san = (struct sockaddr_in*) ifa->ifa_netmask;
-            inet_ntop(AF_INET, &(((struct sockaddr_in*) san)->sin_addr), netmask, 16);
+            sa = (struct sockaddr_in *) ifa->ifa_addr;
+            inet_ntop(AF_INET, &(((struct sockaddr_in *) sa)->sin_addr), address, 16);
+            san = (struct sockaddr_in *) ifa->ifa_netmask;
+            inet_ntop(AF_INET, &(((struct sockaddr_in *) san)->sin_addr), netmask, 16);
 
             log_debug("Interface: <%s>", ifa->ifa_name);
             log_debug("Address: <%s>", address);
@@ -432,7 +432,7 @@ int get_ip_address(char* address, char* netmask, char* name)
  * @param address String that will contain the address
  * @return 0 on success, negative on error
  */
-int get_mac_address(char* address, char* name)
+int get_mac_address(char *address, char *name)
 {
     struct ifreq ifr;
     struct ifconf ifc;
@@ -450,8 +450,8 @@ int get_mac_address(char* address, char* name)
         return -2;
     }
 
-    struct ifreq* it = ifc.ifc_req;
-    const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
+    struct ifreq *it = ifc.ifc_req;
+    const struct ifreq *const end = it + (ifc.ifc_len / sizeof(struct ifreq));
 
     for (; it != end; ++it) {
         strcpy(ifr.ifr_name, it->ifr_name);
@@ -491,7 +491,7 @@ int get_mac_address(char* address, char* name)
  * @param netmask The netmask to convert
  * @return the len of the netmask
  */
-int netmask2prefixlen(char* netmask)
+int netmask2prefixlen(char *netmask)
 {
     int n;
     int i = 0;
@@ -513,7 +513,7 @@ int netmask2prefixlen(char* netmask)
  * @param if_name The name of the interface
  * @return The value of the MTU
  */
-int get_mtu(char* if_name)
+int get_mtu(char *if_name)
 {
     int ret = 0;
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
@@ -530,9 +530,9 @@ int get_mtu(char* if_name)
  * @param s The input string
  * @return A pointer to the resulting string
  */
-char* ltrim(char* s)
+char *ltrim(char *s)
 {
-    char* p = s;
+    char *p = s;
 
     while (isspace(*p))
         p++;
@@ -544,10 +544,10 @@ char* ltrim(char* s)
  * @param s The input string
  * @return A pointer to the resulting string
  */
-char* rtrim(char* s)
+char *rtrim(char *s)
 {
     int iret = strlen(s);
-    char* back = s + iret;
+    char *back = s + iret;
     back--;
     while (isspace(*back)) {
         *back = '\0';
@@ -561,7 +561,7 @@ char* rtrim(char* s)
  * @param s The input string
  * @return A pointer to the resulting string
  */
-char* trim(char* s)
+char *trim(char *s)
 {
     return ltrim(rtrim(s));
 }
@@ -571,9 +571,9 @@ char* trim(char* s)
  * @param s The input string
  * @return A pointer to the resulting string
  */
-char* ltrim_mf(char* s)
+char *ltrim_mf(char *s)
 {
-    char* p = s;
+    char *p = s;
 
     while ((*p == ' ') || (*p == '\t') || (*p == '\n') || (*p == '\r'))
         p++;
@@ -585,10 +585,10 @@ char* ltrim_mf(char* s)
  * @param s The input string
  * @return A pointer to the resulting string
  */
-char* rtrim_mf(char* s)
+char *rtrim_mf(char *s)
 {
     int iret = strlen(s);
-    char* back = s + iret;
+    char *back = s + iret;
 
     if (iret == 0)
         return s;
@@ -605,12 +605,12 @@ char* rtrim_mf(char* s)
  * @param s The input string
  * @return A pointer to the resulting string
  */
-char* trim_mf(char* s)
+char *trim_mf(char *s)
 {
     return ltrim_mf(rtrim_mf(s));
 }
 
-int html_escape(char* url, int max_len)
+int html_escape(char *url, int max_len)
 {
     int i, count = 0;
     char s_tmp[max_len];
@@ -644,7 +644,7 @@ int html_escape(char* url, int max_len)
     }
 
     f = url;
-    t = (char*) &s_tmp[0];
+    t = (char *) &s_tmp[0];
     while (*f != '\0' && (t - s_tmp) < (max_len - 10)) { // Leave room for escape sequences
         switch (*f) {
         case '\"':
@@ -728,7 +728,7 @@ int html_escape(char* url, int max_len)
     }
     *t = '\0'; // Ensure null termination
 
-    strcpy(url, (char*) s_tmp);
+    strcpy(url, (char *) s_tmp);
 }
 
 /**
@@ -739,7 +739,7 @@ int html_escape(char* url, int max_len)
  * @param input_size The size of the input sequence
  * @return A malloc-allocated pointer to the resulting data. 20 bytes long.
  */
-int hashSHA1(char* input, unsigned long input_size, char* output, int output_size)
+int hashSHA1(char *input, unsigned long input_size, char *output, int output_size)
 {
     if (output_size < 20)
         return -1;
@@ -758,7 +758,7 @@ int hashSHA1(char* input, unsigned long input_size, char* output, int output_siz
     mbedtls_sha1_init(&ctx);
     mbedtls_sha1_starts(&ctx);
     //Process the text - remember you can call process() multiple times
-    mbedtls_sha1_update(&ctx, (const unsigned char*) input, input_size);
+    mbedtls_sha1_update(&ctx, (const unsigned char *) input, input_size);
     //Finish the hash calculation
     mbedtls_sha1_finish(&ctx, output);
     mbedtls_sha1_free(&ctx);
@@ -769,7 +769,7 @@ int hashSHA1(char* input, unsigned long input_size, char* output, int output_siz
     //Initialize a state variable for the hash
     sha1_init(&md);
     //Process the text - remember you can call process() multiple times
-    sha1_process(&md, (const unsigned char*) input, input_size);
+    sha1_process(&md, (const unsigned char *) input, input_size);
     //Finish the hash calculation
     sha1_done(&md, output);
 #endif //HAVE_MBEDTLS
@@ -785,11 +785,11 @@ int hashSHA1(char* input, unsigned long input_size, char* output, int output_siz
  * @param input The input sequence pointer
  * @param input_size The size of the input sequence
  */
-void b64_decode(unsigned char* input, unsigned int input_size, unsigned char* output, unsigned long* output_size)
+void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size)
 {
 #ifdef HAVE_WOLFSSL
     word32 olen;
-    Base64_Decode((const unsigned char*) input, input_size, output, &olen);
+    Base64_Decode((const unsigned char *) input, input_size, output, &olen);
     *output_size = olen;
 #else
 #ifdef HAVE_MBEDTLS
@@ -809,11 +809,11 @@ void b64_decode(unsigned char* input, unsigned int input_size, unsigned char* ou
  * @param input The input sequence pointer
  * @param input_size The size of the input sequence
  */
-void b64_encode(unsigned char* input, unsigned int input_size, unsigned char* output, unsigned long* output_size)
+void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size)
 {
 #ifdef HAVE_WOLFSSL
     word32 olen;
-    Base64_Encode_NoNl((const unsigned char*) input, input_size, output, &olen);
+    Base64_Encode_NoNl((const unsigned char *) input, input_size, output, &olen);
     *output_size = olen;
 #else
 #ifdef HAVE_MBEDTLS
@@ -831,7 +831,7 @@ void b64_encode(unsigned char* input, unsigned int input_size, unsigned char* ou
  * @param interval String that represents the interval
  * @return Time interval in seconds
  */
-int interval2sec(const char* interval)
+int interval2sec(const char *interval)
 {
     int d1 = -1, d2 = -1, d3 = -1, n, ret;
     char c1 = 'c', c2 = 'c', c3 = 'c';
@@ -902,7 +902,7 @@ int interval2sec(const char* interval)
  * @param iso_date Output time in ISO format
  * @return 0 on success, negative on error
  */
-int to_iso_date(char* iso_date, int size, time_t timestamp)
+int to_iso_date(char *iso_date, int size, time_t timestamp)
 {
     struct tm my_tm;
     gmtime_r(&timestamp, &my_tm);
@@ -927,7 +927,7 @@ int to_iso_date(char* iso_date, int size, time_t timestamp)
  * @param iso_date Time in ISO format
  * @return Time in time_t
  */
-time_t from_iso_date(const char* date)
+time_t from_iso_date(const char *date)
 {
     struct tm tt = {0};
     double seconds = 0;
@@ -953,7 +953,7 @@ time_t from_iso_date(const char* date)
  * @param g_uuid output to store the UUID
  * @return 0 on success, negative on error
  */
-int gen_uuid(char* g_uuid)
+int gen_uuid(char *g_uuid)
 {
     int i;
     char v[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -987,16 +987,16 @@ int gen_uuid(char* g_uuid)
  * @param ret The output string
  * @return 0 on success, negative on error
  */
-int get_from_query_string(char** ret, int* ret_size, char* par)
+int get_from_query_string(char **ret, int *ret_size, char *par)
 {
-    char* query_string = getenv("QUERY_STRING");
-    char* query = strdup(query_string);
-    char* tokens = query;
-    char* p = query;
+    char *query_string = getenv("QUERY_STRING");
+    char *query = strdup(query_string);
+    char *tokens = query;
+    char *p = query;
 
     while ((p = strsep(&tokens, "&\n"))) {
-        char* var = strtok(p, "=");
-        char* val = NULL;
+        char *var = strtok(p, "=");
+        char *val = NULL;
 
         if (var && (val = strtok(NULL, "="))) {
             if (strcasecmp(par, var) == 0) {
@@ -1019,7 +1019,7 @@ int get_from_query_string(char** ret, int* ret_size, char* par)
  * @param buffer The output buffer
  * @return 0 on success, negative on error
  */
-int set_video_codec(char* buffer, int buffer_len, int codec, int ver)
+int set_video_codec(char *buffer, int buffer_len, int codec, int ver)
 {
     if (buffer_len < 16)
         return -1;
@@ -1051,7 +1051,7 @@ int set_video_codec(char* buffer, int buffer_len, int codec, int ver)
  * @param buffer The output buffer
  * @return 0 on success, negative on error
  */
-int set_audio_codec(char* buffer, int buffer_len, int codec, int ver)
+int set_audio_codec(char *buffer, int buffer_len, int codec, int ver)
 {
     if (buffer_len < 16)
         return -1;
@@ -1082,14 +1082,14 @@ int set_audio_codec(char* buffer, int buffer_len, int codec, int ver)
  * @param input The string containing the expression
  * @return The pointer to a new allocated struct: remember to free it
  */
-topic_expressions_t* parse_topic_expression(const char* input)
+topic_expressions_t *parse_topic_expression(const char *input)
 {
     char input_copy[MAX_LEN];
-    char* str;
+    char *str;
     int number = 0;
     int len;
     int error = 0;
-    topic_expressions_t* out = (topic_expressions_t*) malloc(sizeof(topic_expressions_t));
+    topic_expressions_t *out = (topic_expressions_t *) malloc(sizeof(topic_expressions_t));
     out->topics = NULL;
 
     if (strlen(input) > MAX_LEN - 1) {
@@ -1103,7 +1103,7 @@ topic_expressions_t* parse_topic_expression(const char* input)
 
     strcpy(input_copy, input);
 
-    char* token = strtok(input_copy, "|");
+    char *token = strtok(input_copy, "|");
     while (token != NULL) {
         number++;
         len = strlen(token);
@@ -1112,7 +1112,7 @@ topic_expressions_t* parse_topic_expression(const char* input)
             break;
         }
 
-        topic_expression_t* temp = (topic_expression_t*) realloc(out->topics, number * sizeof(topic_expression_t));
+        topic_expression_t *temp = (topic_expression_t *) realloc(out->topics, number * sizeof(topic_expression_t));
         if (temp == NULL) {
             error = 1;
             break;
@@ -1157,7 +1157,7 @@ topic_expressions_t* parse_topic_expression(const char* input)
  * Free the struct topic_expressions_t
  * @param p The pointer to the struct
  */
-void free_topic_expression(topic_expressions_t* p)
+void free_topic_expression(topic_expressions_t *p)
 {
     int i;
 
@@ -1183,10 +1183,10 @@ void free_topic_expression(topic_expressions_t* p)
  * @param topic_expression The TopicExpression string
  * @return 1 on success or if topic_expression is empty, 1 if not found
  */
-int is_topic_in_expression(const char* topic_expression, char* topic)
+int is_topic_in_expression(const char *topic_expression, char *topic)
 {
     int i;
-    topic_expressions_t* te;
+    topic_expressions_t *te;
 
     if ((topic_expression == NULL) || (topic_expression[0] == '\0')) {
         return 1;
@@ -1232,7 +1232,7 @@ int is_topic_in_expression(const char* topic_expression, char* topic)
  * @return 0 on success, -1 on error
  */
 int construct_uri_with_credentials(
-    char* output_buffer, size_t buffer_size, const char* uri_template, const char* address, const char* username, const char* password)
+    char *output_buffer, size_t buffer_size, const char *uri_template, const char *address, const char *username, const char *password)
 {
     if (output_buffer == NULL || uri_template == NULL || address == NULL || buffer_size == 0) {
         return -1;
@@ -1242,7 +1242,7 @@ int construct_uri_with_credentials(
     if (username != NULL && password != NULL && strlen(username) > 0 && strlen(password) > 0) {
         // Create URI with embedded credentials: protocol://username:password@host/path
         char temp_uri[MAX_LEN];
-        char* protocol_end = strstr(uri_template, "://");
+        char *protocol_end = strstr(uri_template, "://");
 
         if (protocol_end != NULL) {
             // Extract protocol (rtsp, http, https, etc.)
@@ -1262,8 +1262,8 @@ int construct_uri_with_credentials(
             protocol[protocol_len] = '\0';
 
             // Extract path part (everything after %s placeholder)
-            char* path_start = strstr(uri_template + protocol_len, "/");
-            char* path = (path_start != NULL) ? path_start : "";
+            char *path_start = strstr(uri_template + protocol_len, "/");
+            char *path = (path_start != NULL) ? path_start : "";
 
             // Construct URI with credentials
             if (snprintf(temp_uri, sizeof(temp_uri), "%s%s:%s@%s%s", protocol, username, password, address, path) >= (int) sizeof(temp_uri)) {
@@ -1311,7 +1311,7 @@ int construct_uri_with_credentials(
  * @param arg Not used
  * @return NULL
  */
-void* reboot_thread(void* arg)
+void *reboot_thread(void *arg)
 {
     sync();
     setuid(0);

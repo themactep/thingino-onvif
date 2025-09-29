@@ -174,14 +174,14 @@ void onvif_dispatch_cleanup(void)
     // No cleanup needed for dispatch table
 }
 
-int dispatch_onvif_method(const char* service, const char* method)
+int dispatch_onvif_method(const char *service, const char *method)
 {
     if (!service || !method) {
         return -1;
     }
 
     // Search the dispatch table
-    for (const onvif_method_entry_t* entry = onvif_dispatch_table; entry->service != NULL; entry++) {
+    for (const onvif_method_entry_t *entry = onvif_dispatch_table; entry->service != NULL; entry++) {
         if (strcasecmp(entry->service, service) == 0 && strcasecmp(entry->method, method) == 0) {
             // Check condition if one exists
             if (entry->condition != NULL) {

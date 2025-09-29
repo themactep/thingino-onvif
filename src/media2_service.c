@@ -17,9 +17,9 @@
 #include "media2_service.h"
 
 #include "conf.h"
-#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
+#include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
 
@@ -60,17 +60,17 @@ int media2_get_profiles()
     char stmp_w_l[16], stmp_h_l[16];
     char audio_enc_h[16], audio_enc_l[16];
     char video_enc_h[16], video_enc_l[16];
-    const char* profile_token = get_element("Token", "Body");
-    mxml_node_t* x_type;
+    const char *profile_token = get_element("Token", "Body");
+    mxml_node_t *x_type;
     int n_type;
     char xml_name[MAX_LEN];
     long size;
     int q, h;
-    char* h264profile[] = {"High", "Main"};
-    char* profile[] = {"Profile_0", "Profile_1"};
+    char *h264profile[] = {"High", "Main"};
+    char *profile[] = {"Profile_0", "Profile_1"};
     int c;
     char dest_a[] = "stdout";
-    char* dest;
+    char *dest;
     int typeVSC = 0, typeASC = 0, typeVEC = 0, typeAEC = 0, typePTZ = 0, typeAOC = 0, typeADC = 0;
     char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
 
@@ -90,7 +90,7 @@ int media2_get_profiles()
     n_type = 0;
     do {
         if (x_type != NULL) {
-            const char* type_text = mxmlGetText(x_type, NULL);
+            const char *type_text = mxmlGetText(x_type, NULL);
             if (type_text != NULL) {
                 if (strstr(type_text, "VideoSource") != NULL)
                     typeVSC = 1;
@@ -423,7 +423,7 @@ int media2_get_profiles()
 
 int media2_get_video_source_modes()
 {
-    const char* token = get_element("VideoSourceToken", "Body");
+    const char *token = get_element("VideoSourceToken", "Body");
     char stmp_w[16], stmp_h[16], video_enc[16];
 
     if (strcasecmp("VideoSourceToken", token) == 0) {
@@ -450,8 +450,8 @@ int media2_get_video_source_modes()
 
 int media2_get_video_source_configurations()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
     char profiles_num[2], stmp_w[16], stmp_h[16];
 
@@ -504,8 +504,8 @@ int media2_get_video_source_configurations()
 
 int media2_get_video_source_configuration_options()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
     char stmp_w[16], stmp_h[16];
 
@@ -544,8 +544,8 @@ int media2_get_video_encoder_configurations()
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
-    const char* profile_token = get_element("ProfileToken", "Body");
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char token[10];
     char video_enc_h[16], video_enc_l[16];
 
@@ -710,8 +710,8 @@ int media2_get_video_encoder_configurations()
 int media2_get_video_encoder_configuration_options()
 {
     char stmp_w[16], stmp_h[16];
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
     char video_enc[16];
 
@@ -794,8 +794,8 @@ int media2_get_video_encoder_configuration_options()
 
 int media2_get_audio_source_configurations()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
     char stmp_w[16], stmp_h[16];
     char s_profiles_num[2];
@@ -858,8 +858,8 @@ int media2_get_audio_source_configurations()
 
 int media2_get_audio_source_configuration_options()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
 
     memset(token, '\0', sizeof(token));
@@ -918,8 +918,8 @@ int media2_get_audio_encoder_configurations()
 {
     char audio_enc_h[16];
     char audio_enc_l[16];
-    const char* profile_token = get_element("ProfileToken", "Body");
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char token[10];
 
     memset(token, '\0', sizeof(token));
@@ -1107,8 +1107,8 @@ int media2_get_audio_encoder_configurations()
 int media2_get_audio_encoder_configuration_options()
 {
     char audio_enc[16];
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
 
     char bitrate[4], samplerate[4];
@@ -1208,8 +1208,8 @@ int media2_get_audio_encoder_configuration_options()
 
 int media2_get_audio_output_configurations()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
     char stmp_w[16], stmp_h[16];
     char s_profiles_num[2];
@@ -1272,8 +1272,8 @@ int media2_get_audio_output_configurations()
 
 int media2_get_audio_output_configuration_options()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
 
     memset(token, '\0', sizeof(token));
@@ -1330,8 +1330,8 @@ int media2_get_audio_output_configuration_options()
 
 int media2_get_audio_decoder_configurations()
 {
-    const char* profile_token = get_element("ProfileToken", "Body");
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char token[10];
 
     memset(token, '\0', sizeof(token));
@@ -1436,8 +1436,8 @@ int media2_get_audio_decoder_configurations()
 int media2_get_audio_decoder_configuration_options()
 {
     int decoder_type = AUDIO_NONE;
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
     char audio_decoder[16];
     char bitrate[4], samplerate[4];
@@ -1519,9 +1519,9 @@ int media2_get_snapshot_uri()
 {
     char address[16];
     char netmask[16];
-    char* s;
+    char *s;
     char line[MAX_LEN];
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     memset(line, '\0', sizeof(line));
 
@@ -1590,9 +1590,9 @@ int media2_get_stream_uri()
 {
     char address[16];
     char netmask[16];
-    char* s;
+    char *s;
     char line[MAX_LEN];
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     memset(line, '\0', sizeof(line));
 
@@ -1657,8 +1657,8 @@ int media2_get_stream_uri()
 
 int media2_set_video_source_configuration()
 {
-    const char* token = NULL;
-    mxml_node_t* node;
+    const char *token = NULL;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1686,8 +1686,8 @@ int media2_set_video_source_configuration()
 
 int media2_set_audio_source_configuration()
 {
-    const char* token = NULL;
-    mxml_node_t* node;
+    const char *token = NULL;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1737,8 +1737,8 @@ int media2_set_audio_encoder_configuration()
 
 int media2_set_audio_output_configuration()
 {
-    const char* token = NULL;
-    mxml_node_t* node;
+    const char *token = NULL;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1764,11 +1764,11 @@ int media2_set_audio_output_configuration()
     }
 }
 
-int media2_unsupported(const char* method)
+int media2_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
         send_action_failed_fault("media2_service", -1);
     else
-        send_empty_response("tr2", (char*) method);
+        send_empty_response("tr2", (char *) method);
     return -1;
 }

@@ -61,48 +61,48 @@ typedef struct {
 } shm_t;
 
 typedef struct {
-    char* topic;
+    char *topic;
     int match_sub_tree;
 } topic_expression_t;
 
 typedef struct {
-    topic_expression_t* topics;
+    topic_expression_t *topics;
     int number;
 } topic_expressions_t;
 
-void* create_shared_memory(int create);
-void destroy_shared_memory(void* shared_area, int destroy_all);
+void *create_shared_memory(int create);
+void destroy_shared_memory(void *shared_area, int destroy_all);
 int sem_memory_wait();
 int sem_memory_post();
-long cat(char* out, char* filename, int num, ...);
-long cat_soap_fault(char* out, const char* fault_subcode, const char* fault_reason, const char* fault_detail);
+long cat(char *out, char *filename, int num, ...);
+long cat_soap_fault(char *out, const char *fault_subcode, const char *fault_reason, const char *fault_detail);
 void output_http_headers(long content_length);
 
 // Global flag to indicate if the last cat() call returned a SOAP fault
 extern int g_last_response_was_soap_fault;
-int get_ip_address(char* address, char* netmask, char* name);
-int get_mac_address(char* address, char* name);
-int netmask2prefixlen(char* netmask);
-int get_mtu(char* if_name);
-char* trim(char* s);
-char* trim_mf(char* s);
-int html_escape(char* url, int max_len);
-int hashSHA1(char* input, unsigned long inputSize, char* output, int output_size);
-void b64_decode(unsigned char* input, unsigned int input_size, unsigned char* output, unsigned long* output_size);
-void b64_encode(unsigned char* input, unsigned int input_size, unsigned char* output, unsigned long* output_size);
-int interval2sec(const char* interval);
-int to_iso_date(char* iso_date, int size, time_t timestamp);
-time_t from_iso_date(const char* date);
-int gen_uuid(char* g_uuid);
-int get_from_query_string(char** ret, int* ret_size, char* par);
-int set_video_codec(char* buffer, int buffer_len, int codec, int ver);
-int set_audio_codec(char* buffer, int buffer_len, int codec, int ver);
+int get_ip_address(char *address, char *netmask, char *name);
+int get_mac_address(char *address, char *name);
+int netmask2prefixlen(char *netmask);
+int get_mtu(char *if_name);
+char *trim(char *s);
+char *trim_mf(char *s);
+int html_escape(char *url, int max_len);
+int hashSHA1(char *input, unsigned long inputSize, char *output, int output_size);
+void b64_decode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size);
+void b64_encode(unsigned char *input, unsigned int input_size, unsigned char *output, unsigned long *output_size);
+int interval2sec(const char *interval);
+int to_iso_date(char *iso_date, int size, time_t timestamp);
+time_t from_iso_date(const char *date);
+int gen_uuid(char *g_uuid);
+int get_from_query_string(char **ret, int *ret_size, char *par);
+int set_video_codec(char *buffer, int buffer_len, int codec, int ver);
+int set_audio_codec(char *buffer, int buffer_len, int codec, int ver);
 int construct_uri_with_credentials(
-    char* output_buffer, size_t buffer_size, const char* uri_template, const char* address, const char* username, const char* password);
+    char *output_buffer, size_t buffer_size, const char *uri_template, const char *address, const char *username, const char *password);
 
-topic_expressions_t* parseTopicExpression(const char* input);
-void free_topic_expression(topic_expressions_t* p);
-int is_topic_in_expression(const char* topic_expression, char* topic);
-void* reboot_thread(void* arg);
+topic_expressions_t *parseTopicExpression(const char *input);
+void free_topic_expression(topic_expressions_t *p);
+int is_topic_in_expression(const char *topic_expression, char *topic);
+void *reboot_thread(void *arg);
 
 #endif //UTILS_H

@@ -25,24 +25,21 @@
 
 extern service_context_t service_ctx;
 
-int send_empty_response(char* ns, char* method)
+int send_empty_response(char *ns, char *method)
 {
     int ret;
-    char* response = (char*) malloc(strlen(ns) + strlen(method) + 10);
+    char *response = (char *) malloc(strlen(ns) + strlen(method) + 10);
     sprintf(response, "%s:%sResponse", ns, method);
 
     long size = cat(NULL, "generic_files/Empty.xml", 2, "%METHOD%", response);
-
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
-
+    output_http_headers(size);
     ret = cat("stdout", "generic_files/Empty.xml", 2, "%METHOD%", response);
 
     free(response);
     return ret;
 }
 
-int send_fault(char* service, char* rec_send, char* subcode, char* subcode_ex, char* reason, char* detail)
+int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, char *reason, char *detail)
 {
     char msg_uuid[UUID_LEN + 1];
     char address[16];
@@ -52,7 +49,7 @@ int send_fault(char* service, char* rec_send, char* subcode, char* subcode_ex, c
     char device_address[MAX_LEN];
     char service_address[MAX_LEN];
     char port[8];
-    char* cap;
+    char *cap;
 
     port[0] = '\0';
     if (service_ctx.port != 80)
@@ -82,10 +79,8 @@ int send_fault(char* service, char* rec_send, char* subcode, char* subcode_ex, c
                     "%DETAIL%",
                     detail);
 
-    //    fprintf(stdout, "Status: 500 Internal Server Error\r\n");
     fprintf(stdout, "HTTP/1.1 500 Internal Server Error\r\n");
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n", size);
+    output_http_headers(size);
     fprintf(stdout, "\r\n");
 
     return cat("stdout",
@@ -109,19 +104,17 @@ int send_fault(char* service, char* rec_send, char* subcode, char* subcode_ex, c
                detail);
 }
 
-int send_pull_messages_fault(char* timeout, char* message_limit)
+int send_pull_messages_fault(char *timeout, char *message_limit)
 {
     long size = cat(NULL, "generic_files/PullMessagesFaultResponse.xml", 4, "%MAX_TIMEOUT%", timeout, "%MAX_MESSAGE_LIMIT%", message_limit);
 
-    //    fprintf(stdout, "Status: 500 Internal Server Error\r\n");
     fprintf(stdout, "HTTP/1.1 500 Internal Server Error\r\n");
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "generic_files/PullMessagesFaultResponse.xml", 4, "%MAX_TIMEOUT%", timeout, "%MAX_MESSAGE_LIMIT%", message_limit);
 }
 
-int send_action_failed_fault(char* service, int code)
+int send_action_failed_fault(char *service, int code)
 {
     char error_string[1024];
     sprintf(error_string, "The requested SOAP action failed: error %d", code);
@@ -132,10 +125,8 @@ int send_authentication_error()
 {
     long size = cat(NULL, "generic_files/AuthenticationError.xml", 0);
 
-    // Keep original HTTP 400 status (matches original ezxml behavior)
     fprintf(stdout, "HTTP/1.1 400 Bad request\r\n");
-    fprintf(stdout, "Content-type: application/soap+xml\r\n");
-    fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);
+    output_http_headers(size);
 
     return cat("stdout", "generic_files/AuthenticationError.xml", 0);
 }

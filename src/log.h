@@ -19,15 +19,15 @@ enum { LOG_LVL_FATAL = 0, LOG_LVL_ERROR = 1, LOG_LVL_WARN = 2, LOG_LVL_INFO = 3,
 #define log_fatal(...) log_log(LOG_LVL_FATAL, __FILE__, __LINE__, __VA_ARGS__)
 
 // Initialize logging. facility: e.g., LOG_DAEMON; level: 0..5 (numeric) or textual; to_stderr: 0/1
-void log_init(const char* ident, int facility, int level, int to_stderr);
-void log_set_level(int level); // 0..5 as above
-void log_set_level_str(const char* level_str); // "FATAL", "ERROR", etc.
+void log_init(const char *ident, int facility, int level, int to_stderr);
+void log_set_level(int level);                 // 0..5 as above
+void log_set_level_str(const char *level_str); // "FATAL", "ERROR", etc.
 
 // Convert between textual and numeric log levels
-int log_level_from_string(const char* level_str);
-const char* log_level_to_string(int level);
+int log_level_from_string(const char *level_str);
+const char *log_level_to_string(int level);
 
 // Core logging entry point
-void log_log(int level, const char* file, int line, const char* fmt, ...);
+void log_log(int level, const char *file, int line, const char *fmt, ...);
 
 #endif

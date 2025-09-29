@@ -17,9 +17,9 @@
 #include "media_service.h"
 
 #include "conf.h"
-#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
+#include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
 
@@ -76,7 +76,7 @@ int media_get_video_source_configurations()
 
 int media_get_video_source_configuration()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char profiles_num[2], stmp_w[16], stmp_h[16];
 
     if (configuration_token == NULL) {
@@ -155,8 +155,8 @@ int media_get_compatible_video_source_configurations()
 
 int media_get_video_source_configuration_options()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
     char stmp_w[16], stmp_h[16];
 
@@ -195,7 +195,7 @@ int media_get_profiles()
     long size;
     int c;
     char dest_a[] = "stdout";
-    char* dest;
+    char *dest;
     char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
 
     audio_enc_h[0] = '\0';
@@ -416,12 +416,12 @@ int media_get_profile()
     char profiles_num[2];
     char stmp_vsc_w[16], stmp_vsc_h[16];
     char stmp_w[16], stmp_h[16];
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char audio_enc_h[16], audio_enc_l[16];
     long size;
     int c;
     char dest_a[] = "stdout";
-    char* dest;
+    char *dest;
     char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
 
     if (profile_token == NULL) {
@@ -647,7 +647,7 @@ int media_get_video_encoder_configuration()
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char token[10];
 
     if (configuration_token == NULL) {
@@ -725,7 +725,7 @@ int media_get_compatible_video_encoder_configurations()
 {
     char stmp_w_l[16], stmp_h_l[16];
     char stmp_w_h[16], stmp_h_h[16];
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     if (profile_token == NULL) {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
@@ -798,8 +798,8 @@ int media_get_compatible_video_encoder_configurations()
 int media_get_video_encoder_configuration_options()
 {
     char stmp_w[16], stmp_h[16];
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
 
     memset(token, '\0', sizeof(token));
@@ -858,7 +858,7 @@ int media_get_video_encoder_configuration_options()
 int media_get_guaranteed_number_of_video_encoder_instances()
 {
     char stmp[8];
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
 
     if ((service_ctx.profiles_num >= 0) && (service_ctx.profiles_num <= 2)) {
         sprintf(stmp, "%d", service_ctx.profiles_num);
@@ -884,9 +884,9 @@ int media_get_snapshot_uri()
 {
     char address[16];
     char netmask[16];
-    char* s;
+    char *s;
     char line[MAX_LEN];
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     memset(line, '\0', sizeof(line));
 
@@ -955,9 +955,9 @@ int media_get_stream_uri()
 {
     char address[16];
     char netmask[16];
-    char* s;
+    char *s;
     char line[MAX_LEN];
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     memset(line, '\0', sizeof(line));
 
@@ -1080,7 +1080,7 @@ int media_get_audio_source_configurations()
 
 int media_get_audio_source_configuration()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char s_profiles_num[2];
     int profiles_num;
 
@@ -1130,8 +1130,8 @@ int media_get_audio_source_configuration()
 
 int media_get_audio_source_configuration_options()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
 
     memset(token, '\0', sizeof(token));
@@ -1179,7 +1179,7 @@ int media_get_audio_source_configuration_options()
 int media_get_audio_encoder_configuration()
 {
     char audio_encoder[16];
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char token[10];
 
     if (configuration_token == NULL) {
@@ -1354,8 +1354,8 @@ int media_get_audio_encoder_configurations()
 int media_get_audio_encoder_configuration_options()
 {
     char audio_encoder[16];
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
 
     char bitrate[4], samplerate[4];
@@ -1455,7 +1455,7 @@ int media_get_audio_encoder_configuration_options()
 
 int media_get_audio_decoder_configuration()
 {
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
     char token[10];
 
     if (configuration_token == NULL) {
@@ -1563,8 +1563,8 @@ int media_get_audio_decoder_configurations()
 int media_get_audio_decoder_configuration_options()
 {
     int decoder_type;
-    const char* configuration_token = get_element("ConfigurationToken", "Body");
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *configuration_token = get_element("ConfigurationToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char token[10];
     char audio_decoder[16];
     char bitrate[4], samplerate[4];
@@ -1722,7 +1722,7 @@ int media_get_audio_output_configuration_options()
 
 int media_get_compatible_audio_source_configurations()
 {
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
     char profiles_num[2];
 
     if (profile_token == NULL) {
@@ -1755,7 +1755,7 @@ int media_get_compatible_audio_source_configurations()
 int media_get_compatible_audio_encoder_configurations()
 {
     char audio_encoder[16];
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     if (profile_token == NULL) {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
@@ -1832,7 +1832,7 @@ int media_get_compatible_audio_encoder_configurations()
 
 int media_get_compatible_audio_decoder_configurations()
 {
-    const char* profile_token = get_element("ProfileToken", "Body");
+    const char *profile_token = get_element("ProfileToken", "Body");
 
     if (profile_token == NULL) {
         send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile does not exist");
@@ -1905,8 +1905,8 @@ int media_get_compatible_audio_output_configurations()
 
 int media_set_video_source_configuration()
 {
-    const char* token = NULL;
-    mxml_node_t* node;
+    const char *token = NULL;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1934,8 +1934,8 @@ int media_set_video_source_configuration()
 
 int media_set_audio_source_configuration()
 {
-    const char* token = NULL;
-    mxml_node_t* node;
+    const char *token = NULL;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1985,8 +1985,8 @@ int media_set_audio_encoder_configuration()
 
 int media_set_audio_output_configuration()
 {
-    const char* token = NULL;
-    mxml_node_t* node;
+    const char *token = NULL;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -2012,11 +2012,11 @@ int media_set_audio_output_configuration()
     }
 }
 
-int media_unsupported(const char* method)
+int media_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
         send_action_failed_fault("media_service", -1);
     else
-        send_empty_response("trt", (char*) method);
+        send_empty_response("trt", (char *) method);
     return -1;
 }
