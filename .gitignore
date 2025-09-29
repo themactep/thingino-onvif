@@ -1,3 +1,11 @@
+# =============================================================================
+# Thingino ONVIF Project .gitignore
+# =============================================================================
+
+# =============================================================================
+# C/C++ Build Artifacts
+# =============================================================================
+
 # Prerequisites
 *.d
 
@@ -51,22 +59,175 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# debug information files
+# Debug information files
 *.dwo
 
+# =============================================================================
+# Project-Specific Executables
+# =============================================================================
+
+# Main ONVIF server executables
+onvif_notify_server
+onvif_simple_server
+wsd_simple_server
+
+# Debug versions
+onvif_notify_server_debug
+onvif_simple_server_debug
+wsd_simple_server_debug
+
+# =============================================================================
+# Development and Testing
+# =============================================================================
+
+# Build directories
 bin/
 obj/
-.trunk/
-include/*/version.hpp
-samples/
-tmp/
+build/
+dist/
+local/
+buildroot_package/
+onvif_logs/
+
+# Test artifacts
 *.log
+*.tmp
+test_*
+!test_*.c
+!test_*.h
+!test_*.sh
+!test_*.xml
+!test_*.py
 
-# IDE
-.idea/
+# Temporary files
+tmp/
+temp/
+*.temp
+*.swp
+*.swo
+*~
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# =============================================================================
+# IDE and Editor Files
+# =============================================================================
+
+# Visual Studio Code
 .vscode/
+*.code-workspace
 
-# build artefacts
- onvif_notify_server
- onvif_simple_server
- wsd_simple_server
+# JetBrains IDEs
+.idea/
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# =============================================================================
+# System Files
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# =============================================================================
+# Version Control and CI/CD
+# =============================================================================
+
+# Git
+*.orig
+*.rej
+
+# =============================================================================
+# Documentation and Packaging
+# =============================================================================
+
+# Generated documentation
+docs/html/
+docs/latex/
+*.pdf
+!docs/*.pdf
+
+# Package files
+*.tar.gz
+*.tgz
+*.zip
+*.deb
+*.rpm
+
+# =============================================================================
+# Configuration and Secrets
+# =============================================================================
+
+# Local configuration overrides
+config.local
+*.local
+.env
+.env.local
+
+# Secrets and credentials
+*.key
+*.pem
+*.crt
+secrets/
+credentials/
+
+# =============================================================================
+# Miscellaneous
+# =============================================================================
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Patch files
+*.patch
+*.diff
+
+# Coverage reports
+*.gcov
+*.gcda
+*.gcno
+coverage/
+
+# Profiling data
+gmon.out
+*.prof
+
+# Static analysis
+cppcheck-results.xml
+scan-build-*/

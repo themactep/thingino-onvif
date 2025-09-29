@@ -14,7 +14,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ezxml_wrapper.h"
+#include "mxml_wrapper.h"
 #include "log.h"
 #include "utils.h"
 

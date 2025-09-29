@@ -17,7 +17,7 @@
 
 #include "events_service.h"
 
-#include "ezxml_wrapper.h"
+#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
 #include "onvif_simple_server.h"

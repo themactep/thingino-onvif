@@ -23,7 +23,7 @@ The main config can reference an alternate directory via `conf_dir` (defaults to
   "port": 80,
   "user": "",
   "password": "",
-  "loglevel": 3,                 // 0=FATAL..5=TRACE
+  "loglevel": "INFO",            // FATAL, ERROR, WARN, INFO, DEBUG, TRACE (or 0-5 for backward compatibility)
   "conf_dir": "/etc/onvif.d"     // where to load modular JSON files from
 }
 ```

@@ -1,55 +1,67 @@
 # Set HAVE_WOLFSSL or HAVE_MBEDTLS variable if you want to use WOLFSSL or
 # MBEDTLS instead of LIBTOMCRYPT
 
-SRC_DIR := src
+SRC_DIR		:= src
 
-OBJECTS_O = $(SRC_DIR)/onvif_simple_server.o \
-			$(SRC_DIR)/onvif_dispatch.o \
-			$(SRC_DIR)/device_service.o \
-			$(SRC_DIR)/media_service.o \
-			$(SRC_DIR)/media2_service.o \
-			$(SRC_DIR)/ptz_service.o \
-			$(SRC_DIR)/events_service.o \
-			$(SRC_DIR)/deviceio_service.o \
-			$(SRC_DIR)/fault.o \
-			$(SRC_DIR)/conf.o \
-			$(SRC_DIR)/utils.o \
-			$(SRC_DIR)/log.o \
-			$(SRC_DIR)/ezxml_wrapper.o \
-			ezxml/ezxml.o
+OBJECTS_O	 = $(SRC_DIR)/onvif_simple_server.o \
+		   $(SRC_DIR)/onvif_dispatch.o \
+		   $(SRC_DIR)/device_service.o \
+		   $(SRC_DIR)/media_service.o \
+		   $(SRC_DIR)/media2_service.o \
+		   $(SRC_DIR)/ptz_service.o \
+		   $(SRC_DIR)/events_service.o \
+		   $(SRC_DIR)/deviceio_service.o \
+		   $(SRC_DIR)/fault.o \
+		   $(SRC_DIR)/conf.o \
+		   $(SRC_DIR)/utils.o \
+		   $(SRC_DIR)/log.o \
+		   $(SRC_DIR)/mxml_wrapper.o
 
-OBJECTS_N = $(SRC_DIR)/onvif_notify_server.o \
-			$(SRC_DIR)/conf.o \
-			$(SRC_DIR)/utils.o \
-			$(SRC_DIR)/log.o \
-			$(SRC_DIR)/ezxml_wrapper.o \
-			ezxml/ezxml.o
+OBJECTS_N	 = $(SRC_DIR)/onvif_notify_server.o \
+		   $(SRC_DIR)/conf.o \
+		   $(SRC_DIR)/utils.o \
+		   $(SRC_DIR)/log.o \
+		   $(SRC_DIR)/mxml_wrapper.o
 
-OBJECTS_W = $(SRC_DIR)/wsd_simple_server.o \
-			$(SRC_DIR)/utils.o \
-			$(SRC_DIR)/log.o \
-			$(SRC_DIR)/ezxml_wrapper.o \
-			ezxml/ezxml.o
+OBJECTS_W	 = $(SRC_DIR)/wsd_simple_server.o \
+		   $(SRC_DIR)/utils.o \
+		   $(SRC_DIR)/log.o \
+		   $(SRC_DIR)/mxml_wrapper.o
 
+# Common compiler and linker flags
+INCLUDE		 = -ffunction-sections -fdata-sections
+LIBS_O		 = -Wl,--gc-sections
+LIBS_N		 = -Wl,--gc-sections
+
+# Crypto library selection
 ifdef HAVE_WOLFSSL
-INCLUDE = -DHAVE_WOLFSSL -ffunction-sections -fdata-sections
-LIBS_O = -Wl,--gc-sections -lwolfssl -ljson-c -lpthread -lrt
-LIBS_N = -Wl,--gc-sections -lwolfssl -ljson-c -lpthread -lrt
+INCLUDE		+= -DHAVE_WOLFSSL
+LIBS_O		+= -lwolfssl
+LIBS_N		+= -lwolfssl
+LIBS_W		 = -Wl,--gc-sections -lwolfssl
 else
 ifdef HAVE_MBEDTLS
-INCLUDE = -DHAVE_MBEDTLS -ffunction-sections -fdata-sections
-LIBS_O = -Wl,--gc-sections -lmbedcrypto -ljson-c -lpthread -lrt
-LIBS_N = -Wl,--gc-sections -lmbedcrypto -ljson-c -lpthread -lrt
+INCLUDE		+= -DHAVE_MBEDTLS
+LIBS_O		+= -lmbedcrypto
+LIBS_N		+= -lmbedcrypto
+LIBS_W		 = -Wl,--gc-sections -lmbedcrypto
 else
-INCLUDE = -ffunction-sections -fdata-sections
-LIBS_O = -Wl,--gc-sections -ltomcrypt -ljson-c -lpthread -lrt
-LIBS_N = -Wl,--gc-sections -ltomcrypt -ljson-c -lpthread -lrt
+LIBS_O		+= -ltomcrypt
+LIBS_N		+= -ltomcrypt
+LIBS_W		 = -Wl,--gc-sections -ltomcrypt
 endif
 endif
-LIBS_W = -Wl,--gc-sections -lpthread
+
+# Common libraries for all builds
+# Note: For Buildroot builds, mxml is provided by the system
+# For development builds, mxml is built locally via build.sh
+LIBS_O		+= -ljct -lmxml -lpthread -lrt
+LIBS_N		+= -ljct -lmxml -lpthread -lrt
+LIBS_W		+= -lmxml -lpthread
 
 # Ensure headers under src/ and ezxml under project root are found
-INCLUDE += -I$(SRC_DIR) -I.
+# jct headers are expected to be in system include path
+INCLUDE		+= -I$(SRC_DIR) -I.
 
 ifeq ($(STRIP), )
     STRIP=echo
@@ -68,7 +80,10 @@ $(SRC_DIR)/log.o: $(SRC_DIR)/log.c $(HEADERS)
 $(SRC_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
 
-ezxml/%.o: ezxml/%.c
+
+# JCT library compilation (for development)
+# In production, this would not be needed as jct is a system library
+jct/src/%.o: jct/src/%.c
 	$(CC) -c $< -fPIC -Os $(INCLUDE) -o $@
 
 onvif_simple_server: $(OBJECTS_O)
@@ -87,9 +102,6 @@ wsd_simple_server: $(OBJECTS_W)
 $(SRC_DIR)/%.debug.o: $(SRC_DIR)/%.c $(HEADERS)
 	$(CC) -c $< $(CFLAGS_DEBUG) $(INCLUDE) -o $@
 
-ezxml/%.debug.o: ezxml/%.c
-	$(CC) -c $< $(CFLAGS_DEBUG) $(INCLUDE) -o $@
-
 $(SRC_DIR)/log.debug.o: $(SRC_DIR)/log.c $(HEADERS)
 	$(CC) -c $< -std=c99 $(CFLAGS_DEBUG) $(INCLUDE) -o $@
 
@@ -106,7 +118,7 @@ onvif_notify_server_debug: $(OBJECTS_N_DEBUG)
 wsd_simple_server_debug: $(OBJECTS_W_DEBUG)
 	$(CC) $(OBJECTS_W_DEBUG) $(LIBS_W) $(LDFLAGS_DEBUG) -o $@
 
-.PHONY: clean debug
+.PHONY: clean distclean debug
 
 clean:
 	rm -f onvif_simple_server onvif_simple_server_debug
@@ -115,3 +127,10 @@ clean:
 	rm -f $(OBJECTS_O) $(OBJECTS_O_DEBUG)
 	rm -f $(OBJECTS_N) $(OBJECTS_N_DEBUG)
 	rm -f $(OBJECTS_W) $(OBJECTS_W_DEBUG)
+
+distclean: clean
+	@echo "Removing local development artifacts..."
+	rm -rf jct/
+	rm -rf mxml/
+	rm -rf local/
+	@echo "Development environment cleaned."

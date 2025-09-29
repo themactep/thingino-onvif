@@ -20,7 +20,7 @@
 #include "device_service.h"
 #include "deviceio_service.h"
 #include "events_service.h"
-#include "ezxml_wrapper.h"
+#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
 #include "media2_service.h"
@@ -82,7 +82,7 @@ void print_usage(char* progname)
     fprintf(stderr, "\t-c JSON_CONF_FILE, --conf_file JSON_CONF_FILE\n");
     fprintf(stderr, "\t\tpath of the JSON configuration file (default %s)\n", DEFAULT_JSON_CONF_FILE);
     fprintf(stderr, "\t-d LEVEL, --debug LEVEL\n");
-    fprintf(stderr, "\t\tverbosity 0..5 (0=FATAL only, 5=TRACE; default 0)\n");
+    fprintf(stderr, "\t\tlog level: FATAL, ERROR, WARN, INFO, DEBUG, TRACE or 0-5 (default FATAL)\n");
     fprintf(stderr, "\t-h, --help\n");
     fprintf(stderr, "\t\tprint this help\n");
 }
@@ -135,26 +135,15 @@ int main(int argc, char** argv)
             break;
 
         case 'd':
-            debug = strtol(optarg, &endptr, 10);
-
-            /* Check for various possible errors */
-            if ((errno == ERANGE && (debug == LONG_MAX || debug == LONG_MIN)) || (errno != 0 && debug == 0)) {
+            debug = log_level_from_string(optarg);
+            if (debug < 0) {
+                fprintf(stderr, "Invalid log level: %s\n", optarg);
+                fprintf(stderr, "Valid levels: FATAL, ERROR, WARN, INFO, DEBUG, TRACE or 0-5\n");
                 print_usage(argv[0]);
                 free(conf_file);
                 exit(EXIT_FAILURE);
             }
-            if (endptr == optarg) {
-                print_usage(argv[0]);
-                free(conf_file);
-                exit(EXIT_FAILURE);
-            }
-
-            if ((debug < LOG_LVL_FATAL) || (debug > LOG_LVL_TRACE)) {
-                print_usage(argv[0]);
-                free(conf_file);
-                exit(EXIT_FAILURE);
-            }
-            /* level set directly: 0=FATAL..5=TRACE */
+            /* level set directly: textual or numeric */
             debug_cli_set = 1;
             break;
 
@@ -265,16 +254,16 @@ int main(int argc, char** argv)
         if (service_ctx.loglevel >= LOG_LVL_FATAL && service_ctx.loglevel <= LOG_LVL_TRACE) {
             log_set_level(service_ctx.loglevel);
             debug = service_ctx.loglevel;
-            log_info("Log level set from config: %d", debug);
         }
     }
 
     tmp = getenv("REQUEST_METHOD");
+    log_debug("REQUEST_METHOD: %s", tmp ? tmp : "NULL");
     if ((tmp == NULL) || (strcmp("POST", tmp) != 0)) {
         fprintf(stdout, "Content-type: text/html\r\n");
         fprintf(stdout, "Content-Length: 86\r\n\r\n");
         fprintf(stdout, "<html><head><title>Error</title></head><body>HTTP method not supported</body></html>\r\n");
-        log_fatal("HTTP method not supported");
+        log_fatal("HTTP method not supported - got: %s", tmp ? tmp : "NULL");
 
         free(conf_file);
         exit(EXIT_FAILURE);
@@ -331,8 +320,15 @@ int main(int argc, char** argv)
 
     log_debug("Method: %s", method);
 
+    log_debug("Authentication config: username=%s", service_ctx.username ? service_ctx.username : "NULL");
     if (service_ctx.username != NULL) {
-        if ((get_element("Security", "Header") != NULL) && (get_element("UsernameToken", "Header") != NULL)) {
+        log_debug("Authentication required, checking for Security header");
+        const char* security_header = get_element("Security", "Header");
+        const char* username_token = get_element("UsernameToken", "Header");
+        log_debug("Security header: %s", security_header ? "found" : "not found");
+        log_debug("UsernameToken: %s", username_token ? "found" : "not found");
+
+        if ((security_header != NULL) && (username_token != NULL)) {
             unsigned char nonce[128];
             unsigned long nonce_size = sizeof(nonce);
             unsigned char auth[128];
@@ -416,7 +412,7 @@ int main(int argc, char** argv)
 
     if ((strcasecmp("device_service", prog_name) == 0)
         && ((strcasecmp("GetSystemDateAndTime", method) == 0) || (strcasecmp("GetUsers", method) == 0) || (strcasecmp("GetCapabilities", method) == 0)
-            || (strcasecmp("GetServices", method) == 0) || (strcasecmp("GetServiceCapabilities", method) == 0))) {
+            || (strcasecmp("GetServices", method) == 0) || (strcasecmp("GetServiceCapabilities", method) == 0) || (strcasecmp("GetDeviceInformation", method) == 0))) {
         auth_error = 0;
     }
 
@@ -435,10 +431,13 @@ int main(int argc, char** argv)
     // log_debug("Authentication completed, auth_error = %d", auth_error);
     // log_debug("About to process method: %s for service: %s", method ? method : "NULL", prog_name ? prog_name : "NULL");
 
+    log_debug("Authentication check result: auth_error=%d", auth_error);
     if (auth_error == 0) {
+        log_debug("Authentication passed, dispatching method: %s", method);
         // Use clean dispatch table instead of massive if/else ladder
         dispatch_onvif_method(prog_name, method);
     } else {
+        log_error("Authentication failed, sending HTTP 400 error");
         send_authentication_error();
     }
 
@@ -457,8 +456,8 @@ int main(int argc, char** argv)
     // Don't free static buffers: free(input);
     // Don't free static buffers: free(conf_file);
 
-    // Now safe to free configuration memory
-    free_conf_file();
+    // Configuration memory will be freed automatically when the program exits
+    // free_conf_file();
 
     // Skip problematic logging in CGI:
     // log_debug("About to terminate program");

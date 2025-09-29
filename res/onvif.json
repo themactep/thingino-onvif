@@ -101,5 +101,5 @@
     "adv_fault_if_set": false,
     "adv_fault_if_unknown": false,
     "adv_synology_nvr": false,
-    "loglevel": 5
+    "loglevel": "TRACE"
 }

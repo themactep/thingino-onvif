@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 
@@ -86,6 +87,54 @@ void log_set_level(int level)
         setlogmask(LOG_UPTO(syslog_prio(G.max_level)));
 }
 
+void log_set_level_str(const char* level_str)
+{
+    int level = log_level_from_string(level_str);
+    if (level >= 0) {
+        log_set_level(level);
+    }
+}
+
+int log_level_from_string(const char* level_str)
+{
+    if (!level_str || *level_str == '\0')
+        return -1;
+
+    // Convert to uppercase for case-insensitive comparison
+    char upper_str[16];
+    int i;
+    for (i = 0; i < sizeof(upper_str) - 1 && level_str[i]; i++) {
+        if (level_str[i] >= 'a' && level_str[i] <= 'z') {
+            upper_str[i] = level_str[i] - 'a' + 'A';
+        } else {
+            upper_str[i] = level_str[i];
+        }
+    }
+    upper_str[i] = '\0';
+
+    if (strcmp(upper_str, "FATAL") == 0) return LOG_LVL_FATAL;
+    if (strcmp(upper_str, "ERROR") == 0) return LOG_LVL_ERROR;
+    if (strcmp(upper_str, "WARN") == 0) return LOG_LVL_WARN;
+    if (strcmp(upper_str, "WARNING") == 0) return LOG_LVL_WARN; // Accept both WARN and WARNING
+    if (strcmp(upper_str, "INFO") == 0) return LOG_LVL_INFO;
+    if (strcmp(upper_str, "DEBUG") == 0) return LOG_LVL_DEBUG;
+    if (strcmp(upper_str, "TRACE") == 0) return LOG_LVL_TRACE;
+
+    // Try to parse as numeric for backward compatibility
+    char* endptr;
+    long num = strtol(level_str, &endptr, 10);
+    if (*endptr == '\0' && num >= LOG_LVL_FATAL && num <= LOG_LVL_TRACE) {
+        return (int)num;
+    }
+
+    return -1; // Invalid level
+}
+
+const char* log_level_to_string(int level)
+{
+    return level_str(level);
+}
+
 void log_log(int level, const char* file, int line, const char* fmt, ...)
 {
     if (level < LOG_LVL_FATAL || level > LOG_LVL_TRACE)
@@ -105,7 +154,7 @@ void log_log(int level, const char* file, int line, const char* fmt, ...)
     if (len && msgbuf[len - 1] == '\n')
         msgbuf[len - 1] = '\0';
 
-    // Build structured key=value envelope
+    // Build log message in format: [LEVEL:filename.ext:line]: message
     const char* fname = file ? file : "";
     const char* slash = fname;
     for (const char* p = fname; *p; ++p)
@@ -113,7 +162,7 @@ void log_log(int level, const char* file, int line, const char* fmt, ...)
             slash = p + 1; // basename
 
     char outbuf[4200]; // Increased to accommodate larger msgbuf plus formatting overhead
-    snprintf(outbuf, sizeof(outbuf), "level=%s file=%s line=%d msg=\"%s\"", level_str(level), slash, line, msgbuf);
+    snprintf(outbuf, sizeof(outbuf), "[%s:%s:%d]: %s", level_str(level), slash, line, msgbuf);
 
     // Emit to syslog
     syslog(syslog_prio(level), "%s", outbuf);

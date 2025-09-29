@@ -17,7 +17,7 @@ gcc -g -O0 -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer \
     src/utils.debug.o \
     src/log.debug.o \
     -Isrc -I. \
-    -ltomcrypt -ljson-c -lpthread -lrt \
+    -ltomcrypt -ljct -lpthread -lrt \
     -o tests/test_memory_corruption
 
 echo "Running memory corruption tests..."

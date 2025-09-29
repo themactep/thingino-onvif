@@ -35,7 +35,7 @@ See CONFIGURATION.md for the modular configuration structure. The package instal
 
 ## Logging
 - Syslog is used for operational logs.
-- `loglevel`: 0..5 (FATAL..TRACE). CLI `-d` may override the config for foreground debugging.
+- `loglevel`: FATAL, ERROR, WARN, INFO, DEBUG, TRACE (or 0-5 for backward compatibility). CLI `-d` may override the config for foreground debugging.
 
 ## Building within Thingino
 Handled by the package `package/onvif-simple-server/onvif-simple-server.mk` which:
