@@ -17,7 +17,7 @@
 #include "media2_service.h"
 
 #include "conf.h"
-#include "ezxml_wrapper.h"
+#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
 #include "onvif_simple_server.h"
@@ -61,7 +61,7 @@ int media2_get_profiles()
     char audio_enc_h[16], audio_enc_l[16];
     char video_enc_h[16], video_enc_l[16];
     const char* profile_token = get_element("Token", "Body");
-    ezxml_t x_type;
+    mxml_node_t* x_type;
     int n_type;
     char xml_name[MAX_LEN];
     long size;
@@ -90,31 +90,34 @@ int media2_get_profiles()
     n_type = 0;
     do {
         if (x_type != NULL) {
-            if (strstr(x_type->txt, "VideoSource") != NULL)
-                typeVSC = 1;
-            if (strstr(x_type->txt, "AudioSource") != NULL)
-                typeASC = 1;
-            if (strstr(x_type->txt, "VideoEncoder") != NULL)
-                typeVEC = 1;
-            if (strstr(x_type->txt, "AudioEncoder") != NULL)
-                typeAEC = 1;
-            if (strstr(x_type->txt, "PTZ") != NULL)
-                typePTZ = 1;
-            if (strstr(x_type->txt, "AudioOutput") != NULL)
-                typeAOC = 1;
-            if (strstr(x_type->txt, "AudioDecoder") != NULL)
-                typeADC = 1;
-            if (strstr(x_type->txt, "All") != NULL) {
-                typeVSC = 1;
-                typeASC = 1;
-                typeVEC = 1;
-                typeAEC = 1;
-                typePTZ = 1;
-                typeAOC = 1;
-                typeADC = 1;
+            const char* type_text = mxmlGetText(x_type, NULL);
+            if (type_text != NULL) {
+                if (strstr(type_text, "VideoSource") != NULL)
+                    typeVSC = 1;
+                if (strstr(type_text, "AudioSource") != NULL)
+                    typeASC = 1;
+                if (strstr(type_text, "VideoEncoder") != NULL)
+                    typeVEC = 1;
+                if (strstr(type_text, "AudioEncoder") != NULL)
+                    typeAEC = 1;
+                if (strstr(type_text, "PTZ") != NULL)
+                    typePTZ = 1;
+                if (strstr(type_text, "AudioOutput") != NULL)
+                    typeAOC = 1;
+                if (strstr(type_text, "AudioDecoder") != NULL)
+                    typeADC = 1;
+                if (strstr(type_text, "All") != NULL) {
+                    typeVSC = 1;
+                    typeASC = 1;
+                    typeVEC = 1;
+                    typeAEC = 1;
+                    typePTZ = 1;
+                    typeAOC = 1;
+                    typeADC = 1;
+                }
             }
             n_type++;
-            x_type = x_type->next;
+            x_type = mxmlGetNextSibling(x_type);
         }
     } while (x_type != NULL);
 
@@ -1655,7 +1658,7 @@ int media2_get_stream_uri()
 int media2_set_video_source_configuration()
 {
     const char* token = NULL;
-    ezxml_t node;
+    mxml_node_t* node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1684,7 +1687,7 @@ int media2_set_video_source_configuration()
 int media2_set_audio_source_configuration()
 {
     const char* token = NULL;
-    ezxml_t node;
+    mxml_node_t* node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1735,7 +1738,7 @@ int media2_set_audio_encoder_configuration()
 int media2_set_audio_output_configuration()
 {
     const char* token = NULL;
-    ezxml_t node;
+    mxml_node_t* node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {

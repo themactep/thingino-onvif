@@ -7,7 +7,7 @@
   "firmware_ver": "0.0.1",
   "hardware_id": "HWID",
   "ifs": "lo",
-  "loglevel": 5,
+  "loglevel": "TRACE",
   "manufacturer": "Test Manufacturer",
   "model": "Test Model",
   "password": "admin",

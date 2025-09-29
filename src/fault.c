@@ -132,7 +132,7 @@ int send_authentication_error()
 {
     long size = cat(NULL, "generic_files/AuthenticationError.xml", 0);
 
-    // fprintf(stdout, "Status: 400 Bad request\r\n");
+    // Keep original HTTP 400 status (matches original ezxml behavior)
     fprintf(stdout, "HTTP/1.1 400 Bad request\r\n");
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n\r\n", size);

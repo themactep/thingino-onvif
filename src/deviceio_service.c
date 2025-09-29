@@ -16,7 +16,7 @@
 
 #include "deviceio_service.h"
 
-#include "ezxml_wrapper.h"
+#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
 #include "onvif_simple_server.h"
@@ -203,7 +203,7 @@ int deviceio_get_relay_output_options()
 int deviceio_set_relay_output_settings()
 {
     int itoken;
-    ezxml_t node;
+    mxml_node_t* node;
     const char* token = NULL;
 
     node = get_element_ptr(node, "RelayOutput", "Body");

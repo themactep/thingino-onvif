@@ -523,7 +523,7 @@ void print_usage(char* progname)
     fprintf(stderr, "\t-f, --foreground\n");
     fprintf(stderr, "\t\tdon't daemonize\n");
     fprintf(stderr, "\t-d LEVEL, --debug LEVEL\n");
-    fprintf(stderr, "\t\tverbosity 0..5 (0=FATAL only, 5=TRACE; default 0)\n");
+    fprintf(stderr, "\t\tlog level: FATAL, ERROR, WARN, INFO, DEBUG, TRACE or 0-5 (default FATAL)\n");
     fprintf(stderr, "\t-h, --help\n");
     fprintf(stderr, "\t\tprint this help\n");
 }
@@ -593,23 +593,14 @@ int main(int argc, char** argv)
             break;
 
         case 'd':
-            debug = strtol(optarg, &endptr, 10);
-
-            /* Check for various possible errors */
-            if ((errno == ERANGE && (debug == LONG_MAX || debug == LONG_MIN)) || (errno != 0 && debug == 0)) {
+            debug = log_level_from_string(optarg);
+            if (debug < 0) {
+                fprintf(stderr, "Invalid log level: %s\n", optarg);
+                fprintf(stderr, "Valid levels: FATAL, ERROR, WARN, INFO, DEBUG, TRACE or 0-5\n");
                 print_usage(argv[0]);
                 exit(EXIT_FAILURE);
             }
-            if (endptr == optarg) {
-                print_usage(argv[0]);
-                exit(EXIT_FAILURE);
-            }
-
-            if ((debug < LOG_LVL_FATAL) || (debug > LOG_LVL_TRACE)) {
-                print_usage(argv[0]);
-                exit(EXIT_FAILURE);
-            }
-            /* level set directly: 0=FATAL .. 5=TRACE */
+            /* level set directly: textual or numeric */
             debug_cli_set = 1;
             break;
 
@@ -688,7 +679,6 @@ int main(int argc, char** argv)
         if (service_ctx.loglevel >= LOG_LVL_FATAL && service_ctx.loglevel <= LOG_LVL_TRACE) {
             log_set_level(service_ctx.loglevel);
             debug = service_ctx.loglevel;
-            log_info("Log level set from config: %d", debug);
         }
     }
 
@@ -879,7 +869,7 @@ int main(int argc, char** argv)
     unlink(pid_file);
     log_info("Terminating program.");
 
-    free_conf_file();
+    // free_conf_file(); // Let the system handle cleanup
     free(conf_file);
 
     return 0;

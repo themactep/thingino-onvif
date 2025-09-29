@@ -17,7 +17,7 @@
 #include "media_service.h"
 
 #include "conf.h"
-#include "ezxml_wrapper.h"
+#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
 #include "onvif_simple_server.h"
@@ -1906,7 +1906,7 @@ int media_get_compatible_audio_output_configurations()
 int media_set_video_source_configuration()
 {
     const char* token = NULL;
-    ezxml_t node;
+    mxml_node_t* node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1935,7 +1935,7 @@ int media_set_video_source_configuration()
 int media_set_audio_source_configuration()
 {
     const char* token = NULL;
-    ezxml_t node;
+    mxml_node_t* node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {
@@ -1986,7 +1986,7 @@ int media_set_audio_encoder_configuration()
 int media_set_audio_output_configuration()
 {
     const char* token = NULL;
-    ezxml_t node;
+    mxml_node_t* node;
 
     node = get_element_ptr(NULL, "Configuration", "Body");
     if (node != NULL) {

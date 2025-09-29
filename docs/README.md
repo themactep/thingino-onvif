@@ -6,7 +6,7 @@ A lightweight ONVIF (Open Network Video Interface Forum) server designed for emb
 - Modular configuration split between a main file and per‑feature modules
   - Main: `/etc/onvif.json`
   - Modules: `/etc/onvif.d/{profiles,ptz,relays,events}.json`
-- Standards‑compliant SOAP over HTTP using ezXML parser and file templates
+- Standards‑compliant SOAP over HTTP using mxml parser and file templates
 - Optional raw XML request/response logging to a file for deep debugging
 - Syslog‑based logging with proper levels (FATAL..TRACE)
 - Minimal dependencies suitable for constrained devices
@@ -47,5 +47,33 @@ This writes full SOAP requests and responses to that file, useful when syslog tr
 ## Build and Integration
 This repository integrates with the Thingino Buildroot package `onvif-simple-server`. All paths are defined directly in the sources/configs (no patching step). Templates remain under `*_service_files` directories.
 
-See DEPLOYMENT.md for image integration and installed files, and CONFIGURATION.md for all config keys.
+## Documentation Index
+
+### 🏗️ Build & Setup
+- **[BUILD.md](BUILD.md)** - Build instructions for development and production
+- **[BUILDROOT_INTEGRATION.md](BUILDROOT_INTEGRATION.md)** - Buildroot package integration details
+- **[BUILDROOT_PACKAGE_UPDATES.md](BUILDROOT_PACKAGE_UPDATES.md)** - Recent package configuration updates
+
+### 🔄 Migration & Security
+- **[MIGRATION_SUMMARY.md](MIGRATION_SUMMARY.md)** - Executive summary of ezxml→mxml migration
+- **[MXML_MIGRATION.md](MXML_MIGRATION.md)** - Detailed technical migration guide
+
+### ⚙️ Configuration & API
+- **[CONFIGURATION.md](CONFIGURATION.md)** - Complete configuration schema and examples
+- **[CONFIGURATION_SIMPLIFICATION.md](CONFIGURATION_SIMPLIFICATION.md)** - Configuration improvements
+- **[API.md](API.md)** - ONVIF API endpoints and usage
+
+### 🚀 Operations & Deployment
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Image integration and installed files
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[WSD_DEBUG_LOG_EXAMPLE.md](WSD_DEBUG_LOG_EXAMPLE.md)** - WS-Discovery debugging
+
+### 🔧 Development & Maintenance
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+- **[ENHANCED_LOGGING_README.md](ENHANCED_LOGGING_README.md)** - Logging improvements
+- **[MEMORY_CORRUPTION_FIXES.md](MEMORY_CORRUPTION_FIXES.md)** - Memory safety fixes
+- **[BETTER_PROBE_HANDLING.md](BETTER_PROBE_HANDLING.md)** - Probe handling improvements
+- **[COMPRESSION.md](COMPRESSION.md)** - Filesystem-level compression approach
+
+See the main [README.md](../README.md) for a quick overview and getting started guide.
 
