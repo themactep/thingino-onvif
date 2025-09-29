@@ -16,9 +16,9 @@
 
 #include "ptz_service.h"
 
-#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
+#include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
 
@@ -33,15 +33,15 @@ presets_t presets;
 
 int init_presets()
 {
-    FILE* fp;
+    FILE *fp;
     char out[MAX_LEN];
     int i, num;
     double x, y, z;
     char name[MAX_LEN];
-    char* p;
+    char *p;
 
     presets.count = 0;
-    presets.items = (preset_t*) malloc(sizeof(preset_t));
+    presets.items = (preset_t *) malloc(sizeof(preset_t));
 
     // Run command that returns to stdout the list of the presets in the form number=name,pan,tilt,zoom (zoom is optional)
     if (service_ctx.ptz_node.get_presets == NULL) {
@@ -66,8 +66,8 @@ int init_presets()
             } else {
                 if (strlen(name) != 0) {
                     presets.count++;
-                    presets.items = (preset_t*) realloc(presets.items, sizeof(preset_t) * presets.count);
-                    presets.items[presets.count - 1].name = (char*) malloc(strlen(name) + 1);
+                    presets.items = (preset_t *) realloc(presets.items, sizeof(preset_t) * presets.count);
+                    presets.items[presets.count - 1].name = (char *) malloc(strlen(name) + 1);
                     strcpy(presets.items[presets.count - 1].name, name);
                     presets.items[presets.count - 1].number = num;
                     presets.items[presets.count - 1].x = x;
@@ -340,7 +340,7 @@ int ptz_get_node()
     sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
-    const char* node_token = get_element("NodeToken", "Body");
+    const char *node_token = get_element("NodeToken", "Body");
     if (strcmp("PTZNodeToken", node_token) != 0) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoEntity", "No entity", "No such node on the device");
         return -1;
@@ -383,10 +383,10 @@ int ptz_get_node()
 
 int ptz_get_presets()
 {
-    mxml_node_t* node;
+    mxml_node_t *node;
     int i, c;
     char dest_a[] = "stdout";
-    char* dest;
+    char *dest;
     char token[16];
     char sx[16], sy[16], sz[16];
     long size, total_size;
@@ -450,10 +450,10 @@ int ptz_get_presets()
 
 int ptz_goto_preset()
 {
-    const char* preset_token;
+    const char *preset_token;
     int i, preset_number, count, found;
     char sys_command[MAX_LEN];
-    mxml_node_t* node;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -513,7 +513,7 @@ int ptz_goto_preset()
 
 int ptz_goto_home_position()
 {
-    mxml_node_t* node;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -551,13 +551,13 @@ int ptz_goto_home_position()
 
 int ptz_continuous_move()
 {
-    const char* x = NULL;
-    const char* y = NULL;
-    const char* z = NULL;
+    const char *x = NULL;
+    const char *y = NULL;
+    const char *z = NULL;
     double dx, dy, dz;
     char sys_command[MAX_LEN];
     int ret = -1;
-    mxml_node_t* node;
+    mxml_node_t *node;
 
     log_debug("PTZ: ContinuousMove called");
 
@@ -582,20 +582,20 @@ int ptz_continuous_move()
         return -2;
     }
 
-    mxml_node_t* velocity_node = get_element_ptr(NULL, "Velocity", "Body");
+    mxml_node_t *velocity_node = get_element_ptr(NULL, "Velocity", "Body");
     log_debug("PTZ: Velocity node: %p", velocity_node);
     if (velocity_node != NULL) {
         // Debug: List all children of Velocity node
-        mxml_node_t* child = mxmlGetFirstChild(velocity_node);
+        mxml_node_t *child = mxmlGetFirstChild(velocity_node);
         while (child) {
             if (mxmlGetType(child) == MXML_TYPE_ELEMENT) {
-                const char* child_name = mxmlGetElement(child);
+                const char *child_name = mxmlGetElement(child);
                 log_debug("PTZ: Velocity child element: %s", child_name ? child_name : "NULL");
             }
             child = mxmlGetNextSibling(child);
         }
 
-        mxml_node_t* pantilt_node = get_element_ptr(velocity_node, "PanTilt", NULL);
+        mxml_node_t *pantilt_node = get_element_ptr(velocity_node, "PanTilt", NULL);
         log_debug("PTZ: PanTilt node: %p", pantilt_node);
         if (pantilt_node != NULL) {
             x = get_attribute(pantilt_node, "x");
@@ -605,7 +605,7 @@ int ptz_continuous_move()
         }
 
         // Look for Zoom as sibling of PanTilt under Velocity, not inside PanTilt
-        mxml_node_t* zoom_node = get_element_ptr(velocity_node, "Zoom", NULL);
+        mxml_node_t *zoom_node = get_element_ptr(velocity_node, "Zoom", NULL);
         if (zoom_node != NULL) {
             z = get_attribute(zoom_node, "x");
             log_debug("PTZ: Raw Z attribute: %s", z ? z : "NULL");
@@ -693,20 +693,20 @@ int ptz_continuous_move()
 
 int ptz_relative_move()
 {
-    char const* x = NULL;
-    char const* y = NULL;
-    char const* z = NULL;
-    char const* space_p = NULL;
-    char const* space_z = NULL;
+    char const *x = NULL;
+    char const *y = NULL;
+    char const *z = NULL;
+    char const *space_p = NULL;
+    char const *space_z = NULL;
     double dx = 0;
     double dy = 0;
     double dz = 0;
     char sys_command_tmp[MAX_LEN];
     char sys_command[MAX_LEN];
     int ret = 0;
-    mxml_node_t* node;
-    mxml_node_t* node_p;
-    mxml_node_t* node_z;
+    mxml_node_t *node;
+    mxml_node_t *node_p;
+    mxml_node_t *node_z;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -841,17 +841,17 @@ int ptz_relative_move()
 
 int ptz_absolute_move()
 {
-    char const* x = NULL;
-    char const* y = NULL;
-    char const* z = NULL;
+    char const *x = NULL;
+    char const *y = NULL;
+    char const *z = NULL;
     double dx = 0.0;
     double dy = 0.0;
     double dz = 0.0;
     char sys_command_tmp[MAX_LEN];
     char sys_command[MAX_LEN];
     int ret = 0;
-    mxml_node_t* node;
-    mxml_node_t* node_c;
+    mxml_node_t *node;
+    mxml_node_t *node_c;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -938,7 +938,7 @@ int ptz_absolute_move()
 int ptz_stop()
 {
     char sys_command[MAX_LEN];
-    mxml_node_t* node;
+    mxml_node_t *node;
     int pantilt = 1;
     int zoom = 1;
 
@@ -968,11 +968,11 @@ int ptz_stop()
         return -3;
     }
 
-    const char* pantilt_node = get_element("PanTilt", "Body");
+    const char *pantilt_node = get_element("PanTilt", "Body");
     if ((pantilt_node != NULL) && (strcasecmp("false", pantilt_node) == 0)) {
         pantilt = 0;
     }
-    const char* zoom_node = get_element("Zoom", "Body");
+    const char *zoom_node = get_element("Zoom", "Body");
     if ((zoom_node != NULL) && (strcasecmp("false", zoom_node) == 0)) {
         zoom = 0;
     }
@@ -1000,13 +1000,13 @@ int ptz_get_status()
 {
     char utctime[32];
     time_t timestamp = time(NULL);
-    struct tm* tm = gmtime(&timestamp);
+    struct tm *tm = gmtime(&timestamp);
     int ret = 0;
-    FILE* fp;
+    FILE *fp;
     double x, y, z = 1.0;
     int i = 0;
     char out[256], sx[128], sy[128], sz[128], si[128];
-    mxml_node_t* node;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -1123,10 +1123,10 @@ int ptz_set_preset()
 {
     int i;
     char sys_command[MAX_LEN];
-    const char* preset_name;
+    const char *preset_name;
     char preset_name_out[UUID_LEN + 8];
-    const char* preset_token;
-    mxml_node_t* node;
+    const char *preset_token;
+    mxml_node_t *node;
     char preset_token_out[16];
     int preset_number = -1;
     int preset_found;
@@ -1251,7 +1251,7 @@ int ptz_set_preset()
     destroy_presets();
 
     // Unhandled race condition
-    sprintf(sys_command, service_ctx.ptz_node.set_preset, preset_number, (char*) preset_name_out);
+    sprintf(sys_command, service_ctx.ptz_node.set_preset, preset_number, (char *) preset_name_out);
     system(sys_command);
     sleep(1);
 
@@ -1280,7 +1280,7 @@ int ptz_set_preset()
 int ptz_set_home_position()
 {
     char sys_command[MAX_LEN];
-    mxml_node_t* node;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -1321,9 +1321,9 @@ int ptz_set_home_position()
 int ptz_remove_preset()
 {
     char sys_command[MAX_LEN];
-    const char* preset_token;
+    const char *preset_token;
     int preset_number;
-    mxml_node_t* node;
+    mxml_node_t *node;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -1366,11 +1366,11 @@ int ptz_remove_preset()
     return cat("stdout", "ptz_service_files/RemovePreset.xml", 0);
 }
 
-int ptz_unsupported(const char* method)
+int ptz_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
         send_action_failed_fault("ptz_service", -1);
     else
-        send_empty_response("tptz", (char*) method);
+        send_empty_response("tptz", (char *) method);
     return -1;
 }

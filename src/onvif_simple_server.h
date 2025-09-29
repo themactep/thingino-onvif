@@ -25,10 +25,10 @@
 
 typedef struct {
     int enable;
-    const char* username;
-    const char* password;
-    const char* nonce;
-    const char* created;
+    const char *username;
+    const char *password;
+    const char *nonce;
+    const char *created;
     int type;
 } username_token_t;
 
@@ -39,11 +39,11 @@ typedef enum { AUDIO_NONE, G711, G726, AAC } audio_type;
 typedef enum { IDLE_STATE_CLOSE, IDLE_STATE_OPEN } idle_state;
 
 typedef struct {
-    char* name;
+    char *name;
     int width;
     int height;
-    char* url;
-    char* snapurl;
+    char *url;
+    char *snapurl;
     int type;
     int audio_encoder;
     int audio_decoder;
@@ -51,8 +51,8 @@ typedef struct {
 
 typedef struct {
     int idle_state;
-    char* close;
-    char* open;
+    char *close;
+    char *open;
 } relay_output_t;
 
 typedef struct {
@@ -63,62 +63,62 @@ typedef struct {
     double max_step_y;
     double min_step_z;
     double max_step_z;
-    char* get_position;
-    char* is_moving;
-    char* move_left;
-    char* move_right;
-    char* move_up;
-    char* move_down;
-    char* move_in;
-    char* move_out;
-    char* move_stop;
-    char* move_preset;
-    char* goto_home_position;
-    char* set_preset;
-    char* set_home_position;
-    char* remove_preset;
-    char* jump_to_abs;
-    char* jump_to_rel;
-    char* get_presets;
+    char *get_position;
+    char *is_moving;
+    char *move_left;
+    char *move_right;
+    char *move_up;
+    char *move_down;
+    char *move_in;
+    char *move_out;
+    char *move_stop;
+    char *move_preset;
+    char *goto_home_position;
+    char *set_preset;
+    char *set_home_position;
+    char *remove_preset;
+    char *jump_to_abs;
+    char *jump_to_rel;
+    char *get_presets;
 } ptz_node_t;
 
 typedef struct {
-    char* topic;
-    char* source_name;
-    char* source_type;
-    char* source_value;
-    char* input_file;
+    char *topic;
+    char *source_name;
+    char *source_type;
+    char *source_value;
+    char *input_file;
 } event_t;
 
 typedef struct {
     int port;
-    char* username;
-    char* password;
+    char *username;
+    char *password;
 
     //Device Information
-    char* manufacturer;
-    char* model;
-    char* firmware_ver;
-    char* serial_num;
-    char* hardware_id;
+    char *manufacturer;
+    char *model;
+    char *firmware_ver;
+    char *serial_num;
+    char *hardware_id;
 
-    char* ifs;
+    char *ifs;
 
     int adv_enable_media2;
     int adv_fault_if_unknown;
     int adv_fault_if_set;
     int adv_synology_nvr;
 
-    stream_profile_t* profiles;
+    stream_profile_t *profiles;
     int profiles_num;
 
-    char** scopes;
+    char **scopes;
     int scopes_num;
 
-    relay_output_t* relay_outputs;
+    relay_output_t *relay_outputs;
     int relay_outputs_num;
     ptz_node_t ptz_node;
-    event_t* events;
+    event_t *events;
     int events_enable;
     int events_num;
     int loglevel; // 0=FATAL..5=TRACE, default 0

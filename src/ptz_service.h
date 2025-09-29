@@ -19,7 +19,7 @@
 
 typedef struct {
     int number;
-    char* name;
+    char *name;
     double x; // pan
     double y; // tilt
     double z; // zoom
@@ -27,7 +27,7 @@ typedef struct {
 
 typedef struct {
     int count;
-    preset_t* items;
+    preset_t *items;
 } presets_t;
 
 int ptz_get_service_capabilities();
@@ -48,6 +48,6 @@ int ptz_set_preset();
 int ptz_set_home_position();
 int ptz_remove_preset();
 
-int ptz_unsupported(const char* method);
+int ptz_unsupported(const char *method);
 
 #endif //PTZ_SERVICE_H

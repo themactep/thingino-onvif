@@ -14,8 +14,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mxml_wrapper.h"
 #include "log.h"
+#include "mxml_wrapper.h"
 #include "utils.h"
 
 #include <dirent.h>
@@ -56,8 +56,8 @@
 int debug;
 char template_file[1024];
 char address[16], netmask[16];
-char* message;
-char* message_loop;
+char *message;
+char *message_loop;
 int sock;
 struct sockaddr_in addr_in;
 int addr_len;
@@ -124,9 +124,9 @@ int daemonize(int flags)
     return 0;
 }
 
-int check_pid(char* file_name)
+int check_pid(char *file_name)
 {
-    FILE* f;
+    FILE *f;
     long pid;
     char pid_buffer[PID_SIZE];
 
@@ -151,9 +151,9 @@ int check_pid(char* file_name)
     return 0;
 }
 
-int create_pid(char* file_name)
+int create_pid(char *file_name)
 {
-    FILE* f;
+    FILE *f;
     char pid_buffer[PID_SIZE];
 
     f = fopen(file_name, "w");
@@ -200,7 +200,7 @@ void signal_handler(int signal)
                "%ADDRESS%",
                xaddr);
 
-    message = (char*) malloc((size + 1) * sizeof(char));
+    message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
         log_fatal("Malloc error.\n");
         shutdown(sock, SHUT_RDWR);
@@ -224,7 +224,7 @@ void signal_handler(int signal)
         "%ADDRESS%",
         xaddr);
 
-    if (sendto(sock, message, strlen(message), 0, (struct sockaddr*) &addr_in, sizeof(addr_in)) < 0) {
+    if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
         log_fatal("Error sending Bye message.\n");
         free(message);
         shutdown(sock, SHUT_RDWR);
@@ -240,7 +240,7 @@ void signal_handler(int signal)
     exit_main = 1;
 }
 
-void print_usage(char* progname)
+void print_usage(char *progname)
 {
     fprintf(stderr, "\nUsage: %s -i INTERFACE -x XADDR [-m MODEL] [-n MANUFACTURER] -p PID_FILE [-f] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-i, --if_name\n");
@@ -261,23 +261,23 @@ void print_usage(char* progname)
     fprintf(stderr, "\t\tprint this help\n");
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     int errno;
-    char* endptr;
+    char *endptr;
     int c, ret;
-    char* if_name;
-    char* pid_file;
-    char* xaddr_s;
+    char *if_name;
+    char *pid_file;
+    char *xaddr_s;
     int foreground;
     char s_tmp[32];
-    const char* method;
+    const char *method;
 
     struct ip_mreq mr;
     long size;
     char recv_buffer[RECV_BUFFER_LEN];
     int recv_len;
-    char* recv_copy;
+    char *recv_copy;
 
     if_name = NULL;
     pid_file = NULL;
@@ -423,7 +423,7 @@ int main(int argc, char** argv)
     // Check if TEMPLATE_DIR exists
     if (access(TEMPLATE_DIR, F_OK) != -1) {
         // file exists
-        DIR* dirptr;
+        DIR *dirptr;
         if ((dirptr = opendir(TEMPLATE_DIR)) != NULL) {
             closedir(dirptr);
         } else {
@@ -451,7 +451,7 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 
-    if (bind(sock, (struct sockaddr*) &addr_in, sizeof(addr_in)) == -1) {
+    if (bind(sock, (struct sockaddr *) &addr_in, sizeof(addr_in)) == -1) {
         log_fatal("Unable to bind socket\n");
         shutdown(sock, SHUT_RDWR);
         exit(EXIT_FAILURE);
@@ -459,7 +459,7 @@ int main(int argc, char** argv)
 
     mr.imr_multiaddr.s_addr = inet_addr(MULTICAST_ADDRESS);
     mr.imr_interface.s_addr = inet_addr(address);
-    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mr, sizeof(mr)) == -1) {
+    if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mr, sizeof(mr)) == -1) {
         log_fatal("Error joining multicast group\n");
         shutdown(sock, SHUT_RDWR);
         exit(EXIT_FAILURE);
@@ -492,7 +492,7 @@ int main(int argc, char** argv)
                "%ADDRESS%",
                xaddr);
 
-    message = (char*) malloc((size + 1) * sizeof(char));
+    message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
         log_fatal("Malloc error.\n");
         shutdown(sock, SHUT_RDWR);
@@ -516,7 +516,7 @@ int main(int argc, char** argv)
         xaddr);
 
     addr_in.sin_addr.s_addr = inet_addr(MULTICAST_ADDRESS);
-    if (sendto(sock, message, strlen(message), 0, (struct sockaddr*) &addr_in, sizeof(addr_in)) < 0) {
+    if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
         log_fatal("Error sending Hello message.\n");
         free(message);
         shutdown(sock, SHUT_RDWR);
@@ -535,14 +535,14 @@ int main(int argc, char** argv)
         memset(recv_buffer, '\0', RECV_BUFFER_LEN);
         addr_len = sizeof(addr_in); // init address
 
-        if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0, (struct sockaddr*) &addr_in, &addr_len) > 0) {
+        if (recvfrom(sock, recv_buffer, RECV_BUFFER_LEN, 0, (struct sockaddr *) &addr_in, &addr_len) > 0) {
             // Log source IP address
-            char* source_ip = inet_ntoa(addr_in.sin_addr);
+            char *source_ip = inet_ntoa(addr_in.sin_addr);
             log_debug("Received WS-Discovery message from %s:%d", source_ip, ntohs(addr_in.sin_port));
 
             // Check if the message is a response
             if (strstr(recv_buffer, "XAddrs") == NULL) {
-                const char* relates_to_uuid;
+                const char *relates_to_uuid;
 
                 log_debug("Processing request from %s:%d", source_ip, ntohs(addr_in.sin_port));
                 log_debug("Request content: %s", recv_buffer);
@@ -594,7 +594,7 @@ int main(int argc, char** argv)
                            "%ADDRESS%",
                            xaddr);
 
-                message_loop = (char*) malloc((size + 1) * sizeof(char));
+                message_loop = (char *) malloc((size + 1) * sizeof(char));
                 if (message_loop == NULL) {
                     log_error("Malloc error.\n");
                     continue;
@@ -621,7 +621,7 @@ int main(int argc, char** argv)
                 // Log the response content for debugging
                 log_debug("ProbeMatches response: %s", message_loop);
 
-                if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr*) &addr_in, sizeof(addr_in)) < 0) {
+                if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
                     log_error("Error sending ProbeMatches message to %s:%d", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
                     free(message_loop);
                     continue;

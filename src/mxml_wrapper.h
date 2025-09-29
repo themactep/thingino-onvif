@@ -21,13 +21,13 @@
 
 #include <mxml.h>
 
-void init_xml(char* buffer, int buffer_size);
+void init_xml(char *buffer, int buffer_size);
 void close_xml();
-const char* get_method(int skip_prefix);
-const char* get_element(char* name, char* first_node);
-mxml_node_t* get_element_ptr(mxml_node_t* start_from, char* name, char* first_node);
-const char* get_element_in_element(const char* name, mxml_node_t* father);
-mxml_node_t* get_element_in_element_ptr(const char* name, mxml_node_t* father);
-const char* get_attribute(mxml_node_t* node, char* name);
+const char *get_method(int skip_prefix);
+const char *get_element(char *name, char *first_node);
+mxml_node_t *get_element_ptr(mxml_node_t *start_from, char *name, char *first_node);
+const char *get_element_in_element(const char *name, mxml_node_t *father);
+mxml_node_t *get_element_in_element_ptr(const char *name, mxml_node_t *father);
+const char *get_attribute(mxml_node_t *node, char *name);
 
 #endif //MXML_WRAPPER_H

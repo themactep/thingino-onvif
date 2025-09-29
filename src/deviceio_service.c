@@ -16,9 +16,9 @@
 
 #include "deviceio_service.h"
 
-#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
+#include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
 
@@ -122,7 +122,7 @@ int deviceio_get_relay_outputs()
     long size;
     int c, i;
     char dest_a[] = "stdout";
-    char* dest;
+    char *dest;
     char token[32];
     char idle_state[8];
 
@@ -155,11 +155,11 @@ int deviceio_get_relay_output_options()
     long size;
     int c, i;
     char dest_a[] = "stdout";
-    char* dest;
+    char *dest;
     int itoken;
     char stoken[32];
     char idle_state[32];
-    const char* token = get_element("RelayOutputToken", "Body");
+    const char *token = get_element("RelayOutputToken", "Body");
 
     // We need 1st step to evaluate content length
     for (c = 0; c < 2; c++) {
@@ -203,8 +203,8 @@ int deviceio_get_relay_output_options()
 int deviceio_set_relay_output_settings()
 {
     int itoken;
-    mxml_node_t* node;
-    const char* token = NULL;
+    mxml_node_t *node;
+    const char *token = NULL;
 
     node = get_element_ptr(node, "RelayOutput", "Body");
     if (node != NULL) {
@@ -233,8 +233,8 @@ int deviceio_set_relay_output_settings()
 int deviceio_set_relay_output_state()
 {
     int itoken;
-    const char* token = get_element("RelayOutputToken", "Body");
-    const char* state = get_element("LogicalState", "Body");
+    const char *token = get_element("RelayOutputToken", "Body");
+    const char *state = get_element("LogicalState", "Body");
     char sys_command[MAX_LEN];
 
     sys_command[0] = '\0';
@@ -276,11 +276,11 @@ int deviceio_set_relay_output_state()
     return cat("stdout", "deviceio_service_files/SetRelayOutputState.xml", 0);
 }
 
-int deviceio_unsupported(const char* method)
+int deviceio_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)
         send_action_failed_fault("deviceio_service", -1);
     else
-        send_empty_response("tmd", (char*) method);
+        send_empty_response("tmd", (char *) method);
     return -1;
 }

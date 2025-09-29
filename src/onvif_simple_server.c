@@ -20,11 +20,11 @@
 #include "device_service.h"
 #include "deviceio_service.h"
 #include "events_service.h"
-#include "mxml_wrapper.h"
 #include "fault.h"
 #include "log.h"
 #include "media2_service.h"
 #include "media_service.h"
+#include "mxml_wrapper.h"
 #include "onvif_dispatch.h"
 #include "ptz_service.h"
 #include "utils.h"
@@ -76,7 +76,7 @@ void dump_env()
     log_debug("SERVER_SOFTWARE: %s\n", getenv("SERVER_SOFTWARE"));
 }
 
-void print_usage(char* progname)
+void print_usage(char *progname)
 {
     fprintf(stderr, "\nUsage: %s [-c JSON_CONF_FILE] [-d]\n\n", progname);
     fprintf(stderr, "\t-c JSON_CONF_FILE, --conf_file JSON_CONF_FILE\n");
@@ -87,16 +87,16 @@ void print_usage(char* progname)
     fprintf(stderr, "\t\tprint this help\n");
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-    char* tmp;
+    char *tmp;
     int errno;
-    char* endptr;
+    char *endptr;
     int c, ret, i, itmp;
     int debug_cli_set = 0;
-    char* conf_file;
-    char* prog_name;
-    const char* method;
+    char *conf_file;
+    char *prog_name;
+    const char *method;
     username_token_t security;
     int auth_error = 0;
     int conf_file_specified = 0; // Flag to track if user provided -c parameter
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
             /* Check for various possible errors */
             if (strlen(optarg) < MAX_LEN - 1) {
                 free(conf_file);
-                conf_file = (char*) malloc((strlen(optarg) + 1) * sizeof(char));
+                conf_file = (char *) malloc((strlen(optarg) + 1) * sizeof(char));
                 strcpy(conf_file, optarg);
                 conf_file_specified = 1; // Mark that user provided config file
             } else {
@@ -195,7 +195,7 @@ int main(int argc, char** argv)
     dump_env();
 
     // Try to find config file: first in same directory as binary, then in /etc/
-    char* final_conf_file = NULL;
+    char *final_conf_file = NULL;
 
     // If no config file specified via -c, try to find it automatically
     if (!conf_file_specified) {
@@ -206,7 +206,7 @@ int main(int argc, char** argv)
         argv0_copy[sizeof(argv0_copy) - 1] = '\0';
 
         // Get directory of the binary using static buffer
-        char* binary_dir = dirname(argv0_copy);
+        char *binary_dir = dirname(argv0_copy);
         char local_conf_path[PATH_MAX];
         snprintf(local_conf_path, sizeof(local_conf_path), "%s/onvif.json", binary_dir);
 
@@ -272,7 +272,7 @@ int main(int argc, char** argv)
     int input_size;
     // Use static buffer instead of malloc to avoid heap issues
     static char input_buffer[16 * 1024];
-    char* input = input_buffer;
+    char *input = input_buffer;
     log_debug("Static buffer allocated, input pointer points to %p", input);
     // Static buffer can't be NULL
     // if (input == NULL) {
@@ -292,7 +292,7 @@ int main(int argc, char** argv)
 
     // No need to realloc with static buffer - just use what we read
     // char* temp_input = (char*) realloc(input, input_size * sizeof(char));
-    char* temp_input = input;
+    char *temp_input = input;
     // Static buffer doesn't need realloc
     // if (temp_input == NULL) {
     //     log_fatal("Memory error trying to allocate %d bytes", input_size);
@@ -323,8 +323,8 @@ int main(int argc, char** argv)
     log_debug("Authentication config: username=%s", service_ctx.username ? service_ctx.username : "NULL");
     if (service_ctx.username != NULL) {
         log_debug("Authentication required, checking for Security header");
-        const char* security_header = get_element("Security", "Header");
-        const char* username_token = get_element("UsernameToken", "Header");
+        const char *security_header = get_element("Security", "Header");
+        const char *username_token = get_element("UsernameToken", "Header");
         log_debug("Security header: %s", security_header ? "found" : "not found");
         log_debug("UsernameToken: %s", username_token ? "found" : "not found");
 
@@ -359,7 +359,7 @@ int main(int argc, char** argv)
             if (security.nonce != NULL) {
                 log_debug("Security: nonce = %s", security.nonce);
 
-                b64_decode((unsigned char*) security.nonce, strlen(security.nonce), nonce, &nonce_size);
+                b64_decode((unsigned char *) security.nonce, strlen(security.nonce), nonce, &nonce_size);
             } else {
                 auth_error = 3;
             }
@@ -384,9 +384,9 @@ int main(int argc, char** argv)
                     memcpy(&auth[nonce_size + strlen(security.created)], service_ctx.password, strlen(service_ctx.password));
                     auth_size = nonce_size + strlen(security.created) + strlen(service_ctx.password);
 
-                    hashSHA1((char*) auth, auth_size, sha1, (int) sha1_size);
+                    hashSHA1((char *) auth, auth_size, sha1, (int) sha1_size);
 
-                    b64_encode((unsigned char*) sha1, (unsigned int) sha1_size, (unsigned char*) digest, &digest_size);
+                    b64_encode((unsigned char *) sha1, (unsigned int) sha1_size, (unsigned char *) digest, &digest_size);
                     // Ensure null-termination for safe string operations/logging
                     if (digest_size >= sizeof(digest)) {
                         digest[sizeof(digest) - 1] = '\0';
@@ -412,7 +412,8 @@ int main(int argc, char** argv)
 
     if ((strcasecmp("device_service", prog_name) == 0)
         && ((strcasecmp("GetSystemDateAndTime", method) == 0) || (strcasecmp("GetUsers", method) == 0) || (strcasecmp("GetCapabilities", method) == 0)
-            || (strcasecmp("GetServices", method) == 0) || (strcasecmp("GetServiceCapabilities", method) == 0) || (strcasecmp("GetDeviceInformation", method) == 0))) {
+            || (strcasecmp("GetServices", method) == 0) || (strcasecmp("GetServiceCapabilities", method) == 0)
+            || (strcasecmp("GetDeviceInformation", method) == 0))) {
         auth_error = 0;
     }
 

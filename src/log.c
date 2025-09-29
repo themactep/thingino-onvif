@@ -17,7 +17,7 @@ static struct {
     int initialized;
 } G = {.max_level = 0, .to_stderr = 0, .facility = LOG_DAEMON, .ident = {0}, .err_mutex = PTHREAD_MUTEX_INITIALIZER, .initialized = 0};
 
-static const char* level_str(int lvl)
+static const char *level_str(int lvl)
 {
     switch (lvl) {
     case LOG_LVL_FATAL:
@@ -57,7 +57,7 @@ static int syslog_prio(int lvl)
     }
 }
 
-void log_init(const char* ident, int facility, int level, int to_stderr)
+void log_init(const char *ident, int facility, int level, int to_stderr)
 {
     if (!ident)
         ident = "onvif";
@@ -87,7 +87,7 @@ void log_set_level(int level)
         setlogmask(LOG_UPTO(syslog_prio(G.max_level)));
 }
 
-void log_set_level_str(const char* level_str)
+void log_set_level_str(const char *level_str)
 {
     int level = log_level_from_string(level_str);
     if (level >= 0) {
@@ -95,7 +95,7 @@ void log_set_level_str(const char* level_str)
     }
 }
 
-int log_level_from_string(const char* level_str)
+int log_level_from_string(const char *level_str)
 {
     if (!level_str || *level_str == '\0')
         return -1;
@@ -112,30 +112,37 @@ int log_level_from_string(const char* level_str)
     }
     upper_str[i] = '\0';
 
-    if (strcmp(upper_str, "FATAL") == 0) return LOG_LVL_FATAL;
-    if (strcmp(upper_str, "ERROR") == 0) return LOG_LVL_ERROR;
-    if (strcmp(upper_str, "WARN") == 0) return LOG_LVL_WARN;
-    if (strcmp(upper_str, "WARNING") == 0) return LOG_LVL_WARN; // Accept both WARN and WARNING
-    if (strcmp(upper_str, "INFO") == 0) return LOG_LVL_INFO;
-    if (strcmp(upper_str, "DEBUG") == 0) return LOG_LVL_DEBUG;
-    if (strcmp(upper_str, "TRACE") == 0) return LOG_LVL_TRACE;
+    if (strcmp(upper_str, "FATAL") == 0)
+        return LOG_LVL_FATAL;
+    if (strcmp(upper_str, "ERROR") == 0)
+        return LOG_LVL_ERROR;
+    if (strcmp(upper_str, "WARN") == 0)
+        return LOG_LVL_WARN;
+    if (strcmp(upper_str, "WARNING") == 0)
+        return LOG_LVL_WARN; // Accept both WARN and WARNING
+    if (strcmp(upper_str, "INFO") == 0)
+        return LOG_LVL_INFO;
+    if (strcmp(upper_str, "DEBUG") == 0)
+        return LOG_LVL_DEBUG;
+    if (strcmp(upper_str, "TRACE") == 0)
+        return LOG_LVL_TRACE;
 
     // Try to parse as numeric for backward compatibility
-    char* endptr;
+    char *endptr;
     long num = strtol(level_str, &endptr, 10);
     if (*endptr == '\0' && num >= LOG_LVL_FATAL && num <= LOG_LVL_TRACE) {
-        return (int)num;
+        return (int) num;
     }
 
     return -1; // Invalid level
 }
 
-const char* log_level_to_string(int level)
+const char *log_level_to_string(int level)
 {
     return level_str(level);
 }
 
-void log_log(int level, const char* file, int line, const char* fmt, ...)
+void log_log(int level, const char *file, int line, const char *fmt, ...)
 {
     if (level < LOG_LVL_FATAL || level > LOG_LVL_TRACE)
         return;
@@ -155,9 +162,9 @@ void log_log(int level, const char* file, int line, const char* fmt, ...)
         msgbuf[len - 1] = '\0';
 
     // Build log message in format: [LEVEL:filename.ext:line]: message
-    const char* fname = file ? file : "";
-    const char* slash = fname;
-    for (const char* p = fname; *p; ++p)
+    const char *fname = file ? file : "";
+    const char *slash = fname;
+    for (const char *p = fname; *p; ++p)
         if (*p == '/')
             slash = p + 1; // basename
 

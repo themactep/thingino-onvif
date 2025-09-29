@@ -22,14 +22,14 @@
 #include "string.h"
 #include "utils.h"
 
-mxml_node_t* root_xml;
+mxml_node_t *root_xml;
 
 /**
  * Init xml parser
  * @param buffer The buffer containing the xml file
  * @param buffer_size The size of the buffer
  */
-void init_xml(char* buffer, int buffer_size)
+void init_xml(char *buffer, int buffer_size)
 {
     log_debug("init_xml: buffer=%p, size=%d", buffer, buffer_size);
     if (!buffer) {
@@ -54,7 +54,7 @@ void init_xml(char* buffer, int buffer_size)
  * Init xml parser from file
  * @param file The name of the xml file
  */
-void init_xml_from_file(char* file)
+void init_xml_from_file(char *file)
 {
     root_xml = mxmlLoadFilename(NULL, NULL, file);
     if (!root_xml) {
@@ -78,7 +78,7 @@ void close_xml()
  * @param skip_prefix Skip namespace prefix if non-zero
  * @return Method name or NULL if not found
  */
-const char* get_method(int skip_prefix)
+const char *get_method(int skip_prefix)
 {
     log_debug("get_method: skip_prefix=%d, root_xml=%p", skip_prefix, root_xml);
 
@@ -87,23 +87,23 @@ const char* get_method(int skip_prefix)
         return NULL;
     }
 
-    mxml_node_t* body = NULL;
+    mxml_node_t *body = NULL;
 
-    // First: Check if "Body" element exists (search entire tree like original ezxml)
+    // First: Check if "Body" element exists
     body = mxmlFindElement(root_xml, root_xml, "Body", NULL, NULL, MXML_DESCEND_ALL);
 
     if (body && mxmlGetFirstChild(body)) {
-        mxml_node_t* method_node = mxmlGetFirstChild(body);
+        mxml_node_t *method_node = mxmlGetFirstChild(body);
         while (method_node && mxmlGetType(method_node) != MXML_TYPE_ELEMENT) {
             method_node = mxmlGetNextSibling(method_node);
         }
 
         if (method_node) {
-            const char* method_name = mxmlGetElement(method_node);
+            const char *method_name = mxmlGetElement(method_node);
             if (method_name) {
                 log_debug("get_method: Found method in Body: %s", method_name);
                 if (skip_prefix) {
-                    const char* colon = strchr(method_name, ':');
+                    const char *colon = strchr(method_name, ':');
                     if (colon) {
                         return colon + 1;
                     } else {
@@ -118,10 +118,10 @@ const char* get_method(int skip_prefix)
 
     // Second: Check if "something:Body" element exists (namespace suffix matching)
     // Search all elements in the tree for ones ending with ":Body"
-    mxml_node_t* node = mxmlFindElement(root_xml, root_xml, NULL, NULL, NULL, MXML_DESCEND_ALL);
+    mxml_node_t *node = mxmlFindElement(root_xml, root_xml, NULL, NULL, NULL, MXML_DESCEND_ALL);
     while (node) {
         if (mxmlGetType(node) == MXML_TYPE_ELEMENT) {
-            const char* element_name = mxmlGetElement(node);
+            const char *element_name = mxmlGetElement(node);
             if (element_name) {
                 int len = strlen(element_name);
                 // Check if element name ends with ":Body"
@@ -136,17 +136,17 @@ const char* get_method(int skip_prefix)
     }
 
     if (body && mxmlGetFirstChild(body)) {
-        mxml_node_t* method_node = mxmlGetFirstChild(body);
+        mxml_node_t *method_node = mxmlGetFirstChild(body);
         while (method_node && mxmlGetType(method_node) != MXML_TYPE_ELEMENT) {
             method_node = mxmlGetNextSibling(method_node);
         }
 
         if (method_node) {
-            const char* method_name = mxmlGetElement(method_node);
+            const char *method_name = mxmlGetElement(method_node);
             if (method_name) {
                 log_debug("get_method: Found method in namespaced Body: %s", method_name);
                 if (skip_prefix) {
-                    const char* colon = strchr(method_name, ':');
+                    const char *colon = strchr(method_name, ':');
                     if (colon) {
                         return colon + 1;
                     } else {
@@ -169,23 +169,24 @@ const char* get_method(int skip_prefix)
  * @param first_node Starting node name (e.g., "Body")
  * @return Element text content or NULL if not found
  */
-// Recursive helper function matching original ezxml logic exactly
-static const char* get_element_rec_mxml(mxml_node_t* xml, char* name, char* first_node, int* go_to_parent)
+// Recursive helper function
+static const char *get_element_rec_mxml(mxml_node_t *xml, char *name, char *first_node, int *go_to_parent)
 {
-    if (*go_to_parent) return NULL;
+    if (*go_to_parent)
+        return NULL;
 
     // If it's the root of the document choose the first node ("Header" or "Body")
     if (!mxmlGetParent(xml)) {
-        mxml_node_t* px = mxmlGetFirstChild(xml);
+        mxml_node_t *px = mxmlGetFirstChild(xml);
         while (px) {
             if (mxmlGetType(px) == MXML_TYPE_ELEMENT) {
-                const char* px_name = mxmlGetElement(px);
+                const char *px_name = mxmlGetElement(px);
                 if (px_name) {
                     int px_len = strlen(px_name);
                     int first_len = strlen(first_node);
                     // Check suffix match: "Header" matches "v:Header", "soap:Header", etc.
                     if (px_len >= first_len && strcmp(first_node, &px_name[px_len - first_len]) == 0) {
-                        const char* ret = get_element_rec_mxml(px, name, first_node, go_to_parent);
+                        const char *ret = get_element_rec_mxml(px, name, first_node, go_to_parent);
                         return ret;
                     }
                 }
@@ -195,10 +196,10 @@ static const char* get_element_rec_mxml(mxml_node_t* xml, char* name, char* firs
         // 1st node not found, exit
     } else {
         // Check if this node is "<name>"
-        const char* xml_name = mxmlGetElement(xml);
+        const char *xml_name = mxmlGetElement(xml);
         if (xml_name && strcmp(name, xml_name) == 0) {
             // Get text content
-            mxml_node_t* text_node = mxmlGetFirstChild(xml);
+            mxml_node_t *text_node = mxmlGetFirstChild(xml);
             while (text_node && mxmlGetType(text_node) != MXML_TYPE_TEXT) {
                 text_node = mxmlGetNextSibling(text_node);
             }
@@ -212,11 +213,9 @@ static const char* get_element_rec_mxml(mxml_node_t* xml, char* name, char* firs
         if (xml_name) {
             int xml_len = strlen(xml_name);
             int name_len = strlen(name);
-            if (xml_len >= name_len + 1 &&
-                strcmp(name, &xml_name[xml_len - name_len]) == 0 &&
-                xml_name[xml_len - name_len - 1] == ':') {
+            if (xml_len >= name_len + 1 && strcmp(name, &xml_name[xml_len - name_len]) == 0 && xml_name[xml_len - name_len - 1] == ':') {
                 // Get text content
-                mxml_node_t* text_node = mxmlGetFirstChild(xml);
+                mxml_node_t *text_node = mxmlGetFirstChild(xml);
                 while (text_node && mxmlGetType(text_node) != MXML_TYPE_TEXT) {
                     text_node = mxmlGetNextSibling(text_node);
                 }
@@ -228,19 +227,22 @@ static const char* get_element_rec_mxml(mxml_node_t* xml, char* name, char* firs
         }
 
         // Check children
-        mxml_node_t* child = mxmlGetFirstChild(xml);
+        mxml_node_t *child = mxmlGetFirstChild(xml);
         if (child) {
-            const char* ret = get_element_rec_mxml(child, name, first_node, go_to_parent);
+            const char *ret = get_element_rec_mxml(child, name, first_node, go_to_parent);
             *go_to_parent = 0;
-            if (ret != NULL) return ret;
+            if (ret != NULL)
+                return ret;
         }
 
         // Check brothers (siblings)
-        mxml_node_t* pk = mxmlGetNextSibling(xml);
+        mxml_node_t *pk = mxmlGetNextSibling(xml);
         if (pk) {
-            const char* ret = get_element_rec_mxml(pk, name, first_node, go_to_parent);
-            if (*go_to_parent) return NULL;
-            if (ret != NULL) return ret;
+            const char *ret = get_element_rec_mxml(pk, name, first_node, go_to_parent);
+            if (*go_to_parent)
+                return NULL;
+            if (ret != NULL)
+                return ret;
         }
 
         *go_to_parent = 1;
@@ -249,10 +251,10 @@ static const char* get_element_rec_mxml(mxml_node_t* xml, char* name, char* firs
     return NULL;
 }
 
-const char* get_element(char* name, char* first_node)
+const char *get_element(char *name, char *first_node)
 {
     int go_to_parent = 0;
-    const char* ret = get_element_rec_mxml(root_xml, name, first_node, &go_to_parent);
+    const char *ret = get_element_rec_mxml(root_xml, name, first_node, &go_to_parent);
     return ret;
 }
 
@@ -263,33 +265,32 @@ const char* get_element(char* name, char* first_node)
  * @param first_node Starting node name (e.g., "Body")
  * @return Element pointer or NULL if not found
  */
-mxml_node_t* get_element_ptr(mxml_node_t* start_from, char* name, char* first_node)
+mxml_node_t *get_element_ptr(mxml_node_t *start_from, char *name, char *first_node)
 {
     if (!root_xml) {
         return NULL;
     }
 
-    mxml_node_t* search_root = start_from ? start_from : root_xml;
+    mxml_node_t *search_root = start_from ? start_from : root_xml;
 
-    // If first_node is specified, find it first using suffix matching like original ezxml
+    // If first_node is specified, find it first using suffix matching
     if (first_node) {
-        mxml_node_t* first = NULL;
+        mxml_node_t *first = NULL;
 
         // Try exact match first
         first = mxmlFindElement(search_root, search_root, first_node, NULL, NULL, MXML_DESCEND_ALL);
 
-        // If not found, try namespace suffix matching (like original ezxml)
+        // If not found, try namespace suffix matching
         if (!first) {
-            mxml_node_t* node = mxmlFindElement(search_root, search_root, NULL, NULL, NULL, MXML_DESCEND_ALL);
+            mxml_node_t *node = mxmlFindElement(search_root, search_root, NULL, NULL, NULL, MXML_DESCEND_ALL);
             while (node) {
                 if (mxmlGetType(node) == MXML_TYPE_ELEMENT) {
-                    const char* element_name = mxmlGetElement(node);
+                    const char *element_name = mxmlGetElement(node);
                     if (element_name) {
                         int len = strlen(element_name);
                         int first_len = strlen(first_node);
                         // Check if element name ends with first_node (suffix matching)
-                        if (len >= first_len &&
-                            strcmp(&element_name[len - first_len], first_node) == 0) {
+                        if (len >= first_len && strcmp(&element_name[len - first_len], first_node) == 0) {
                             first = node;
                             break;
                         }
@@ -306,14 +307,14 @@ mxml_node_t* get_element_ptr(mxml_node_t* start_from, char* name, char* first_no
     }
 
     // Find the target element with exact match first
-    mxml_node_t* target = mxmlFindElement(search_root, search_root, name, NULL, NULL, MXML_DESCEND_ALL);
+    mxml_node_t *target = mxmlFindElement(search_root, search_root, name, NULL, NULL, MXML_DESCEND_ALL);
 
     // If not found with exact match, try namespace suffix matching
     if (!target) {
-        mxml_node_t* node = mxmlFindElement(search_root, search_root, NULL, NULL, NULL, MXML_DESCEND_ALL);
+        mxml_node_t *node = mxmlFindElement(search_root, search_root, NULL, NULL, NULL, MXML_DESCEND_ALL);
         while (node) {
             if (mxmlGetType(node) == MXML_TYPE_ELEMENT) {
-                const char* element_name = mxmlGetElement(node);
+                const char *element_name = mxmlGetElement(node);
                 if (element_name) {
                     // Check if this node is "<name>"
                     if (strcmp(name, element_name) == 0) {
@@ -324,9 +325,7 @@ mxml_node_t* get_element_ptr(mxml_node_t* start_from, char* name, char* first_no
                     // Check if this node is "<something:name>" (namespace suffix matching)
                     int len = strlen(element_name);
                     int name_len = strlen(name);
-                    if (len >= name_len + 1 &&
-                        strcmp(&element_name[len - name_len], name) == 0 &&
-                        element_name[len - name_len - 1] == ':') {
+                    if (len >= name_len + 1 && strcmp(&element_name[len - name_len], name) == 0 && element_name[len - name_len - 1] == ':') {
                         target = node;
                         break;
                     }
@@ -345,15 +344,15 @@ mxml_node_t* get_element_ptr(mxml_node_t* start_from, char* name, char* first_no
  * @param father Parent element
  * @return Element text content or NULL if not found
  */
-const char* get_element_in_element(const char* name, mxml_node_t* father)
+const char *get_element_in_element(const char *name, mxml_node_t *father)
 {
-    mxml_node_t* node = get_element_in_element_ptr(name, father);
+    mxml_node_t *node = get_element_in_element_ptr(name, father);
     if (!node) {
         return NULL;
     }
 
     // Get the text content of the element
-    mxml_node_t* text_node = mxmlGetFirstChild(node);
+    mxml_node_t *text_node = mxmlGetFirstChild(node);
     while (text_node && mxmlGetType(text_node) != MXML_TYPE_TEXT) {
         text_node = mxmlGetNextSibling(text_node);
     }
@@ -371,17 +370,17 @@ const char* get_element_in_element(const char* name, mxml_node_t* father)
  * @param father Parent element
  * @return Element pointer or NULL if not found
  */
-mxml_node_t* get_element_in_element_ptr(const char* name, mxml_node_t* father)
+mxml_node_t *get_element_in_element_ptr(const char *name, mxml_node_t *father)
 {
     if (!father) {
         return NULL;
     }
 
-    mxml_node_t* child = mxmlGetFirstChild(father);
+    mxml_node_t *child = mxmlGetFirstChild(father);
 
     while (child) {
         if (mxmlGetType(child) == MXML_TYPE_ELEMENT) {
-            const char* element_name = mxmlGetElement(child);
+            const char *element_name = mxmlGetElement(child);
             if (element_name) {
                 // Check if this node is "<name>"
                 if (strcmp(name, element_name) == 0) {
@@ -391,9 +390,7 @@ mxml_node_t* get_element_in_element_ptr(const char* name, mxml_node_t* father)
                 // Check if this node is "<something:name>" (namespace suffix matching)
                 int len = strlen(element_name);
                 int name_len = strlen(name);
-                if (len >= name_len + 1 &&
-                    strcmp(&element_name[len - name_len], name) == 0 &&
-                    element_name[len - name_len - 1] == ':') {
+                if (len >= name_len + 1 && strcmp(&element_name[len - name_len], name) == 0 && element_name[len - name_len - 1] == ':') {
                     return child;
                 }
             }
@@ -410,7 +407,7 @@ mxml_node_t* get_element_in_element_ptr(const char* name, mxml_node_t* father)
  * @param name Attribute name
  * @return Attribute value or NULL if not found
  */
-const char* get_attribute(mxml_node_t* node, char* name)
+const char *get_attribute(mxml_node_t *node, char *name)
 {
     if (!node || !name) {
         return NULL;

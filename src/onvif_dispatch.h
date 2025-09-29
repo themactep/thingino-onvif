@@ -30,8 +30,8 @@ typedef int (*onvif_condition_t)(void);
 
 // Structure to map service/method names to handlers with optional conditions
 typedef struct {
-    const char* service;
-    const char* method;
+    const char *service;
+    const char *method;
     onvif_handler_t handler;
     onvif_condition_t condition; // Optional condition function (NULL if always enabled)
 } onvif_method_entry_t;
@@ -42,7 +42,7 @@ typedef struct {
  * @param method The method name (e.g., "GetDeviceInformation", "GetProfiles")
  * @return 0 on success, non-zero on error
  */
-int dispatch_onvif_method(const char* service, const char* method);
+int dispatch_onvif_method(const char *service, const char *method);
 
 /**
  * Initialize the dispatch system

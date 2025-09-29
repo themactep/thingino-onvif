@@ -26,6 +26,6 @@ int deviceio_get_relay_output_options();
 int deviceio_set_relay_output_settings();
 int deviceio_set_relay_output_state();
 
-int deviceio_unsupported(const char* method);
+int deviceio_unsupported(const char *method);
 
 #endif //DEVICEIO_SERVICE_H

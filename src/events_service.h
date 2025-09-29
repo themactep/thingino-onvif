@@ -26,6 +26,6 @@ int events_unsubscribe();
 int events_get_event_properties();
 int events_set_synchronization_point();
 
-int events_unsupported(const char* method);
+int events_unsupported(const char *method);
 
 #endif //EVENTS_SERVICE_H
