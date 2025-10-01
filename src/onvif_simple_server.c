@@ -124,7 +124,7 @@ int main(int argc, char **argv)
         case 'c':
             /* Check for various possible errors */
             if (strlen(optarg) < MAX_LEN - 1) {
-                free(conf_file);
+                // Don't free static buffer: free(conf_file);
                 conf_file = (char *) malloc((strlen(optarg) + 1) * sizeof(char));
                 strcpy(conf_file, optarg);
                 conf_file_specified = 1; // Mark that user provided config file
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "Invalid log level: %s\n", optarg);
                 fprintf(stderr, "Valid levels: FATAL, ERROR, WARN, INFO, DEBUG, TRACE or 0-5\n");
                 print_usage(argv[0]);
-                free(conf_file);
+                // Don't free static buffer unless malloc'd: if (conf_file_specified) free(conf_file);
                 exit(EXIT_FAILURE);
             }
             /* level set directly: textual or numeric */
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 
         case 'h':
             print_usage(argv[0]);
-            free(conf_file);
+            // Don't free static buffer unless malloc'd: if (conf_file_specified) free(conf_file);
             exit(EXIT_SUCCESS);
             break;
 
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 
         default:
             print_usage(argv[0]);
-            free(conf_file);
+            // Don't free static buffer unless malloc'd: if (conf_file_specified) free(conf_file);
             exit(EXIT_SUCCESS);
         }
     }
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
         fprintf(stdout, "<html><head><title>Error</title></head><body>HTTP method not supported</body></html>\r\n");
         log_fatal("HTTP method not supported - got: %s", tmp ? tmp : "NULL");
 
-        free(conf_file);
+        // Don't free static buffer unless malloc'd: if (conf_file_specified) free(conf_file);
         exit(EXIT_FAILURE);
     }
 
@@ -438,7 +438,7 @@ int main(int argc, char **argv)
         // Use clean dispatch table instead of massive if/else ladder
         dispatch_onvif_method(prog_name, method);
     } else {
-        log_error("Authentication failed, sending HTTP 400 error");
+        log_error("Authentication failed, sending HTTP 401 Unauthorized");
         send_authentication_error();
     }
 

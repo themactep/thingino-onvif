@@ -22,7 +22,10 @@
 #include "string.h"
 #include "utils.h"
 
-mxml_node_t *root_xml;
+// In mxml v4, mxmlLoadString returns a document node, not the root element
+// We need to keep track of both for proper memory management
+static mxml_node_t *doc_xml = NULL; // Document node (for cleanup)
+mxml_node_t *root_xml = NULL;       // Root element (Envelope)
 
 /**
  * Init xml parser
@@ -41,12 +44,27 @@ void init_xml(char *buffer, int buffer_size)
     int log_len = (buffer_size > 200) ? 200 : buffer_size;
     log_debug("init_xml: XML content (first %d chars): %.200s", log_len, buffer);
 
-    root_xml = mxmlLoadString(NULL, NULL, buffer);
-    if (!root_xml) {
+    doc_xml = mxmlLoadString(NULL, NULL, buffer);
+    if (!doc_xml) {
         log_error("Failed to parse XML string - mxmlLoadString returned NULL");
         log_error("Buffer size: %d, Buffer content: %.100s", buffer_size, buffer);
+        root_xml = NULL;
+        return;
+    }
+
+    // In mxml v4, mxmlLoadString returns a document node, not the root element
+    // We need to find the first element child (the Envelope)
+    root_xml = mxmlGetFirstChild(doc_xml);
+    while (root_xml && mxmlGetType(root_xml) != MXML_TYPE_ELEMENT) {
+        root_xml = mxmlGetNextSibling(root_xml);
+    }
+
+    if (!root_xml) {
+        log_error("Failed to find root element in XML document");
+        mxmlDelete(doc_xml);
+        doc_xml = NULL;
     } else {
-        log_debug("XML parsed successfully, root_xml=%p", root_xml);
+        log_debug("XML parsed successfully, root_xml=%p (element: %s)", root_xml, mxmlGetElement(root_xml));
     }
 }
 
@@ -67,8 +85,10 @@ void init_xml_from_file(char *file)
  */
 void close_xml()
 {
-    if (root_xml) {
-        mxmlDelete(root_xml);
+    // Delete the document node, which will also delete all children including root_xml
+    if (doc_xml) {
+        mxmlDelete(doc_xml);
+        doc_xml = NULL;
         root_xml = NULL;
     }
 }

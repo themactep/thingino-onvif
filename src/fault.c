@@ -125,7 +125,8 @@ int send_authentication_error()
 {
     long size = cat(NULL, "generic_files/AuthenticationError.xml", 0);
 
-    fprintf(stdout, "HTTP/1.1 400 Bad request\r\n");
+    // Use HTTP 401 Unauthorized for authentication errors (ONVIF standard)
+    fprintf(stdout, "HTTP/1.1 401 Unauthorized\r\n");
     output_http_headers(size);
 
     return cat("stdout", "generic_files/AuthenticationError.xml", 0);
