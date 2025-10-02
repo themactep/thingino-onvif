@@ -80,6 +80,13 @@ void output_http_headers(long content_length);
 
 // Global flag to indicate if the last cat() call returned a SOAP fault
 extern int g_last_response_was_soap_fault;
+
+// Response buffering for XML logging
+void response_buffer_init(void);
+void response_buffer_enable(int enable);
+void response_buffer_append(const char *data, size_t len);
+const char *response_buffer_get(size_t *size);
+void response_buffer_clear(void);
 int get_ip_address(char *address, char *netmask, char *name);
 int get_mac_address(char *address, char *name);
 int netmask2prefixlen(char *netmask);

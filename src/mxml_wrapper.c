@@ -52,19 +52,102 @@ void init_xml(char *buffer, int buffer_size)
         return;
     }
 
-    // In mxml v4, mxmlLoadString returns a document node, not the root element
-    // We need to find the first element child (the Envelope)
-    root_xml = mxmlGetFirstChild(doc_xml);
-    while (root_xml && mxmlGetType(root_xml) != MXML_TYPE_ELEMENT) {
-        root_xml = mxmlGetNextSibling(root_xml);
+    mxml_type_t doc_type = mxmlGetType(doc_xml);
+    log_debug("init_xml: doc_xml=%p, type=%d", doc_xml, doc_type);
+
+    // Check if mxmlLoadString returned an element directly (older behavior)
+    // or a document node (newer behavior)
+    if (doc_type == MXML_TYPE_ELEMENT) {
+        // mxmlLoadString returned the root element directly
+        root_xml = doc_xml;
+        doc_xml = NULL; // Don't try to delete it separately
+        log_debug("init_xml: mxmlLoadString returned element directly: %s", mxmlGetElement(root_xml));
+    } else {
+        // mxmlLoadString returned a document node, find the first element child (the Envelope)
+        root_xml = mxmlGetFirstChild(doc_xml);
+        log_debug("init_xml: First child=%p, type=%d", root_xml, root_xml ? mxmlGetType(root_xml) : -1);
+
+        while (root_xml && mxmlGetType(root_xml) != MXML_TYPE_ELEMENT) {
+            root_xml = mxmlGetNextSibling(root_xml);
+            log_debug("init_xml: Next sibling=%p, type=%d", root_xml, root_xml ? mxmlGetType(root_xml) : -1);
+        }
     }
 
     if (!root_xml) {
         log_error("Failed to find root element in XML document");
-        mxmlDelete(doc_xml);
-        doc_xml = NULL;
+        if (doc_xml) {
+            mxmlDelete(doc_xml);
+            doc_xml = NULL;
+        }
     } else {
-        log_debug("XML parsed successfully, root_xml=%p (element: %s)", root_xml, mxmlGetElement(root_xml));
+        const char *element_name = mxmlGetElement(root_xml);
+        log_debug("XML parsed successfully, root_xml=%p (element: %s)", root_xml, element_name ? element_name : "NULL");
+
+        // Debug: print parent information
+        mxml_node_t *parent = mxmlGetParent(root_xml);
+        if (parent) {
+            log_debug("init_xml: root_xml has parent=%p, parent type=%d", parent, mxmlGetType(parent));
+            if (mxmlGetType(parent) == MXML_TYPE_ELEMENT) {
+                log_debug("init_xml: parent element name=%s", mxmlGetElement(parent));
+            }
+        } else {
+            log_debug("init_xml: root_xml has no parent (is truly root)");
+        }
+
+        // Verify this is actually the Envelope element
+        if (element_name) {
+            int len = strlen(element_name);
+            // Check if element name ends with "Envelope" (handles namespaced names like "v:Envelope", "SOAP-ENV:Envelope", etc.)
+            if (len < 8 || strcmp(&element_name[len - 8], "Envelope") != 0) {
+                log_warn("Root element is '%s', not Envelope - this may indicate a parsing issue", element_name);
+
+                // If we have a parent, check if the parent is the Envelope
+                if (parent && mxmlGetType(parent) == MXML_TYPE_ELEMENT) {
+                    const char *parent_name = mxmlGetElement(parent);
+                    if (parent_name) {
+                        int parent_len = strlen(parent_name);
+                        if (parent_len >= 8 && strcmp(&parent_name[parent_len - 8], "Envelope") == 0) {
+                            log_debug("Parent is Envelope, correcting root_xml from %s to %s", element_name, parent_name);
+                            root_xml = parent;
+                            element_name = parent_name;
+                            len = parent_len;
+                        }
+                    }
+                }
+
+                // If still not Envelope, try to find it
+                if (len < 8 || strcmp(&element_name[len - 8], "Envelope") != 0) {
+                    // Try to find Envelope element explicitly
+                    mxml_node_t *search_root = doc_xml ? doc_xml : root_xml;
+                    mxml_node_t *envelope = mxmlFindElement(search_root, search_root, "Envelope", NULL, NULL, MXML_DESCEND_ALL);
+                    if (!envelope) {
+                        // Try with namespace suffix matching
+                        mxml_node_t *node = mxmlFindElement(search_root, search_root, NULL, NULL, NULL, MXML_DESCEND_ALL);
+                        while (node) {
+                            if (mxmlGetType(node) == MXML_TYPE_ELEMENT) {
+                                const char *node_name = mxmlGetElement(node);
+                                if (node_name) {
+                                    int node_len = strlen(node_name);
+                                    if (node_len >= 8 && strcmp(&node_name[node_len - 8], "Envelope") == 0) {
+                                        envelope = node;
+                                        log_debug("Found Envelope element with namespace: %s", node_name);
+                                        break;
+                                    }
+                                }
+                            }
+                            node = mxmlWalkNext(node, search_root, MXML_DESCEND_ALL);
+                        }
+                    }
+
+                    if (envelope) {
+                        log_debug("Corrected root_xml to Envelope element: %s", mxmlGetElement(envelope));
+                        root_xml = envelope;
+                    } else {
+                        log_error("Could not find Envelope element in XML document");
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -89,6 +172,11 @@ void close_xml()
     if (doc_xml) {
         mxmlDelete(doc_xml);
         doc_xml = NULL;
+        root_xml = NULL;
+    } else if (root_xml) {
+        // If doc_xml is NULL but root_xml is not, it means mxmlLoadString returned
+        // the element directly, so we need to delete root_xml
+        mxmlDelete(root_xml);
         root_xml = NULL;
     }
 }

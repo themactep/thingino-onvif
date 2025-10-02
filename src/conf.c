@@ -142,6 +142,7 @@ int process_json_conf_file(char *file)
     service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
     service_ctx.loglevel = 0;
+    service_ctx.raw_log_directory = NULL;
 
     service_ctx.ptz_node.min_step_x = 0;
     service_ctx.ptz_node.max_step_x = 360.0;
@@ -174,6 +175,7 @@ int process_json_conf_file(char *file)
     get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
     get_int_from_json(&(service_ctx.port), json_file, "port");
     get_loglevel_from_json(&(service_ctx.loglevel), json_file, "loglevel");
+    get_string_from_json(&(service_ctx.raw_log_directory), json_file, "raw_log_directory");
 
     value = get_object_item(json_file, "scopes");
     if (value && value->type == JSON_ARRAY) {
@@ -236,6 +238,7 @@ int process_json_conf_file(char *file)
     log_debug("serial_num: %s", service_ctx.serial_num);
     log_debug("ifs: %s", service_ctx.ifs);
     log_debug("port: %d", service_ctx.port);
+    log_debug("raw_log_directory: %s", service_ctx.raw_log_directory ? service_ctx.raw_log_directory : "(disabled)");
     log_debug("scopes:");
     for (i = 0; i < service_ctx.scopes_num; i++) {
         log_debug("\t%s", service_ctx.scopes[i]);
@@ -563,4 +566,6 @@ void free_conf_file()
         free(service_ctx.password);
     if (service_ctx.username != NULL)
         free(service_ctx.username);
+    if (service_ctx.raw_log_directory != NULL)
+        free(service_ctx.raw_log_directory);
 }

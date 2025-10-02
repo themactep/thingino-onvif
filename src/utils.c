@@ -56,6 +56,12 @@
 
 sem_t *sem_memory_lock = SEM_FAILED;
 
+// Response buffer for XML logging
+#define RESPONSE_BUFFER_SIZE (64 * 1024) // 64KB should be enough for most SOAP responses
+static char response_buffer[RESPONSE_BUFFER_SIZE];
+static size_t response_buffer_pos = 0;
+static int response_buffer_enabled = 0;
+
 /**
  * Open a semaphore
  * @return 0 on success, -1 on error
@@ -206,6 +212,70 @@ int sem_memory_post()
 }
 
 /**
+ * Initialize response buffer for XML logging
+ */
+void response_buffer_init(void)
+{
+    response_buffer_pos = 0;
+    response_buffer_enabled = 0; // Will be set by caller if needed
+}
+
+/**
+ * Enable or disable response buffer
+ */
+void response_buffer_enable(int enable)
+{
+    response_buffer_enabled = enable;
+    if (enable) {
+        log_debug("Response buffer enabled for XML logging");
+    }
+}
+
+/**
+ * Append data to response buffer
+ */
+void response_buffer_append(const char *data, size_t len)
+{
+    if (!response_buffer_enabled || data == NULL || len == 0) {
+        return;
+    }
+
+    // Check if we have space
+    if (response_buffer_pos + len < RESPONSE_BUFFER_SIZE) {
+        memcpy(response_buffer + response_buffer_pos, data, len);
+        response_buffer_pos += len;
+    } else {
+        log_warn("Response buffer overflow, XML response logging may be incomplete");
+        // Copy what we can
+        size_t remaining = RESPONSE_BUFFER_SIZE - response_buffer_pos;
+        if (remaining > 0) {
+            memcpy(response_buffer + response_buffer_pos, data, remaining);
+            response_buffer_pos = RESPONSE_BUFFER_SIZE;
+        }
+    }
+}
+
+/**
+ * Get response buffer content
+ */
+const char *response_buffer_get(size_t *size)
+{
+    if (size) {
+        *size = response_buffer_pos;
+    }
+    return response_buffer;
+}
+
+/**
+ * Clear response buffer
+ */
+void response_buffer_clear(void)
+{
+    response_buffer_pos = 0;
+    response_buffer_enabled = 0;
+}
+
+/**
  * Generate ONVIF-compliant SOAP fault response
  * @param out The output type: "stdout", char *ptr or NULL
  * @param fault_subcode The ONVIF fault subcode (e.g., "ter:ActionNotSupported")
@@ -222,6 +292,8 @@ int g_last_response_was_soap_fault = 0;
  */
 void output_http_headers(long content_length)
 {
+    // Note: We don't capture HTTP headers in the response buffer
+    // Only the XML body is logged for debugging purposes
     if (g_last_response_was_soap_fault) {
         fprintf(stdout, "Status: 500 Internal Server Error\r\n");
     }
@@ -269,6 +341,8 @@ long cat_soap_fault(char *out, const char *fault_subcode, const char *fault_reas
         // The service function will handle HTTP status and headers
         printf("%s", soap_fault);
         fflush(stdout);
+        // Capture for XML logging
+        response_buffer_append(soap_fault, len);
     } else {
         // Output to buffer
         strcpy(out, soap_fault);
@@ -358,8 +432,10 @@ long cat(char *out, char *filename, int num, ...)
             if (strcmp("stdout", out) == 0) {
                 if (*l != '<') {
                     fprintf(stdout, " ");
+                    response_buffer_append(" ", 1);
                 }
                 fprintf(stdout, "%s", l);
+                response_buffer_append(l, strlen(l));
             } else {
                 if (*l != '<') {
                     sprintf(ptr, " ");

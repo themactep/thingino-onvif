@@ -28,6 +28,7 @@
 #include "onvif_dispatch.h"
 #include "ptz_service.h"
 #include "utils.h"
+#include "xml_logger.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -306,6 +307,16 @@ int main(int argc, char **argv)
 
     log_debug("Url: %s", prog_name);
 
+    // Initialize response buffer for XML logging
+    response_buffer_init();
+
+    // Log raw XML request if enabled
+    tmp = getenv("REMOTE_ADDR");
+    if (xml_logger_is_enabled()) {
+        log_xml_request(input, input_size, tmp);
+        response_buffer_enable(1);
+    }
+
     // Warning: init_xml changes the input string
     init_xml(input, input_size);
 
@@ -453,6 +464,17 @@ int main(int argc, char **argv)
     }
 
     close_xml();
+
+    // Log XML response if enabled
+    if (xml_logger_is_enabled()) {
+        size_t response_size;
+        const char *response_data = response_buffer_get(&response_size);
+        if (response_size > 0) {
+            tmp = getenv("REMOTE_ADDR");
+            log_xml_response(response_data, response_size, tmp);
+        }
+    }
+    response_buffer_clear();
 
     // Don't free static buffers: free(input);
     // Don't free static buffers: free(conf_file);
