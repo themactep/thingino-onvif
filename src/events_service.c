@@ -606,23 +606,59 @@ int events_renew()
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("Renew request received");
 
+    // Debug: log the QUERY_STRING environment variable
+    char *query_env = getenv("QUERY_STRING");
+    log_debug("QUERY_STRING environment variable: '%s'", query_env ? query_env : "(null)");
+
     // Get parameters from query string
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
-        log_error("No sub parameter in query string for Renew method");
+        log_error("No sub parameter in query string for Renew method (QUERY_STRING='%s')", query_env ? query_env : "(null)");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
+
+    log_debug("Extracted sub parameter: '%.*s' (size=%d)", qs_size, qs_string, qs_size);
     sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
     memset(sub_id_s, '\0', qs_size + 1);
     strncpy(sub_id_s, qs_string, qs_size);
-    sub_id = atoi(sub_id_s);
-    free(sub_id_s);
-    if ((sub_id <= 0) || (sub_id > 65535)) {
-        log_error("Sub index out of range for Renew method");
-        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+
+    // Validate that the string contains only digits
+    int valid = 1;
+    for (i = 0; i < qs_size; i++) {
+        if (sub_id_s[i] < '0' || sub_id_s[i] > '9') {
+            valid = 0;
+            break;
+        }
+    }
+
+    if (!valid) {
+        log_error("Invalid sub parameter (non-numeric) for Renew method: '%s'", sub_id_s);
+        free(sub_id_s);
+        send_fault("events_service",
+                   "Receiver",
+                   "wsrf-rw:ResourceUnknownFault",
+                   "wsrf-rw:ResourceUnknownFault",
+                   "Resource unknown",
+                   "Invalid subscription ID format");
         return -2;
     }
+
+    sub_id = atoi(sub_id_s);
+    free(sub_id_s);
+
+    if ((sub_id <= 0) || (sub_id > 65535)) {
+        log_error("sub index out of range for Renew method: %d (valid range: 1-65535)", sub_id);
+        send_fault("events_service",
+                   "Receiver",
+                   "wsrf-rw:ResourceUnknownFault",
+                   "wsrf-rw:ResourceUnknownFault",
+                   "Resource unknown",
+                   "Subscription ID out of valid range");
+        return -2;
+    }
+
+    log_debug("Renew request for subscription ID: %d", sub_id);
 
     // Get parameters from xml content
     time(&now);
@@ -828,24 +864,60 @@ int events_unsubscribe()
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("Unsubscribe request received");
 
+    // Debug: log the QUERY_STRING environment variable
+    char *query_env = getenv("QUERY_STRING");
+    log_debug("QUERY_STRING environment variable: '%s'", query_env ? query_env : "(null)");
+
     // Get parameters from query string
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
-        log_error("No sub parameter in query string for Unsubscribe method");
+        log_error("No sub parameter in query string for Unsubscribe method (QUERY_STRING='%s')", query_env ? query_env : "(null)");
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
 
+    log_debug("Extracted sub parameter: '%.*s' (size=%d)", qs_size, qs_string, qs_size);
+
     sub_id_s = (char *) malloc((qs_size + 1) * sizeof(char));
     memset(sub_id_s, '\0', qs_size + 1);
     strncpy(sub_id_s, qs_string, qs_size);
-    sub_id = atoi(sub_id_s);
-    free(sub_id_s);
-    if ((sub_id <= 0) || (sub_id > 65535)) {
-        log_error("sub index out of range for Unsubscribe method");
-        send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
+
+    // Validate that the string contains only digits
+    int valid = 1;
+    for (i = 0; i < qs_size; i++) {
+        if (sub_id_s[i] < '0' || sub_id_s[i] > '9') {
+            valid = 0;
+            break;
+        }
+    }
+
+    if (!valid) {
+        log_error("Invalid sub parameter (non-numeric) for Unsubscribe method: '%s'", sub_id_s);
+        free(sub_id_s);
+        send_fault("events_service",
+                   "Receiver",
+                   "wsrf-rw:ResourceUnknownFault",
+                   "wsrf-rw:ResourceUnknownFault",
+                   "Resource unknown",
+                   "Invalid subscription ID format");
         return -2;
     }
+
+    sub_id = atoi(sub_id_s);
+    free(sub_id_s);
+
+    if ((sub_id <= 0) || (sub_id > 65535)) {
+        log_error("sub index out of range for Unsubscribe method: %d (valid range: 1-65535)", sub_id);
+        send_fault("events_service",
+                   "Receiver",
+                   "wsrf-rw:ResourceUnknownFault",
+                   "wsrf-rw:ResourceUnknownFault",
+                   "Resource unknown",
+                   "Subscription ID out of valid range");
+        return -2;
+    }
+
+    log_debug("Unsubscribe request for subscription ID: %d", sub_id);
 
     subs_evts = (shm_t *) create_shared_memory(0);
     if (subs_evts == NULL) {
