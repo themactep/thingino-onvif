@@ -99,6 +99,13 @@ test_*
 !test_*.xml
 !test_*.py
 
+# Container temp files
+container/*_files/
+container/onvif.json
+container/onvif_notify_server
+container/onvif_simple_server
+container/wsd_simple_server
+
 # Temporary files
 tmp/
 temp/
