@@ -17,8 +17,10 @@ cp ../onvif_notify_server ./
 cp ../onvif_simple_server ./
 cp ../wsd_simple_server ./
 
-echo "Updating interface configuration for container environment..."
+echo "Updating config for container environment..."
 sed -i 's/"ifs": "wlan0"/"ifs": "lo"/g' onvif.json
+sed -i 's/"enable": 0,/"enable": 1,/' onvif.json
+sed -i 's|"jump_to_abs": null|"jump_to_abs": "/bin/echo PTZ move to x=%f y=%f z=%f"|' onvif.json
 
 podman build -t oss .
 

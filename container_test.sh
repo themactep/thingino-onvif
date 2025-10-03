@@ -148,6 +148,117 @@ test_onvif_service() {
     fi
 }
 
+# Function to test PTZ service with custom SOAP body
+test_ptz_service() {
+    local method=$1
+    local description=$2
+    local soap_body=$3
+    local expected_http_code=${4:-200}
+    local expected_fault=${5:-""}
+
+    echo -e "\n${YELLOW}Testing: $description${NC}"
+
+    local username="thingino"
+    local password="thingino"
+
+    # Generate authenticated SOAP request with custom body
+    local soap_request=$(python3 -c "
+import sys
+import base64
+import hashlib
+import datetime
+import os
+
+username = '$username'
+password = '$password'
+nonce = os.urandom(16)
+nonce_b64 = base64.b64encode(nonce).decode('utf-8')
+created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
+digest = hashlib.sha1(digest_input).digest()
+digest_b64 = base64.b64encode(digest).decode('utf-8')
+
+soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
+                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
+                   xmlns:tt=\"http://www.onvif.org/ver10/schema\"
+                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
+                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
+    <SOAP-ENV:Header>
+        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
+            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
+                <wsse:Username>{username}</wsse:Username>
+                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
+                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
+                <wsu:Created>{created}</wsu:Created>
+            </wsse:UsernameToken>
+        </wsse:Security>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        $soap_body
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+print(soap)
+")
+
+    # Send request and capture both response and HTTP code
+    local http_code=$(curl -s -w "%{http_code}" -o /tmp/ptz_response.xml -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -d "$soap_request" \
+        "$SERVER_URL/onvif/ptz_service")
+
+    local response=$(cat /tmp/ptz_response.xml)
+
+    # Check HTTP status code
+    if [ "$http_code" != "$expected_http_code" ]; then
+        echo -e "${RED}✗ $method - FAILED (expected HTTP $expected_http_code, got $http_code)${NC}"
+        if [ "$VERBOSE" = true ]; then
+            echo "Response: $response"
+        fi
+        return 1
+    fi
+
+    # Check if we got a valid SOAP response
+    if [[ $response == *"<?xml"* ]] && [[ $response == *"Envelope"* ]] && [[ $response == *"Body"* ]]; then
+
+        # If we expect a fault, check for it
+        if [ -n "$expected_fault" ]; then
+            if [[ $response == *"$expected_fault"* ]]; then
+                echo -e "${GREEN}✓ $method - SUCCESS (HTTP $http_code with expected fault: $expected_fault)${NC}"
+                if [ "$VERBOSE" = true ]; then
+                    echo "Response: $response"
+                fi
+                return 0
+            else
+                echo -e "${RED}✗ $method - FAILED (expected fault '$expected_fault' not found)${NC}"
+                if [ "$VERBOSE" = true ]; then
+                    echo "Response: $response"
+                fi
+                return 1
+            fi
+        else
+            # No fault expected, check for success response
+            if [[ $response == *"Fault"* ]]; then
+                echo -e "${RED}✗ $method - FAILED (unexpected SOAP fault)${NC}"
+                if [ "$VERBOSE" = true ]; then
+                    echo "Response: $response"
+                fi
+                return 1
+            else
+                echo -e "${GREEN}✓ $method - SUCCESS (HTTP $http_code)${NC}"
+                if [ "$VERBOSE" = true ]; then
+                    echo "Response: $response"
+                fi
+                return 0
+            fi
+        fi
+    else
+        echo -e "${RED}✗ $method - FAILED (invalid SOAP response)${NC}"
+        echo "Response: $response"
+        return 1
+    fi
+}
+
 # Function to test basic HTTP connectivity
 test_http_connectivity() {
     echo -e "\n${YELLOW}Testing HTTP connectivity...${NC}"
@@ -207,6 +318,300 @@ test_onvif_service "device_service" "GetServices" "Get Available Services" false
 # Test media services (auth required)
 test_onvif_service "media_service" "GetProfiles" "Get Media Profiles" true
 test_onvif_service "media_service" "GetVideoSources" "Get Video Sources" true
+
+# PTZ Tests
+echo -e "\n${BLUE}=== PTZ Functionality Tests ===${NC}"
+
+# Test PTZ GetConfigurations
+test_ptz_get_configurations() {
+    echo -e "\n${YELLOW}Testing: PTZ GetConfigurations (verify UseCount)${NC}"
+
+    local soap_request=$(generate_auth_soap "GetConfigurations")
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping PTZ tests - authentication script not available${NC}"
+        return 0
+    fi
+
+    local response=$(curl -s -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -d "$soap_request" \
+        "$SERVER_URL/onvif/ptz_service")
+
+    if [[ $response == *"PTZConfiguration"* ]] && [[ $response == *"UseCount"* ]]; then
+        # Extract UseCount value
+        if [[ $response =~ \<tt:UseCount\>([0-9]+)\</tt:UseCount\> ]]; then
+            local use_count="${BASH_REMATCH[1]}"
+            if [ "$use_count" -gt 0 ]; then
+                echo -e "${GREEN}✓ PTZ GetConfigurations - SUCCESS (UseCount=$use_count)${NC}"
+                if [ "$VERBOSE" = true ]; then
+                    echo "$response" | xmllint --format - 2>/dev/null || echo "$response"
+                fi
+                return 0
+            else
+                echo -e "${YELLOW}⚠ PTZ GetConfigurations - UseCount is 0 (should be >0)${NC}"
+                return 2
+            fi
+        else
+            echo -e "${YELLOW}⚠ PTZ GetConfigurations - Could not extract UseCount${NC}"
+            return 2
+        fi
+    else
+        echo -e "${RED}✗ PTZ GetConfigurations - FAILED${NC}"
+        return 1
+    fi
+}
+
+# Test PTZ GetNodes
+test_ptz_get_nodes() {
+    echo -e "\n${YELLOW}Testing: PTZ GetNodes (verify capabilities)${NC}"
+
+    local soap_request=$(generate_auth_soap "GetNodes")
+    if [ -z "$soap_request" ]; then
+        return 0
+    fi
+
+    local response=$(curl -s -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -d "$soap_request" \
+        "$SERVER_URL/onvif/ptz_service")
+
+    if [[ $response == *"PTZNode"* ]] && [[ $response == *"AbsolutePanTiltPositionSpace"* ]]; then
+        echo -e "${GREEN}✓ PTZ GetNodes - SUCCESS (AbsoluteMove supported)${NC}"
+        if [ "$VERBOSE" = true ]; then
+            echo "$response" | xmllint --format - 2>/dev/null || echo "$response"
+        fi
+        return 0
+    else
+        echo -e "${RED}✗ PTZ GetNodes - FAILED${NC}"
+        return 1
+    fi
+}
+
+# Test PTZ AbsoluteMove with valid coordinates
+test_ptz_absolute_move_valid() {
+    echo -e "\n${YELLOW}Testing: PTZ AbsoluteMove with valid coordinates${NC}"
+
+    local username="thingino"
+    local password="thingino"
+
+    # Generate authenticated AbsoluteMove request
+    local soap_request=$(python3 -c "
+import sys, base64, hashlib, datetime, os
+sys.path.insert(0, 'tests')
+
+username = '$username'
+password = '$password'
+nonce = os.urandom(16)
+nonce_b64 = base64.b64encode(nonce).decode('utf-8')
+created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
+digest = hashlib.sha1(digest_input).digest()
+digest_b64 = base64.b64encode(digest).decode('utf-8')
+
+soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
+                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
+                   xmlns:tt=\"http://www.onvif.org/ver10/schema\"
+                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
+                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
+    <SOAP-ENV:Header>
+        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
+            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
+                <wsse:Username>{username}</wsse:Username>
+                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
+                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
+                <wsu:Created>{created}</wsu:Created>
+            </wsse:UsernameToken>
+        </wsse:Security>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <tptz:AbsoluteMove>
+            <tptz:ProfileToken>Profile_0</tptz:ProfileToken>
+            <tptz:Position>
+                <tt:PanTilt x=\"1850.0\" y=\"500.0\" space=\"http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace\"/>
+            </tptz:Position>
+        </tptz:AbsoluteMove>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+print(soap)
+" 2>/dev/null)
+
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
+        return 0
+    fi
+
+    local http_code=$(curl -s -o /tmp/ptz_response.xml -w "%{http_code}" -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -d "$soap_request" \
+        "$SERVER_URL/onvif/ptz_service")
+
+    local response=$(cat /tmp/ptz_response.xml)
+
+    if [ "$http_code" = "200" ] && [[ $response == *"AbsoluteMoveResponse"* ]]; then
+        echo -e "${GREEN}✓ PTZ AbsoluteMove (valid) - SUCCESS (HTTP $http_code)${NC}"
+        if [ "$VERBOSE" = true ]; then
+            echo "$response" | xmllint --format - 2>/dev/null || echo "$response"
+        fi
+        return 0
+    else
+        echo -e "${RED}✗ PTZ AbsoluteMove (valid) - FAILED (HTTP $http_code)${NC}"
+        if [ "$VERBOSE" = true ]; then
+            echo "$response"
+        fi
+        return 1
+    fi
+}
+
+# Test PTZ AbsoluteMove with out-of-bounds coordinates (should return HTTP 500)
+test_ptz_absolute_move_invalid() {
+    echo -e "\n${YELLOW}Testing: PTZ AbsoluteMove with out-of-bounds coordinates (expect HTTP 500)${NC}"
+
+    local username="thingino"
+    local password="thingino"
+
+    # Generate authenticated AbsoluteMove request with invalid coordinates
+    local soap_request=$(python3 -c "
+import sys, base64, hashlib, datetime, os
+sys.path.insert(0, 'tests')
+
+username = '$username'
+password = '$password'
+nonce = os.urandom(16)
+nonce_b64 = base64.b64encode(nonce).decode('utf-8')
+created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
+digest = hashlib.sha1(digest_input).digest()
+digest_b64 = base64.b64encode(digest).decode('utf-8')
+
+soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
+                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
+                   xmlns:tt=\"http://www.onvif.org/ver10/schema\"
+                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
+                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
+    <SOAP-ENV:Header>
+        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
+            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
+                <wsse:Username>{username}</wsse:Username>
+                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
+                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
+                <wsu:Created>{created}</wsu:Created>
+            </wsse:UsernameToken>
+        </wsse:Security>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <tptz:AbsoluteMove>
+            <tptz:ProfileToken>Profile_0</tptz:ProfileToken>
+            <tptz:Position>
+                <tt:PanTilt x=\"9999.0\" y=\"9999.0\" space=\"http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace\"/>
+            </tptz:Position>
+        </tptz:AbsoluteMove>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+print(soap)
+" 2>/dev/null)
+
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
+        return 0
+    fi
+
+    local http_code=$(curl -s -o /tmp/ptz_fault_response.xml -w "%{http_code}" -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -d "$soap_request" \
+        "$SERVER_URL/onvif/ptz_service")
+
+    local response=$(cat /tmp/ptz_fault_response.xml)
+
+    if [ "$http_code" = "500" ] && [[ $response == *"Fault"* ]] && [[ $response == *"InvalidPosition"* ]]; then
+        echo -e "${GREEN}✓ PTZ AbsoluteMove (invalid) - SUCCESS (HTTP $http_code with ter:InvalidPosition fault)${NC}"
+        if [ "$VERBOSE" = true ]; then
+            echo "$response" | xmllint --format - 2>/dev/null || echo "$response"
+        fi
+        return 0
+    else
+        echo -e "${RED}✗ PTZ AbsoluteMove (invalid) - FAILED (HTTP $http_code, expected 500)${NC}"
+        if [ "$VERBOSE" = true ]; then
+            echo "$response"
+        fi
+        return 1
+    fi
+}
+
+# Test PTZ GetStatus
+test_ptz_get_status() {
+    echo -e "\n${YELLOW}Testing: PTZ GetStatus${NC}"
+
+    local username="thingino"
+    local password="thingino"
+
+    # Generate authenticated GetStatus request
+    local soap_request=$(python3 -c "
+import sys, base64, hashlib, datetime, os
+sys.path.insert(0, 'tests')
+
+username = '$username'
+password = '$password'
+nonce = os.urandom(16)
+nonce_b64 = base64.b64encode(nonce).decode('utf-8')
+created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
+digest = hashlib.sha1(digest_input).digest()
+digest_b64 = base64.b64encode(digest).decode('utf-8')
+
+soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
+                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
+                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
+                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
+    <SOAP-ENV:Header>
+        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
+            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
+                <wsse:Username>{username}</wsse:Username>
+                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
+                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
+                <wsu:Created>{created}</wsu:Created>
+            </wsse:UsernameToken>
+        </wsse:Security>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <tptz:GetStatus>
+            <tptz:ProfileToken>Profile_0</tptz:ProfileToken>
+        </tptz:GetStatus>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+print(soap)
+" 2>/dev/null)
+
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
+        return 0
+    fi
+
+    local response=$(curl -s -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -d "$soap_request" \
+        "$SERVER_URL/onvif/ptz_service")
+
+    if [[ $response == *"GetStatusResponse"* ]] && [[ $response == *"Position"* ]] && [[ $response == *"PanTilt"* ]]; then
+        echo -e "${GREEN}✓ PTZ GetStatus - SUCCESS${NC}"
+        if [ "$VERBOSE" = true ]; then
+            echo "$response" | xmllint --format - 2>/dev/null || echo "$response"
+        fi
+        return 0
+    else
+        echo -e "${RED}✗ PTZ GetStatus - FAILED${NC}"
+        return 1
+    fi
+}
+
+# Run PTZ tests
+test_ptz_get_configurations
+test_ptz_get_nodes
+test_ptz_absolute_move_valid
+test_ptz_absolute_move_invalid
+test_ptz_get_status
 
 echo -e "\n${BLUE}=== Test Summary ===${NC}"
 echo -e "${GREEN}Tests completed. Check output above for results.${NC}"

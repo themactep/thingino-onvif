@@ -85,8 +85,6 @@ if [ ! -d "mxml" ]; then
     git clone https://github.com/michaelrsweet/mxml.git
 fi
 
-
-
 # Build jct library
 echo -e "${YELLOW}Building jct library...${NC}"
 cd jct
@@ -105,8 +103,6 @@ fi
 make clean >/dev/null 2>&1 || true
 make CC="$CC" AR="$AR" libmxml.a
 cd ..
-
-
 
 # Create local lib and include directories
 mkdir -p local/lib local/include
