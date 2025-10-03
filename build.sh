@@ -85,6 +85,12 @@ if [ ! -d "mxml" ]; then
     git clone https://github.com/michaelrsweet/mxml.git
 fi
 
+# Check if libtomcrypt directory exists
+if [ ! -d "libtomcrypt" ]; then
+    echo -e "${YELLOW}Cloning libtomcrypt library...${NC}"
+    git clone https://github.com/libtom/libtomcrypt.git
+fi
+
 # Build jct library
 echo -e "${YELLOW}Building jct library...${NC}"
 cd jct
@@ -104,6 +110,15 @@ make clean >/dev/null 2>&1 || true
 make CC="$CC" AR="$AR" libmxml.a
 cd ..
 
+# Build libtomcrypt library
+echo -e "${YELLOW}Building libtomcrypt library...${NC}"
+cd libtomcrypt
+git pull
+make clean >/dev/null 2>&1 || true
+# Build static library with warnings suppressed
+make CC="$CC" AR="$AR" CFLAGS="-DLTC_SOURCE -DLTC_NO_TEST -Wno-macro-redefined -w" library
+cd ..
+
 # Create local lib and include directories
 mkdir -p local/lib local/include
 
@@ -115,16 +130,26 @@ cp jct/src/json_config.h local/include/
 cp mxml/libmxml.a local/lib/
 cp mxml/mxml.h local/include/
 
+# Copy libtomcrypt library and headers to local directories
+cp libtomcrypt/libtomcrypt.a local/lib/
+# Copy all libtomcrypt header files
+cp libtomcrypt/src/headers/*.h local/include/
+
 # Build ONVIF server with local jct and mxml libraries
 echo -e "${YELLOW}Building ONVIF server...${NC}"
 
-# Clean and build with local jct and mxml libraries
+# Use locally built libtomcrypt
+CRYPTO_LIB="-ltomcrypt"
+CRYPTO_FLAGS=""
+echo -e "${BLUE}Using crypto library: libtomcrypt (local build)${NC}"
+
+# Clean and build with local jct, mxml, and libtomcrypt libraries
 make clean
 make CC="$CC" STRIP="$STRIP" \
-     INCLUDE="-I$(pwd)/local/include -Isrc -I." \
-     LIBS_O="-Wl,--gc-sections -ltomcrypt -L$(pwd)/local/lib -ljct -lmxml -lpthread -lrt" \
-     LIBS_N="-Wl,--gc-sections -ltomcrypt -L$(pwd)/local/lib -ljct -lmxml -lpthread -lrt" \
-     LIBS_W="-Wl,--gc-sections -ltomcrypt -L$(pwd)/local/lib -lmxml -lpthread"
+     INCLUDE="-I$(pwd)/local/include -Isrc -I. $CRYPTO_FLAGS" \
+     LIBS_O="-Wl,--gc-sections $CRYPTO_LIB -L$(pwd)/local/lib -ljct -lmxml -lpthread -lrt" \
+     LIBS_N="-Wl,--gc-sections $CRYPTO_LIB -L$(pwd)/local/lib -ljct -lmxml -lpthread -lrt" \
+     LIBS_W="-Wl,--gc-sections $CRYPTO_LIB -L$(pwd)/local/lib -lmxml -lpthread"
 
 # Check if build was successful
 if [ $? -eq 0 ] && [ -f "onvif_simple_server" ]; then
