@@ -259,7 +259,9 @@ int media_get_profiles()
             if (service_ctx.ptz_node.enable == 1) {
                 size += cat(dest,
                             "media_service_files/GetProfile_PTZ.xml",
-                            12,
+                            14,
+                            "%USE_COUNT%",
+                            "1",
                             "%MIN_X%",
                             min_x,
                             "%MAX_X%",
@@ -328,7 +330,9 @@ int media_get_profiles()
             if (service_ctx.ptz_node.enable == 1) {
                 size += cat(dest,
                             "media_service_files/GetProfile_PTZ.xml",
-                            12,
+                            14,
+                            "%USE_COUNT%",
+                            "2",
                             "%MIN_X%",
                             min_x,
                             "%MAX_X%",
@@ -384,7 +388,9 @@ int media_get_profiles()
             if (service_ctx.ptz_node.enable == 1) {
                 size += cat(dest,
                             "media_service_files/GetProfile_PTZ.xml",
-                            12,
+                            14,
+                            "%USE_COUNT%",
+                            "2",
                             "%MIN_X%",
                             min_x,
                             "%MAX_X%",

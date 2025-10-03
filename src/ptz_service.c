@@ -128,6 +128,7 @@ int ptz_get_configurations()
     char max_y[256];
     char min_z[256];
     char max_z[256];
+    char use_count[8];
 
     sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
@@ -136,9 +137,19 @@ int ptz_get_configurations()
     sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
+    // Calculate UseCount: number of profiles that use PTZ
+    // If PTZ is enabled, UseCount equals the number of profiles
+    if (service_ctx.ptz_node.enable == 1) {
+        sprintf(use_count, "%d", service_ctx.profiles_num);
+    } else {
+        sprintf(use_count, "0");
+    }
+
     long size = cat(NULL,
                     "ptz_service_files/GetConfigurations.xml",
-                    12,
+                    14,
+                    "%USE_COUNT%",
+                    use_count,
                     "%MIN_X%",
                     min_x,
                     "%MAX_X%",
@@ -156,7 +167,9 @@ int ptz_get_configurations()
 
     return cat("stdout",
                "ptz_service_files/GetConfigurations.xml",
-               12,
+               14,
+               "%USE_COUNT%",
+               use_count,
                "%MIN_X%",
                min_x,
                "%MAX_X%",
