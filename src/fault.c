@@ -39,6 +39,9 @@ int send_empty_response(char *ns, char *method)
     return ret;
 }
 
+// External declaration of the global flag
+extern int g_last_response_was_soap_fault;
+
 int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, char *reason, char *detail)
 {
     char msg_uuid[UUID_LEN + 1];
@@ -79,9 +82,10 @@ int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, c
                     "%DETAIL%",
                     detail);
 
-    fprintf(stdout, "HTTP/1.1 500 Internal Server Error\r\n");
+    // Set flag to indicate this is a SOAP fault response
+    g_last_response_was_soap_fault = 1;
+
     output_http_headers(size);
-    fprintf(stdout, "\r\n");
 
     return cat("stdout",
                "generic_files/Fault.xml",
@@ -108,7 +112,9 @@ int send_pull_messages_fault(char *timeout, char *message_limit)
 {
     long size = cat(NULL, "generic_files/PullMessagesFaultResponse.xml", 4, "%MAX_TIMEOUT%", timeout, "%MAX_MESSAGE_LIMIT%", message_limit);
 
-    fprintf(stdout, "HTTP/1.1 500 Internal Server Error\r\n");
+    // Set flag to indicate this is a SOAP fault response
+    g_last_response_was_soap_fault = 1;
+
     output_http_headers(size);
 
     return cat("stdout", "generic_files/PullMessagesFaultResponse.xml", 4, "%MAX_TIMEOUT%", timeout, "%MAX_MESSAGE_LIMIT%", message_limit);
@@ -126,7 +132,7 @@ int send_authentication_error()
     long size = cat(NULL, "generic_files/AuthenticationError.xml", 0);
 
     // Use HTTP 401 Unauthorized for authentication errors (ONVIF standard)
-    fprintf(stdout, "HTTP/1.1 401 Unauthorized\r\n");
+    fprintf(stdout, "Status: 401 Unauthorized\r\n");
     output_http_headers(size);
 
     return cat("stdout", "generic_files/AuthenticationError.xml", 0);
