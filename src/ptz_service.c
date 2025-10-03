@@ -433,12 +433,14 @@ int ptz_get_presets()
             dest = NULL;
         } else {
             dest = dest_a;
-            output_http_headers(size);
+            output_http_headers(total_size);
         }
 
         size = cat(dest, "ptz_service_files/GetPresets_1.xml", 0);
         if (c == 0)
             total_size = size;
+        else
+            fflush(stdout);
 
         for (i = 0; i < presets.count; i++) {
             sprintf(token, "PresetToken_%d", presets.items[i].number);
@@ -449,11 +451,15 @@ int ptz_get_presets()
                 dest, "ptz_service_files/GetPresets_2.xml", 10, "%TOKEN%", token, "%NAME%", presets.items[i].name, "%X%", sx, "%Y%", sy, "%Z%", sz);
             if (c == 0)
                 total_size += size;
+            else
+                fflush(stdout);
         }
 
         size = cat(dest, "ptz_service_files/GetPresets_3.xml", 0);
         if (c == 0)
             total_size += size;
+        else
+            fflush(stdout);
     }
 
     destroy_presets();
