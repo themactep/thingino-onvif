@@ -15,10 +15,12 @@
  */
 
 #include <ctype.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
 #include <limits.h>
 #include <netdb.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,11 +58,11 @@
 
 sem_t *sem_memory_lock = SEM_FAILED;
 
-// Response buffer for XML logging
-#define RESPONSE_BUFFER_SIZE (64 * 1024) // 64KB should be enough for most SOAP responses
-static char response_buffer[RESPONSE_BUFFER_SIZE];
-static size_t response_buffer_pos = 0;
-static int response_buffer_enabled = 0;
+// Response buffer for XML logging - now process-local to prevent race conditions
+#define RESPONSE_BUFFER_SIZE (64 * 1024)                    // 64KB should be enough for most SOAP responses
+static __thread char response_buffer[RESPONSE_BUFFER_SIZE]; // Thread-local storage
+static __thread size_t response_buffer_pos = 0;             // Thread-local position
+static __thread int response_buffer_enabled = 0;            // Thread-local flag
 
 /**
  * Open a semaphore
@@ -163,7 +165,7 @@ void *create_shared_memory(int create)
 }
 
 /**
- * Destroy shared memory
+ * Destroy shared memory with enhanced safety checks
  * @param shared_area Pointer to the shared memory
  * @param destroy_all Set to 1 to unlink the file
  */
@@ -177,16 +179,23 @@ void destroy_shared_memory(void *shared_area, int destroy_all)
         return;
     }
 
+    // Additional safety: validate the pointer is within reasonable range
+    // This helps catch corrupted pointers that could cause segfaults
+    if ((uintptr_t) shared_area < 0x1000 || (uintptr_t) shared_area == 0xFFFFFFFFFFFFFFFF) {
+        log_error("destroy_shared_memory called with invalid pointer %p, skipping", shared_area);
+        return;
+    }
+
     sem_memory_close();
 
     if (munmap(shared_area, shared_seg_size) != 0) {
-        log_error("munmap() failed");
+        log_error("munmap() failed: %s", strerror(errno));
         return;
     }
 
     if (destroy_all) {
         if (shm_unlink(SHMOBJ_PATH) != 0) {
-            log_error("shm_unlink() failed");
+            log_error("shm_unlink() failed: %s", strerror(errno));
             return;
         }
     }
@@ -212,12 +221,15 @@ int sem_memory_post()
 }
 
 /**
- * Initialize response buffer for XML logging
+ * Initialize response buffer for XML logging with safety checks
  */
 void response_buffer_init(void)
 {
+    // Clear the entire buffer to prevent stale data
+    memset(response_buffer, 0, RESPONSE_BUFFER_SIZE);
     response_buffer_pos = 0;
     response_buffer_enabled = 0; // Will be set by caller if needed
+    log_debug("Response buffer initialized for process %d", getpid());
 }
 
 /**
@@ -232,47 +244,79 @@ void response_buffer_enable(int enable)
 }
 
 /**
- * Append data to response buffer
+ * Append data to response buffer with enhanced safety checks
  */
 void response_buffer_append(const char *data, size_t len)
 {
+    // Enhanced safety checks to prevent segfaults
     if (!response_buffer_enabled || data == NULL || len == 0) {
         return;
     }
 
-    // Check if we have space
-    if (response_buffer_pos + len < RESPONSE_BUFFER_SIZE) {
-        memcpy(response_buffer + response_buffer_pos, data, len);
+    // Validate buffer state to prevent corruption
+    if (response_buffer_pos >= RESPONSE_BUFFER_SIZE) {
+        log_error("Response buffer position corrupted, resetting");
+        response_buffer_pos = 0;
+        return;
+    }
+
+    // Check if we have space with additional safety margin
+    if (response_buffer_pos + len < RESPONSE_BUFFER_SIZE - 1) {
+        // Safe to copy - use memmove for overlapping memory safety
+        memmove(response_buffer + response_buffer_pos, data, len);
         response_buffer_pos += len;
+        // Ensure null termination
+        response_buffer[response_buffer_pos] = '\0';
     } else {
         log_warn("Response buffer overflow, XML response logging may be incomplete");
-        // Copy what we can
-        size_t remaining = RESPONSE_BUFFER_SIZE - response_buffer_pos;
+        // Copy what we can safely
+        size_t remaining = RESPONSE_BUFFER_SIZE - response_buffer_pos - 1;
         if (remaining > 0) {
-            memcpy(response_buffer + response_buffer_pos, data, remaining);
-            response_buffer_pos = RESPONSE_BUFFER_SIZE;
+            memmove(response_buffer + response_buffer_pos, data, remaining);
+            response_buffer_pos += remaining;
         }
+        // Ensure null termination
+        response_buffer[RESPONSE_BUFFER_SIZE - 1] = '\0';
+        response_buffer_pos = RESPONSE_BUFFER_SIZE - 1;
     }
 }
 
 /**
- * Get response buffer content
+ * Get response buffer content with safety validation
  */
 const char *response_buffer_get(size_t *size)
 {
+    // Validate buffer state before returning
+    if (response_buffer_pos >= RESPONSE_BUFFER_SIZE) {
+        log_error("Response buffer position corrupted in get, resetting");
+        response_buffer_pos = 0;
+        response_buffer[0] = '\0';
+    }
+
     if (size) {
         *size = response_buffer_pos;
     }
+
+    // Ensure null termination before returning
+    if (response_buffer_pos < RESPONSE_BUFFER_SIZE) {
+        response_buffer[response_buffer_pos] = '\0';
+    } else {
+        response_buffer[RESPONSE_BUFFER_SIZE - 1] = '\0';
+    }
+
     return response_buffer;
 }
 
 /**
- * Clear response buffer
+ * Clear response buffer with complete cleanup
  */
 void response_buffer_clear(void)
 {
+    // Clear the entire buffer to prevent stale data
+    memset(response_buffer, 0, RESPONSE_BUFFER_SIZE);
     response_buffer_pos = 0;
     response_buffer_enabled = 0;
+    log_debug("Response buffer cleared for process %d", getpid());
 }
 
 /**
@@ -399,6 +443,13 @@ long cat(char *out, char *filename, int num, ...)
         for (i = 0; i < num / 2; i++) {
             par_to_find = va_arg(valist, char *);
             par_to_sub = va_arg(valist, char *);
+
+            // Safety check: skip if either parameter is NULL
+            if (par_to_find == NULL || par_to_sub == NULL) {
+                log_warn("cat() received NULL parameter: par_to_find=%p, par_to_sub=%p", par_to_find, par_to_sub);
+                continue;
+            }
+
             pars = strstr(line, par_to_find);
             if (pars != NULL) {
                 pare = pars + strlen(par_to_find);
@@ -410,6 +461,7 @@ long cat(char *out, char *filename, int num, ...)
                 if (prefix_len + sub_len + suffix_len < MAX_CAT_LEN - 1) {
                     strncpy(new_line, line, prefix_len);
                     new_line[prefix_len] = '\0'; // Ensure null termination
+                    // Safe string copy - par_to_sub is already validated as non-NULL above
                     strcpy(&new_line[prefix_len], par_to_sub);
                     strncpy(&new_line[prefix_len + sub_len], pare, suffix_len);
                     new_line[prefix_len + sub_len + suffix_len] = '\0'; // Ensure null termination
@@ -1069,8 +1121,29 @@ int gen_uuid(char *g_uuid)
  */
 int get_from_query_string(char **ret, int *ret_size, char *par)
 {
+    // Validate inputs
+    if (!ret || !ret_size || !par) {
+        if (ret)
+            *ret = NULL;
+        if (ret_size)
+            *ret_size = -1;
+        return -1;
+    }
+
     char *query_string = getenv("QUERY_STRING");
+    if (query_string == NULL || query_string[0] == '\0') {
+        *ret = NULL;
+        *ret_size = -1;
+        return -1;
+    }
+
     char *query = strdup(query_string);
+    if (query == NULL) {
+        *ret = NULL;
+        *ret_size = -1;
+        return -1;
+    }
+
     char *tokens = query;
     char *p = query;
 
@@ -1080,14 +1153,18 @@ int get_from_query_string(char **ret, int *ret_size, char *par)
 
         if (var && (val = strtok(NULL, "="))) {
             if (strcasecmp(par, var) == 0) {
-                *ret = query_string + (val - query);
+                int offset = (int) (val - query);
+                *ret = query_string + offset; // pointer into original
                 *ret_size = strlen(val);
+                free(query);
                 return 0;
             }
         }
     }
-    free(query);
 
+    free(query);
+    *ret = NULL;
+    *ret_size = -1;
     return -1;
 }
 

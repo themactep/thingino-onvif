@@ -370,6 +370,11 @@ int events_pull_messages()
         for (i = 0; i < service_ctx.events_num && i < MAX_EVENTS; i++) {
             if (count >= limit)
                 break;
+            // Skip events with NULL topic to prevent segfaults
+            if (service_ctx.events[i].topic == NULL) {
+                log_warn("Skipping event %d with NULL topic", i);
+                continue;
+            }
             if ((subs_evts->events[i].pull_notify & (1 << sub_index))) {
                 if ((subs_evts->events[i].pull_send_initialized & (1 << sub_index))) {
                     strcpy(property, "Initialized");
@@ -396,19 +401,24 @@ int events_pull_messages()
                 } else {
                     strcpy(data_name, "State");
                 }
+                // Ensure we have valid strings to prevent null pointer dereference
+                const char *safe_topic = service_ctx.events[i].topic ? service_ctx.events[i].topic : "Unknown";
+                const char *safe_source_name = service_ctx.events[i].source_name ? service_ctx.events[i].source_name : "Unknown";
+                const char *safe_source_value = service_ctx.events[i].source_value ? service_ctx.events[i].source_value : "Unknown";
+
                 size = cat(dest,
                            "events_service_files/PullMessages_2.xml",
                            14,
                            "%TOPIC%",
-                           service_ctx.events[i].topic,
+                           safe_topic,
                            "%UTC_TIME%",
                            iso_str_3,
                            "%PROPERTY%",
                            property,
                            "%SOURCE_NAME%",
-                           service_ctx.events[i].source_name,
+                           safe_source_name,
                            "%SOURCE_VALUE%",
-                           service_ctx.events[i].source_value,
+                           safe_source_value,
                            "%DATA_NAME%",
                            data_name,
                            "%DATA_VALUE%",
@@ -782,13 +792,20 @@ int events_get_event_properties()
             total_size = size;
 
         for (i = 0; i < service_ctx.events_num; i++) {
+            // Skip events with NULL topic to prevent segfaults
+            if (service_ctx.events[i].topic == NULL) {
+                log_warn("Skipping event %d with NULL topic in GetEventProperties", i);
+                continue;
+            }
             topic_ls[0][0] = '\0';
             topic_ls[1][0] = '\0';
             topic_ls[2][0] = '\0';
             topic_le[0][0] = '\0';
             topic_le[1][0] = '\0';
             topic_le[2][0] = '\0';
-            strcpy(topic, service_ctx.events[i].topic);
+            // Ensure we have a valid topic string to prevent null pointer dereference
+            const char *safe_topic = service_ctx.events[i].topic ? service_ctx.events[i].topic : "Unknown/Unknown/Unknown";
+            strcpy(topic, safe_topic);
             token = strtok(topic, "/");
 
             /* walk through other tokens */
@@ -810,13 +827,17 @@ int events_get_event_properties()
                 return -1;
             }
 
-            if (strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
+            if (service_ctx.events[i].topic != NULL && strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
                 strcpy(data_name, "LogicalState");
                 strcpy(data_type, "tt:RelayLogicalState");
             } else {
                 strcpy(data_name, "State");
                 strcpy(data_type, "xsd:boolean");
             }
+
+            // Ensure we have valid strings to prevent null pointer dereference
+            const char *safe_source_name = service_ctx.events[i].source_name ? service_ctx.events[i].source_name : "Unknown";
+            const char *safe_source_type = service_ctx.events[i].source_type ? service_ctx.events[i].source_type : "Unknown";
 
             size = cat(dest,
                        "events_service_files/GetEventProperties_2.xml",
@@ -828,9 +849,9 @@ int events_get_event_properties()
                        "%TOPIC_L3_START%",
                        topic_ls[2],
                        "%SOURCE_NAME%",
-                       service_ctx.events[i].source_name,
+                       safe_source_name,
                        "%SOURCE_TYPE%",
-                       service_ctx.events[i].source_type,
+                       safe_source_type,
                        "%DATA_NAME%",
                        data_name,
                        "%DATA_TYPE%",
