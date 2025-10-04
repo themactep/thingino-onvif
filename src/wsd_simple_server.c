@@ -204,6 +204,7 @@ void signal_handler(int signal)
     if (message == NULL) {
         log_fatal("Malloc error.\n");
         shutdown(sock, SHUT_RDWR);
+        close(sock);
         // Exit from main loop
         exit_main = 1;
     }
@@ -228,6 +229,7 @@ void signal_handler(int signal)
         log_fatal("Error sending Bye message.\n");
         free(message);
         shutdown(sock, SHUT_RDWR);
+        close(sock);
         // Exit from main loop
         exit_main = 1;
         exit(EXIT_FAILURE);
@@ -237,6 +239,7 @@ void signal_handler(int signal)
 
     // Exit from main loop
     shutdown(sock, SHUT_RDWR);
+    close(sock);
     exit_main = 1;
 }
 
@@ -454,6 +457,7 @@ int main(int argc, char **argv)
     if (bind(sock, (struct sockaddr *) &addr_in, sizeof(addr_in)) == -1) {
         log_fatal("Unable to bind socket\n");
         shutdown(sock, SHUT_RDWR);
+        close(sock);
         exit(EXIT_FAILURE);
     }
 
@@ -462,6 +466,7 @@ int main(int argc, char **argv)
     if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mr, sizeof(mr)) == -1) {
         log_fatal("Error joining multicast group\n");
         shutdown(sock, SHUT_RDWR);
+        close(sock);
         exit(EXIT_FAILURE);
     }
 
@@ -496,6 +501,7 @@ int main(int argc, char **argv)
     if (message == NULL) {
         log_fatal("Malloc error.\n");
         shutdown(sock, SHUT_RDWR);
+        close(sock);
         exit(EXIT_FAILURE);
     }
 
@@ -520,6 +526,7 @@ int main(int argc, char **argv)
         log_fatal("Error sending Hello message.\n");
         free(message);
         shutdown(sock, SHUT_RDWR);
+        close(sock);
         exit(EXIT_FAILURE);
     }
     free(message);
@@ -636,6 +643,7 @@ int main(int argc, char **argv)
     }
 
     shutdown(sock, SHUT_RDWR);
+    close(sock);
 
     log_info("Terminating program.");
 
