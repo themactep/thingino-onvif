@@ -88,6 +88,13 @@ dist/
 local/
 buildroot_package/
 onvif_logs/
+tests/
+xml/
+
+jct/
+mxml/
+libtomcrypt/
+
 
 # Test artifacts
 *.log
