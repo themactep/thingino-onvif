@@ -377,8 +377,15 @@ void clean_expired_subscriptions()
             // Check if subscription is expired
             now = time(NULL);
             if (now > subs_evts->subscriptions[i].expire) {
+                // Log details before clearing
+                char expire_str[21];
+                to_iso_date(expire_str, sizeof(expire_str), subs_evts->subscriptions[i].expire);
+                log_info("Cleaning expired subscription: slot=%d, id=%d, type=%s, expired_at=%s",
+                         i,
+                         subs_evts->subscriptions[i].id,
+                         subs_evts->subscriptions[i].used == SUB_PULL ? "PULL" : "PUSH",
+                         expire_str);
                 memset(&subs_evts->subscriptions[i], '\0', sizeof(subscription_shm_t));
-                log_info("Subscription %d is expired", i);
             }
         }
     }

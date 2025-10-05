@@ -153,7 +153,29 @@ int events_create_pull_point_subscription()
     sem_memory_post();
     sub_index = i;
     if (sub_index == MAX_SUBSCRIPTIONS) {
-        log_error("Reached the maximum number of subscriptions");
+        // Log current subscription status to help diagnose the issue
+        log_error("Reached the maximum number of subscriptions (%d)", MAX_SUBSCRIPTIONS);
+        sem_memory_wait();
+        int active_count = 0;
+        time_t current_time = time(NULL);
+        for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+            if (subs_evts->subscriptions[i].used != SUB_UNUSED) {
+                active_count++;
+                char expire_str[21];
+                to_iso_date(expire_str, sizeof(expire_str), subs_evts->subscriptions[i].expire);
+                int expired = (current_time > subs_evts->subscriptions[i].expire) ? 1 : 0;
+                log_warn("Subscription slot %d: id=%d, type=%s, expire=%s%s",
+                         i,
+                         subs_evts->subscriptions[i].id,
+                         subs_evts->subscriptions[i].used == SUB_PULL ? "PULL" : "PUSH",
+                         expire_str,
+                         expired ? " (EXPIRED)" : "");
+            }
+        }
+        sem_memory_post();
+        log_error("Active subscriptions: %d/%d (consider increasing MAX_SUBSCRIPTIONS or check for subscription leaks)",
+                  active_count,
+                  MAX_SUBSCRIPTIONS);
         send_fault("events_service",
                    "Receiver",
                    "wsntw:SubscribeCreationFailedFault",
@@ -181,6 +203,7 @@ int events_create_pull_point_subscription()
     to_iso_date(iso_str, sizeof(iso_str), now);
     to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
 
+    log_info("Created PULL subscription: id=%d, slot=%d, expire=%s", subscription_id, sub_index, iso_str_2);
     log_debug("Subscription data: expire %s - subscription id %d", iso_str_2, subscription_id);
 
     long size = cat(NULL,
@@ -535,7 +558,29 @@ int events_subscribe()
     sem_memory_post();
     sub_index = i;
     if (sub_index == MAX_SUBSCRIPTIONS) {
-        log_error("Reached the maximum number of subscriptions");
+        // Log current subscription status to help diagnose the issue
+        log_error("Reached the maximum number of subscriptions (%d)", MAX_SUBSCRIPTIONS);
+        sem_memory_wait();
+        int active_count = 0;
+        time_t current_time = time(NULL);
+        for (i = 0; i < MAX_SUBSCRIPTIONS; i++) {
+            if (subs_evts->subscriptions[i].used != SUB_UNUSED) {
+                active_count++;
+                char expire_str[21];
+                to_iso_date(expire_str, sizeof(expire_str), subs_evts->subscriptions[i].expire);
+                int expired = (current_time > subs_evts->subscriptions[i].expire) ? 1 : 0;
+                log_warn("Subscription slot %d: id=%d, type=%s, expire=%s%s",
+                         i,
+                         subs_evts->subscriptions[i].id,
+                         subs_evts->subscriptions[i].used == SUB_PULL ? "PULL" : "PUSH",
+                         expire_str,
+                         expired ? " (EXPIRED)" : "");
+            }
+        }
+        sem_memory_post();
+        log_error("Active subscriptions: %d/%d (consider increasing MAX_SUBSCRIPTIONS or check for subscription leaks)",
+                  active_count,
+                  MAX_SUBSCRIPTIONS);
         send_fault("events_service",
                    "Receiver",
                    "wsntw:SubscribeCreationFailedFault",
@@ -565,6 +610,7 @@ int events_subscribe()
     to_iso_date(iso_str, sizeof(iso_str), now);
     to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
 
+    log_info("Created PUSH subscription: id=%d, slot=%d, reference=%s, expire=%s", subscription_id, sub_index, address, iso_str_2);
     log_debug("Subscription data: reference %s - expire %s - subscription index %d", address, iso_str_2, subscription_id);
 
     long size = cat(NULL,
@@ -970,6 +1016,11 @@ int events_unsubscribe()
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -5;
     }
+
+    // Log subscription details before clearing
+    subscription_type sub_type = subs_evts->subscriptions[sub_index].used;
+    log_info("Unsubscribed: id=%d, slot=%d, type=%s", sub_id, sub_index, sub_type == SUB_PULL ? "PULL" : "PUSH");
+
     memset(&(subs_evts->subscriptions[sub_index]), '\0', sizeof(subscription_shm_t));
     sem_memory_post();
     destroy_shared_memory((void *) subs_evts, 0);

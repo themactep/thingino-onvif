@@ -28,8 +28,8 @@
 #define UUID_LEN 36
 
 #define MAX_RELAY_OUTPUTS 8
-#define MAX_SUBSCRIPTIONS 8 // MAX 32
-#define MAX_EVENTS 8        // MAX 32
+#define MAX_SUBSCRIPTIONS 32 // MAX 32 - Increased from 8 to prevent subscription flooding
+#define MAX_EVENTS 8         // MAX 32
 #define CONSUMER_REFERENCE_MAX_SIZE 256
 
 #define EVENTS_NONE 0
