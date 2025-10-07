@@ -26,7 +26,7 @@
 void xml_logger_init(void);
 
 /**
- * Log raw XML request to external storage
+ * Log raw XML request to external storage (general XML logger)
  * @param xml_content The raw XML content to log
  * @param xml_size Size of the XML content
  * @param remote_addr Remote IP address (from REMOTE_ADDR env var)
@@ -35,7 +35,7 @@ void xml_logger_init(void);
 int log_xml_request(const char *xml_content, int xml_size, const char *remote_addr);
 
 /**
- * Log raw XML response to external storage
+ * Log raw XML response to external storage (general XML logger)
  * @param xml_content The raw XML content to log
  * @param xml_size Size of the XML content
  * @param remote_addr Remote IP address (from REMOTE_ADDR env var)
@@ -44,7 +44,30 @@ int log_xml_request(const char *xml_content, int xml_size, const char *remote_ad
 int log_xml_response(const char *xml_content, int xml_size, const char *remote_addr);
 
 /**
- * Check if XML logging is enabled
+ * Error-time raw XML capture (parameter validation failure or SOAP Fault)
+ * Independent of loglevel; will only write when raw_log_directory is a mounted,
+ * writable external filesystem per policy. On failure, emits throttled WARN.
+ * All string parameters may be NULL.
+ */
+int log_xml_error_request(const char *xml_content,
+                          int xml_size,
+                          const char *client_ip,
+                          const char *service,
+                          const char *method,
+                          const char *reason,
+                          const char *request_uri,
+                          const char *query_string);
+
+/**
+ * Destination readiness check for error-time logging.
+ * Returns 1 if raw_log_directory is configured, exists, writable, and mounted
+ * on an external filesystem; 0 otherwise. If emit_warn is non-zero, emits a
+ * throttled WARN when not ready.
+ */
+int xml_error_log_destination_ready(int emit_warn);
+
+/**
+ * Check if XML logging is enabled (general request/response logger)
  * @return 1 if enabled, 0 if disabled
  */
 int xml_logger_is_enabled(void);

@@ -44,6 +44,19 @@
 
 service_context_t service_ctx;
 
+// Store a copy of raw request for error-only logging
+static char *g_raw_request_copy = NULL;
+static size_t g_raw_request_size = 0;
+
+const char *get_raw_request_data(size_t *out_size)
+{
+    if (out_size)
+        *out_size = g_raw_request_size;
+    return g_raw_request_copy;
+}
+// Track whether the last response was a SOAP fault (defined in utils.c)
+extern int g_last_response_was_soap_fault;
+
 int debug = 0;
 
 void dump_env()
@@ -311,11 +324,18 @@ int main(int argc, char **argv)
     // Initialize response buffer for XML logging
     response_buffer_init();
 
-    // Log raw XML request if enabled
+    // Log raw XML request if enabled; also keep a copy if error-time logging destination is ready
     tmp = getenv("REMOTE_ADDR");
     if (xml_logger_is_enabled()) {
         log_xml_request(input, input_size, tmp);
         response_buffer_enable(1);
+    }
+    if (xml_error_log_destination_ready(0) && g_raw_request_copy == NULL && input_size > 0) {
+        g_raw_request_copy = (char *) malloc((size_t) input_size);
+        if (g_raw_request_copy) {
+            memcpy(g_raw_request_copy, input, (size_t) input_size);
+            g_raw_request_size = (size_t) input_size;
+        }
     }
 
     // Warning: init_xml changes the input string
@@ -441,6 +461,9 @@ int main(int argc, char **argv)
 
     // Skip problematic log_debug calls in CGI:
     // log_debug("DEBUG: About to log authentication details");
+    // Reset SOAP fault flag before dispatch
+    g_last_response_was_soap_fault = 0;
+
     // log_debug("Authentication completed, auth_error = %d", auth_error);
     // log_debug("About to process method: %s for service: %s", method ? method : "NULL", prog_name ? prog_name : "NULL");
 
@@ -476,12 +499,28 @@ int main(int argc, char **argv)
         }
     }
     response_buffer_clear();
+    // Error-only raw XML logging on SOAP Fault responses (central hook)
+    if (g_last_response_was_soap_fault) {
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        const char *client_ip = getenv("REMOTE_ADDR");
+        const char *request_uri = getenv("REQUEST_URI");
+        const char *query = getenv("QUERY_STRING");
+        log_xml_error_request(raw, (int) raw_sz, client_ip, prog_name, method, "SOAP Fault", request_uri, query);
+    }
 
     // Don't free static buffers: free(input);
     // Don't free static buffers: free(conf_file);
 
     // Configuration memory will be freed automatically when the program exits
     // free_conf_file();
+
+    // Free raw request copy if allocated
+    if (g_raw_request_copy) {
+        free(g_raw_request_copy);
+        g_raw_request_copy = NULL;
+        g_raw_request_size = 0;
+    }
 
     // Skip problematic logging in CGI:
     // log_debug("About to terminate program");

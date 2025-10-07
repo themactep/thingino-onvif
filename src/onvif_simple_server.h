@@ -16,6 +16,7 @@
 
 #ifndef ONVIF_SIMPLE_SERVER_H
 #define ONVIF_SIMPLE_SERVER_H
+#include <stddef.h>
 
 #define DAEMON_NO_CHDIR 01          /* Don't chdir ("/") */
 #define DAEMON_NO_CLOSE_FILES 02    /* Don't close all open files */
@@ -124,11 +125,15 @@ typedef struct {
     int loglevel; // 0=FATAL..5=TRACE, default 0
 
     // Raw XML logging configuration
-    char *raw_log_directory; // Path to external storage for raw XML logs (optional)
+    char *raw_log_directory;   // Path to external storage for raw XML logs (optional)
+    int raw_log_on_error_only; // When true, log raw XML on error even if general XML logging is disabled
 } service_context_t;
 
 // Expose global context
 extern service_context_t service_ctx;
+
+// Access to original raw request (pre-parse) for error logging
+const char *get_raw_request_data(size_t *out_size);
 
 // returns 0 on success -1 on error
 int daemonize(int flags);

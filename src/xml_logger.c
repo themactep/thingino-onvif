@@ -22,6 +22,7 @@
 #include "onvif_simple_server.h"
 
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -95,6 +96,82 @@ int xml_logger_is_enabled(void)
     log_debug("XML logging enabled: raw_log_directory='%s'", service_ctx.raw_log_directory);
     xml_logging_enabled = 1;
     return 1;
+}
+// ------------- Error destination readiness (external mount) -------------
+
+static int is_external_mount_ready(const char *dir)
+{
+    if (!dir || !dir[0])
+        return 0;
+
+    struct stat st;
+    if (stat(dir, &st) != 0) {
+        return 0;
+    }
+    if (access(dir, W_OK) != 0) {
+        return 0;
+    }
+
+    // Resolve to absolute path
+    char resolved[PATH_MAX];
+    if (!realpath(dir, resolved)) {
+        return 0;
+    }
+
+    // Parse /proc/mounts and find the best (longest) matching mount point
+    FILE *fp = fopen("/proc/mounts", "r");
+    if (!fp)
+        return 0;
+
+    char dev[256], mnt[512], fstype[128], opts[256];
+    int best_len = -1;
+    char best_mnt[512] = {0};
+    char best_fstype[128] = {0};
+
+    while (fscanf(fp, "%255s %511s %127s %255s %*d %*d\n", dev, mnt, fstype, opts) == 4) {
+        size_t mlen = strlen(mnt);
+        if (mlen <= 0)
+            continue;
+        if (strncmp(resolved, mnt, mlen) == 0 && (resolved[mlen] == '\0' || resolved[mlen] == '/')) {
+            if ((int) mlen > best_len) {
+                best_len = (int) mlen;
+                strncpy(best_mnt, mnt, sizeof(best_mnt) - 1);
+                strncpy(best_fstype, fstype, sizeof(best_fstype) - 1);
+            }
+        }
+    }
+    fclose(fp);
+
+    if (best_len < 0)
+        return 0;
+
+    // Disallow rootfs-like or in-memory/overlay filesystems
+    if (strcmp(best_mnt, "/") == 0)
+        return 0;
+
+    const char *disallow[] = {"overlay", "tmpfs", "ramfs", "rootfs"};
+    for (size_t i = 0; i < sizeof(disallow) / sizeof(disallow[0]); ++i) {
+        if (strcmp(best_fstype, disallow[i]) == 0)
+            return 0;
+    }
+
+    // Consider it external
+    return 1;
+}
+
+int xml_error_log_destination_ready(int emit_warn)
+{
+    static time_t last_warn = 0;
+    int ready = is_external_mount_ready(service_ctx.raw_log_directory);
+    if (!ready && emit_warn) {
+        time_t now = time(NULL);
+        if (last_warn == 0 || (now - last_warn) >= 300) {
+            last_warn = now;
+            log_warn("XML error capture disabled: raw_log_directory not ready or not external (dir='%s')",
+                     service_ctx.raw_log_directory ? service_ctx.raw_log_directory : "");
+        }
+    }
+    return ready;
 }
 
 /**
@@ -293,4 +370,215 @@ int log_xml_response(const char *xml_content, int xml_size, const char *remote_a
 
     // Write XML to file
     return write_xml_file(filepath, xml_content, xml_size);
+}
+
+// --- Error-only logging with redaction and fallbacks ---
+
+#define MAX_ERROR_XML_SIZE (2 * 1024 * 1024)
+
+static void utc_iso8601(char *buf, size_t n)
+{
+    time_t now = time(NULL);
+    struct tm tm_utc;
+#if defined(_POSIX_THREAD_SAFE_FUNCTIONS)
+    gmtime_r(&now, &tm_utc);
+#else
+    struct tm *tmp = gmtime(&now);
+    if (tmp)
+        tm_utc = *tmp;
+    else
+        memset(&tm_utc, 0, sizeof(tm_utc));
+#endif
+    strftime(buf, n, "%Y%m%dT%H%M%SZ", &tm_utc);
+}
+
+static char *redact_between_tags(const char *xml, const char *open_tag, const char *close_tag)
+{
+    if (!xml)
+        return NULL;
+    size_t len = strlen(xml);
+    char *out = (char *) malloc(len + 1);
+    if (!out)
+        return NULL;
+    memcpy(out, xml, len + 1);
+
+    const char *tags[][2] = {{"<wsse:Password", "</wsse:Password>"}, {"<wsu:Created", "</wsu:Created>"}, {"<wsse:Nonce", "</wsse:Nonce>"}};
+
+    for (size_t t = 0; t < sizeof(tags) / sizeof(tags[0]); ++t) {
+        const char *open = tags[t][0];
+        const char *close = tags[t][1];
+        char *p = out;
+        while ((p = strstr(p, open)) != NULL) {
+            char *gt = strchr(p, '>');
+            if (!gt)
+                break;
+            char *q = strstr(gt + 1, close);
+            if (!q)
+                break;
+            // replace inner text with REDACTED
+            size_t inner_len = (size_t) (q - (gt + 1));
+            const char *replacement = "REDACTED";
+            size_t repl_len = strlen(replacement);
+            if (repl_len <= inner_len) {
+                memcpy(gt + 1, replacement, repl_len);
+                // fill remaining with spaces to keep positions stable
+                memset(gt + 1 + repl_len, ' ', inner_len - repl_len);
+            } else {
+                // replacement longer: keep it simple, truncate
+                memcpy(gt + 1, replacement, inner_len);
+            }
+            p = q + strlen(close);
+        }
+    }
+
+    return out;
+}
+
+static int ensure_dir_exists(const char *dir)
+{
+    struct stat st;
+    if (stat(dir, &st) == 0) {
+        return S_ISDIR(st.st_mode) ? 0 : -1;
+    }
+    if (mkdir(dir, 0755) != 0) {
+        return -1;
+    }
+    return 0;
+}
+
+int log_xml_error_request(const char *xml_content,
+                          int xml_size,
+                          const char *client_ip,
+                          const char *service,
+                          const char *method,
+                          const char *reason,
+                          const char *request_uri,
+                          const char *query_string)
+{
+    // Only write when destination is ready per external mount policy
+    if (!xml_error_log_destination_ready(1)) {
+        return 0;
+    }
+
+    // Validate inputs
+    if (xml_content == NULL || xml_size <= 0) {
+        log_warn("XML error logging: no request body available, skipping file save");
+        return 0;
+    }
+
+    const char *ip = (client_ip && client_ip[0]) ? client_ip : "unknown";
+
+    // Determine base directory (must be configured)
+    const char *base_dir = service_ctx.raw_log_directory;
+    if (!base_dir || !base_dir[0]) {
+        return 0;
+    }
+
+    // Build filename
+    char ts[32];
+    utc_iso8601(ts, sizeof(ts));
+
+    char filepath[1536];
+    int ret = snprintf(filepath,
+                       sizeof(filepath),
+                       "%s/%s_client-%s_svc-%s_method-%s_error.xml",
+                       base_dir,
+                       ts,
+                       ip,
+                       service ? service : "unknown",
+                       method ? method : "unknown");
+    if (ret < 0 || (size_t) ret >= sizeof(filepath)) {
+        log_warn("XML error logging: filepath too long, skipping");
+        return 0;
+    }
+
+    // Redact sensitive fields
+    char *xml_copy = NULL;
+    char *redacted = NULL;
+    xml_copy = (char *) malloc((size_t) xml_size + 1);
+    // Ensure uniqueness under concurrency: append pid and counter on collision
+    pid_t pid = getpid();
+    int attempt = 0;
+    char unique_path[1700];
+    while (attempt < 100) {
+        if (attempt == 0) {
+            strncpy(unique_path, filepath, sizeof(unique_path) - 1);
+            unique_path[sizeof(unique_path) - 1] = '\0';
+        } else {
+            snprintf(unique_path,
+                     sizeof(unique_path),
+                     "%s/%s_client-%s_svc-%s_method-%s_error_pid-%d_%02d.xml",
+                     base_dir,
+                     ts,
+                     ip,
+                     service ? service : "unknown",
+                     method ? method : "unknown",
+                     (int) pid,
+                     attempt);
+        }
+        if (access(unique_path, F_OK) != 0) {
+            break; // available
+        }
+        attempt++;
+    }
+
+    if (!xml_copy) {
+        log_warn("XML error logging: OOM copying buffer");
+        return 0;
+    }
+    memcpy(xml_copy, xml_content, (size_t) xml_size);
+    xml_copy[xml_size] = '\0';
+
+    redacted = redact_between_tags(xml_copy, NULL, NULL);
+    free(xml_copy);
+    if (!redacted) {
+        return 0;
+    }
+
+    // Truncate if needed
+    int write_size = (xml_size > MAX_ERROR_XML_SIZE) ? MAX_ERROR_XML_SIZE : xml_size;
+
+    // Write to file
+    int rc = -1;
+    FILE *fp = fopen(unique_path, "w");
+    if (!fp) {
+        log_warn(
+            "Malformed %s.%s: reason='%s', client=%s, URI='%s', QUERY_STRING='%s' 			 		 			 		 	 	 		 		 		 		 (failed to open file)",
+            service ? service : "service",
+            method ? method : "method",
+            reason ? reason : "(none)",
+            ip,
+            request_uri ? request_uri : "",
+            query_string ? query_string : "");
+        free(redacted);
+        return 0;
+    }
+
+    size_t w = fwrite(redacted, 1, (size_t) write_size, fp);
+    if (w != (size_t) write_size) {
+        // continue anyway
+    }
+    if (xml_size > MAX_ERROR_XML_SIZE) {
+        const char *tr = "\n[TRUNCATED]\n";
+        fwrite(tr, 1, strlen(tr), fp);
+    }
+    fclose(fp);
+
+    // One-line error referencing saved file
+    log_error("Malformed %s.%s: reason='%s', client=%s, URI='%s', QUERY_STRING='%s' -> raw XML: %s",
+              service ? service : "service",
+              method ? method : "method",
+              reason ? reason : "(none)",
+              ip,
+              request_uri ? request_uri : "",
+              query_string ? query_string : "",
+              unique_path);
+
+    // Optional debug with first 120 chars
+    redacted[120] = '\0';
+    log_debug("XML error preview: %s", redacted);
+
+    free(redacted);
+    rc = 0;
+    return rc;
 }

@@ -22,6 +22,7 @@
 #include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
 #include "utils.h"
+#include "xml_logger.h"
 
 #include <errno.h>
 #include <limits.h>
@@ -264,6 +265,17 @@ int events_pull_messages()
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for PullMessages method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "PullMessages",
+                              "missing sub",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
@@ -274,6 +286,17 @@ int events_pull_messages()
     free(sub_id_s);
     if ((sub_id <= 0) || (sub_id > 65535)) {
         log_error("sub index out of range for PullMessages method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "PullMessages",
+                              "sub out of range",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }
@@ -282,6 +305,17 @@ int events_pull_messages()
     timeout = get_element("Timeout", "Body");
     if (timeout == NULL) {
         log_error("No Timeout element for PullMessages method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "PullMessages",
+                              "missing Timeout",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_action_failed_fault("events_service", -3);
         return -3;
     }
@@ -289,6 +323,17 @@ int events_pull_messages()
     message_limit = get_element("MessageLimit", "Body");
     if (message_limit == NULL) {
         log_error("No MessageLimit element for PullMessages method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "PullMessages",
+                              "missing MessageLimit",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_action_failed_fault("events_service", -4);
         return -4;
     }
@@ -297,6 +342,17 @@ int events_pull_messages()
     /* Check for various possible errors */
     if ((errno == ERANGE && (limit == LONG_MAX || limit == LONG_MIN)) || (errno != 0 && limit == 0)) {
         log_error("Wrong MessageLimit value for PullMessages method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "PullMessages",
+                              "invalid MessageLimit",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_action_failed_fault("events_service", -5);
         return -5;
     }
@@ -323,6 +379,17 @@ int events_pull_messages()
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         log_error("Sub index out of range for PullMessages method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "PullMessages",
+                              "subscription not found",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -7;
     }
@@ -331,6 +398,17 @@ int events_pull_messages()
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         log_error("This subscription is not a Real-time Pull-Point Notification Interface");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "PullMessages",
+                              "not pull-point subscription",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -8;
     }
@@ -670,6 +748,17 @@ int events_renew()
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for Renew method (QUERY_STRING='%s')", query_env ? query_env : "(null)");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "Renew",
+                              "missing sub",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
@@ -690,6 +779,17 @@ int events_renew()
 
     if (!valid) {
         log_error("Invalid sub parameter (non-numeric) for Renew method: '%s'", sub_id_s);
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "Renew",
+                              "non-numeric sub",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         free(sub_id_s);
         send_fault("events_service",
                    "Receiver",
@@ -705,6 +805,17 @@ int events_renew()
 
     if ((sub_id <= 0) || (sub_id > 65535)) {
         log_error("sub index out of range for Renew method: %d (valid range: 1-65535)", sub_id);
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "Renew",
+                              "sub out of range",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service",
                    "Receiver",
                    "wsrf-rw:ResourceUnknownFault",
@@ -721,6 +832,17 @@ int events_renew()
     tt = get_element("TerminationTime", "Body");
     if (tt == NULL) {
         log_error("No TerminationTime element for Renew method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "Renew",
+                              "missing TerminationTime",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service",
                    "Receiver",
                    "wsntw:UnacceptableTerminationTimeFault",
@@ -756,6 +878,17 @@ int events_renew()
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         log_error("Sub index (%d) out of range for Renew method", sub_index);
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "Renew",
+                              "subscription not found",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -5;
     }
@@ -764,6 +897,17 @@ int events_renew()
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         log_error("This subscription is empty or expired");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "Renew",
+                              "subscription empty or expired",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -6;
     }
@@ -931,14 +1075,29 @@ int events_unsubscribe()
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
     log_info("Unsubscribe request received");
 
-    // Debug: log the QUERY_STRING environment variable
+    // Debug: log the QUERY_STRING and client IP address
     char *query_env = getenv("QUERY_STRING");
+    char *client_ip = getenv("REMOTE_ADDR");
+    log_debug("Client IP: '%s'", client_ip ? client_ip : "(unknown)");
     log_debug("QUERY_STRING environment variable: '%s'", query_env ? query_env : "(null)");
 
     // Get parameters from query string
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
-        log_error("No sub parameter in query string for Unsubscribe method (QUERY_STRING='%s')", query_env ? query_env : "(null)");
+        log_error("No sub parameter in query string for Unsubscribe method (client=%s, QUERY_STRING='%s')",
+                  client_ip ? client_ip : "(unknown)",
+                  query_env ? query_env : "(null)");
+        // Error-time raw XML logging
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              client_ip,
+                              "events_service",
+                              "Unsubscribe",
+                              "missing sub",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
@@ -959,7 +1118,19 @@ int events_unsubscribe()
     }
 
     if (!valid) {
-        log_error("Invalid sub parameter (non-numeric) for Unsubscribe method: '%s'", sub_id_s);
+        char *client_ip = getenv("REMOTE_ADDR");
+        log_error("Invalid sub parameter (non-numeric) for Unsubscribe method from %s: '%s'", client_ip ? client_ip : "(unknown)", sub_id_s);
+        // Error-time raw XML logging
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              client_ip,
+                              "events_service",
+                              "Unsubscribe",
+                              "non-numeric sub",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         free(sub_id_s);
         send_fault("events_service",
                    "Receiver",
@@ -974,7 +1145,19 @@ int events_unsubscribe()
     free(sub_id_s);
 
     if ((sub_id <= 0) || (sub_id > 65535)) {
-        log_error("sub index out of range for Unsubscribe method: %d (valid range: 1-65535)", sub_id);
+        char *client_ip = getenv("REMOTE_ADDR");
+        log_error("sub index out of range for Unsubscribe method from %s: %d (valid range: 1-65535)", client_ip ? client_ip : "(unknown)", sub_id);
+        // Error-time raw XML logging
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              client_ip,
+                              "events_service",
+                              "Unsubscribe",
+                              "sub out of range",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service",
                    "Receiver",
                    "wsrf-rw:ResourceUnknownFault",
@@ -1006,6 +1189,17 @@ int events_unsubscribe()
         sem_memory_post();
         destroy_shared_memory((void *) subs_evts, 0);
         log_error("sub index out of range for PullMessages method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "SetSynchronizationPoint",
+                              "subscription not found",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -4;
     }
@@ -1048,6 +1242,17 @@ int events_set_synchronization_point()
     get_from_query_string(&qs_string, &qs_size, "sub");
     if ((qs_size == -1) || (qs_string == NULL)) {
         log_error("No sub parameter in query string for Renew method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "SetSynchronizationPoint",
+                              "missing sub",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -1;
     }
@@ -1058,6 +1263,17 @@ int events_set_synchronization_point()
     free(sub_id_s);
     if ((sub_id <= 0) || (sub_id > MAX_SUBSCRIPTIONS)) {
         log_error("sub index out of range for Renew method");
+        // Error-time raw XML logging with specific reason
+        size_t raw_sz = 0;
+        const char *raw = get_raw_request_data(&raw_sz);
+        log_xml_error_request(raw,
+                              (int) raw_sz,
+                              getenv("REMOTE_ADDR"),
+                              "events_service",
+                              "SetSynchronizationPoint",
+                              "sub out of range",
+                              getenv("REQUEST_URI"),
+                              getenv("QUERY_STRING"));
         send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", "wsrf-rw:ResourceUnknownFault", "Resource unknown", "");
         return -2;
     }

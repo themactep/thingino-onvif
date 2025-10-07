@@ -102,5 +102,6 @@
     "adv_fault_if_unknown": false,
     "adv_synology_nvr": false,
     "loglevel": "ERROR",
-    "raw_log_directory": ""
+    "raw_log_directory": "",
+    "raw_log_on_error_only": false
 }
