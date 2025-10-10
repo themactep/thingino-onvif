@@ -602,6 +602,50 @@ int device_get_wsdl_url()
     return cat("stdout", "device_service_files/GetWsdlUrl.xml", 0);
 }
 
+int device_get_hostname()
+{
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname) - 1) != 0 || hostname[0] == '\0') {
+        strcpy(hostname, "Thingino");
+    }
+    hostname[sizeof(hostname) - 1] = '\0';
+
+    const char *from_dhcp = "true"; // Default to true per request; wiring real status later
+
+    long size = cat(NULL, "device_service_files/GetHostname.xml", 4, "%HOSTNAME%", hostname, "%FROM_DHCP%", from_dhcp);
+
+    output_http_headers(size);
+
+    return cat("stdout", "device_service_files/GetHostname.xml", 4, "%HOSTNAME%", hostname, "%FROM_DHCP%", from_dhcp);
+}
+int device_get_endpoint_reference()
+{
+    int ret = 0;
+    char address[16];
+    char netmask[16];
+    char port[8];
+    char device_service_address[MAX_LEN];
+
+    ret = get_ip_address(address, netmask, service_ctx.ifs);
+    if (ret < 0) {
+        log_error("Unable to get ip address from interface %s", service_ctx.ifs);
+        send_action_failed_fault("device_service", -1);
+        return -1;
+    }
+
+    port[0] = '\0';
+    if (service_ctx.port != 80) {
+        sprintf(port, ":%d", service_ctx.port);
+    }
+    sprintf(device_service_address, "http://%s%s/onvif/device_service", address, port);
+
+    long size = cat(NULL, "device_service_files/GetEndpointReference.xml", 2, "%ADDRESS%", device_service_address);
+
+    output_http_headers(size);
+
+    return cat("stdout", "device_service_files/GetEndpointReference.xml", 2, "%ADDRESS%", device_service_address);
+}
+
 int device_get_capabilities()
 {
     int ret = 0;

@@ -80,7 +80,7 @@
             "topic": "tns1:VideoSource/MotionAlarm",
             "source_name": "VideoSourceConfigurationToken",
             "source_type": "tt:ReferenceToken",
-            "source_value": "VideoSourceToken",
+            "source_value": "VideoSourceConfigToken",
             "input_file": "/run/motion/motion_alarm"
         },
         {

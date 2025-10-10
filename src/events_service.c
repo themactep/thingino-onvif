@@ -107,8 +107,8 @@ int events_create_pull_point_subscription()
     time(&now);
     itt = get_element("InitialTerminationTime", "Body");
     if (itt == NULL) {
-        // Use NotificationProducer termination time = 1 minute
-        expire_time = now + 60;
+        // Use NotificationProducer termination time = 10 minutes (more interoperable default)
+        expire_time = now + 600;
     } else {
         if (strncmp("PT", itt, 2) == 0) {
             expire_time = now + interval2sec(itt);
@@ -460,7 +460,8 @@ int events_pull_messages()
             dest = NULL;
         } else {
             dest = dest_a;
-            output_http_headers(size);
+            // Send HTTP headers once for the full payload size calculated in the first pass
+            output_http_headers(total_size);
         }
 
         size = cat(dest, "events_service_files/PullMessages_1.xml", 4, "%CURRENT_TIME%", iso_str, "%TERMINATION_TIME%", iso_str_2);
@@ -499,6 +500,11 @@ int events_pull_messages()
                 }
                 if (service_ctx.events[i].topic != NULL && strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
                     strcpy(data_name, "LogicalState");
+                } else if (service_ctx.events[i].topic != NULL
+                           && (strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")
+                               || strstr(service_ctx.events[i].topic, "CellMotionDetector/Motion"))) {
+                    // Use IsMotion for motion topics to match common client expectations
+                    strcpy(data_name, "IsMotion");
                 } else {
                     strcpy(data_name, "State");
                 }
@@ -1020,6 +1026,12 @@ int events_get_event_properties()
             if (service_ctx.events[i].topic != NULL && strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
                 strcpy(data_name, "LogicalState");
                 strcpy(data_type, "tt:RelayLogicalState");
+            } else if (service_ctx.events[i].topic != NULL
+                       && (strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")
+                           || strstr(service_ctx.events[i].topic, "CellMotionDetector/Motion"))) {
+                // Advertise IsMotion for motion topics
+                strcpy(data_name, "IsMotion");
+                strcpy(data_type, "xsd:boolean");
             } else {
                 strcpy(data_name, "State");
                 strcpy(data_type, "xsd:boolean");

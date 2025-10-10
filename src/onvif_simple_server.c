@@ -442,10 +442,18 @@ int main(int argc, char **argv)
         security.enable = 0;
     }
 
+    // PRE_AUTH allowlist per ONVIF Core Specc:
+    // Device (tds): GetWsdlUrl, GetServices, GetServiceCapabilities, GetCapabilities,
+    //               GetHostname, GetSystemDateAndTime, GetEndpointReference
     if ((strcasecmp("device_service", prog_name) == 0)
-        && ((strcasecmp("GetSystemDateAndTime", method) == 0) || (strcasecmp("GetUsers", method) == 0) || (strcasecmp("GetCapabilities", method) == 0)
-            || (strcasecmp("GetServices", method) == 0) || (strcasecmp("GetServiceCapabilities", method) == 0)
-            || (strcasecmp("GetDeviceInformation", method) == 0))) {
+        && (strcasecmp("GetSystemDateAndTime", method) == 0 || strcasecmp("GetWsdlUrl", method) == 0 || strcasecmp("GetServices", method) == 0
+            || strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("GetCapabilities", method) == 0
+            || strcasecmp("GetHostname", method) == 0 || strcasecmp("GetEndpointReference", method) == 0)) {
+        auth_error = 0;
+    }
+
+    // Events (tev): GetServiceCapabilities must be accessible pre-auth
+    if ((strcasecmp("events_service", prog_name) == 0) && (strcasecmp("GetServiceCapabilities", method) == 0)) {
         auth_error = 0;
     }
 

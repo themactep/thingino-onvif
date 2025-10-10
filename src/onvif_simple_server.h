@@ -122,7 +122,8 @@ typedef struct {
     event_t *events;
     int events_enable;
     int events_num;
-    int loglevel; // 0=FATAL..5=TRACE, default 0
+    int events_min_interval_ms; // Global debounce for events; 0 disables
+    int loglevel;               // 0=FATAL..5=TRACE, default 0
 
     // Raw XML logging configuration
     char *raw_log_directory;   // Path to external storage for raw XML logs (optional)

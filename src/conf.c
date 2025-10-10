@@ -141,6 +141,7 @@ int process_json_conf_file(char *file)
     service_ctx.events = NULL;
     service_ctx.events_enable = EVENTS_NONE;
     service_ctx.events_num = 0;
+    service_ctx.events_min_interval_ms = 0;
     service_ctx.loglevel = 0;
     service_ctx.raw_log_directory = NULL;
     service_ctx.raw_log_on_error_only = 0;
@@ -398,6 +399,8 @@ int process_json_conf_file(char *file)
 
     // Load events configuration from main configuration file
     get_int_from_json(&(service_ctx.events_enable), json_file, "events_enable");
+    // Optional global debounce for events (milliseconds); 0 disables
+    get_int_from_json(&(service_ctx.events_min_interval_ms), json_file, "events_min_interval_ms");
     value = get_object_item(json_file, "events");
     if (value && value->type == JSON_ARRAY) {
         int array_len = get_array_size(value);

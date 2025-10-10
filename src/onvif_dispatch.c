@@ -57,6 +57,8 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"device_service", "GetScopes", device_get_scopes, NULL},
     {"device_service", "GetUsers", device_get_users, NULL},
     {"device_service", "GetWsdlUrl", device_get_wsdl_url, NULL},
+    {"device_service", "GetHostname", device_get_hostname, NULL},
+    {"device_service", "GetEndpointReference", device_get_endpoint_reference, NULL},
     {"device_service", "GetCapabilities", device_get_capabilities, NULL},
     {"device_service", "GetNetworkInterfaces", device_get_network_interfaces, NULL},
     {"device_service", "GetDiscoveryMode", device_get_discovery_mode, NULL},

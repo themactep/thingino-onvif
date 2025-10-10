@@ -65,6 +65,7 @@ int debug;
 int exit_main;
 sem_t *sem_shmem;
 subscription_shm_t saved_subscriptions[MAX_SUBSCRIPTIONS];
+static time_t last_emit_time[MAX_EVENTS]; // per-event debounce timestamp (seconds)
 
 int daemonize(int flags)
 {
@@ -498,23 +499,37 @@ int handle_inotify_events(int fd, char *dir)
                             subs_evts->events[i].is_on = 0;
                         }
 
-                        for (j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                            if (subs_evts->subscriptions[j].used == SUB_PULL) {
-                                // Check if subscription is expired
-                                if (now > subs_evts->subscriptions[j].expire)
-                                    continue;
-                                if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
-                                    sub_count++;
-                                    subs_evts->events[i].pull_notify |= (1 << j);
-                                    log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
-                                }
-                            } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
-                                // Check if subscription is expired
-                                if (now > subs_evts->subscriptions[j].expire)
-                                    continue;
-                                sub_count++;
-                                send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", value);
+                        int allow = 1;
+                        if (service_ctx.events_min_interval_ms > 0) {
+                            long diff_ms = (long) (now - last_emit_time[i]) * 1000L;
+                            if (diff_ms < service_ctx.events_min_interval_ms) {
+                                allow = 0; // Suppress notification due to debounce
+                            } else {
+                                last_emit_time[i] = now;
                             }
+                        }
+
+                        if (allow) {
+                            for (j = 0; j < MAX_SUBSCRIPTIONS; j++) {
+                                if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                                    // Check if subscription is expired
+                                    if (now > subs_evts->subscriptions[j].expire)
+                                        continue;
+                                    if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
+                                        sub_count++;
+                                        subs_evts->events[i].pull_notify |= (1 << j);
+                                        log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
+                                    }
+                                } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
+                                    // Check if subscription is expired
+                                    if (now > subs_evts->subscriptions[j].expire)
+                                        continue;
+                                    sub_count++;
+                                    send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", value);
+                                }
+                            }
+                        } else {
+                            log_debug("Debounced event %d (min_interval_ms=%d)", i, service_ctx.events_min_interval_ms);
                         }
                         sem_memory_post();
                         log_debug("%d notification subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
@@ -813,23 +828,37 @@ int main(int argc, char **argv)
                     subs_evts->events[i].e_time = now;
                     subs_evts->events[i].is_on = ALARM_ON;
 
-                    for (j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                        if (subs_evts->subscriptions[j].used == SUB_PULL) {
-                            // Check if subscription is expired
-                            if (now > subs_evts->subscriptions[j].expire)
-                                continue;
-                            if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
-                                sub_count++;
-                                subs_evts->events[i].pull_notify |= (1 << j);
-                                log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
-                            }
-                        } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
-                            // Check if subscription is expired
-                            if (now > subs_evts->subscriptions[j].expire)
-                                continue;
-                            sub_count++;
-                            send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "true");
+                    int allow = 1;
+                    if (service_ctx.events_min_interval_ms > 0) {
+                        long diff_ms = (long) (now - last_emit_time[i]) * 1000L;
+                        if (diff_ms < service_ctx.events_min_interval_ms) {
+                            allow = 0;
+                        } else {
+                            last_emit_time[i] = now;
                         }
+                    }
+
+                    if (allow) {
+                        for (j = 0; j < MAX_SUBSCRIPTIONS; j++) {
+                            if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                                // Check if subscription is expired
+                                if (now > subs_evts->subscriptions[j].expire)
+                                    continue;
+                                if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
+                                    sub_count++;
+                                    subs_evts->events[i].pull_notify |= (1 << j);
+                                    log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
+                                }
+                            } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
+                                // Check if subscription is expired
+                                if (now > subs_evts->subscriptions[j].expire)
+                                    continue;
+                                sub_count++;
+                                send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "true");
+                            }
+                        }
+                    } else {
+                        log_debug("Debounced event %d (min_interval_ms=%d)", i, service_ctx.events_min_interval_ms);
                     }
                     sem_memory_post();
                     log_debug("%d notification subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
@@ -843,23 +872,37 @@ int main(int argc, char **argv)
                     subs_evts->events[i].e_time = now;
                     subs_evts->events[i].is_on = ALARM_OFF;
 
-                    for (j = 0; j < MAX_SUBSCRIPTIONS; j++) {
-                        if (subs_evts->subscriptions[j].used == SUB_PULL) {
-                            // Check if subscription is expired
-                            if (now > subs_evts->subscriptions[j].expire)
-                                continue;
-                            if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
-                                sub_count++;
-                                subs_evts->events[i].pull_notify |= (1 << j);
-                                log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
-                            }
-                        } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
-                            // Check if subscription is expired
-                            if (now > subs_evts->subscriptions[j].expire)
-                                continue;
-                            sub_count++;
-                            send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "false");
+                    int allow = 1;
+                    if (service_ctx.events_min_interval_ms > 0) {
+                        long diff_ms = (long) (now - last_emit_time[i]) * 1000L;
+                        if (diff_ms < service_ctx.events_min_interval_ms) {
+                            allow = 0;
+                        } else {
+                            last_emit_time[i] = now;
                         }
+                    }
+
+                    if (allow) {
+                        for (j = 0; j < MAX_SUBSCRIPTIONS; j++) {
+                            if (subs_evts->subscriptions[j].used == SUB_PULL) {
+                                // Check if subscription is expired
+                                if (now > subs_evts->subscriptions[j].expire)
+                                    continue;
+                                if (is_topic_in_expression(subs_evts->subscriptions[j].topic_expression, service_ctx.events[i].topic)) {
+                                    sub_count++;
+                                    subs_evts->events[i].pull_notify |= (1 << j);
+                                    log_debug("Event %d matches topic expression %s", i, subs_evts->subscriptions[j].topic_expression);
+                                }
+                            } else if (subs_evts->subscriptions[j].used == SUB_PUSH) {
+                                // Check if subscription is expired
+                                if (now > subs_evts->subscriptions[j].expire)
+                                    continue;
+                                sub_count++;
+                                send_notify(subs_evts->subscriptions[j].reference, i, subs_evts->events[i].e_time, "Changed", "false");
+                            }
+                        }
+                    } else {
+                        log_debug("Debounced event %d (min_interval_ms=%d)", i, service_ctx.events_min_interval_ms);
                     }
                     sem_memory_post();
                     log_debug("%d notification subscriptions for %s file", sub_count, service_ctx.events[i].input_file);
