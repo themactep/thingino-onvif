@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"
+            xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2"
+            xmlns:wsa="http://www.w3.org/2005/08/addressing">
+  <s:Header>
+    <wsa:MessageID>urn:uuid:85f633d0-dc1d-4205-95fb-a511f98b2517</wsa:MessageID>
+  </s:Header>
+  <s:Body>
+    <wsnt:Renew>
+      <wsnt:TerminationTime>PT5M</wsnt:TerminationTime>
+    </wsnt:Renew>
+  </s:Body>
+</s:Envelope>
+

@@ -94,13 +94,16 @@ An array of media profiles. The URL templates use `%s` placeholder for device IP
   "events": [
     {
       "topic": "tns1:VideoSource/MotionAlarm",
-      "source_name": "Source",
+      "source_name": "VideoSourceConfigurationToken",
       "source_type": "tt:ReferenceToken",
-      "source_value": "VideoSourceToken",
+      "source_value": "VideoSourceConfigToken",
       "input_file": "/tmp/onvif_notify_server/motion_alarm"
     }
   ]
 }
+
+Note: Global debounce for events can be configured in /etc/onvif.json using key "events_min_interval_ms" (milliseconds). Set to 0 to disable.
+
 ```
 
 ## Using jct (JSON Config Tool)

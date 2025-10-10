@@ -80,6 +80,7 @@ test_onvif_service() {
     local method=$2
     local description=$3
     local require_auth=${4:-false}
+    local expected_contains=${5:-}
 
     echo -e "\n${YELLOW}Testing: $description${NC}"
 
@@ -129,7 +130,21 @@ test_onvif_service() {
             fi
             return 2  # Return 2 for SOAP fault (different from success or error)
         else
-            echo -e "${GREEN}✓ $service_name/$method - SUCCESS${NC}"
+            # Optional content assertion
+            if [ -n "$expected_contains" ]; then
+                if [[ $response == *"$expected_contains"* ]]; then
+                    echo -e "${GREEN}✓ $service_name/$method - SUCCESS (asserted: '$expected_contains')${NC}"
+                else
+                    echo -e "${RED}✗ $service_name/$method - FAILED (missing expected content)${NC}"
+                    echo "Expected to find: $expected_contains"
+                    if [ "$VERBOSE" = true ]; then
+                        echo "Response: $response"
+                    fi
+                    return 1
+                fi
+            else
+                echo -e "${GREEN}✓ $service_name/$method - SUCCESS${NC}"
+            fi
             if [ "$VERBOSE" = true ]; then
                 echo "Response: $response"
             fi
@@ -258,6 +273,59 @@ print(soap)
         return 1
     fi
 }
+# Explicit PRE_AUTH verification helpers (check HTTP status codes)
+preauth_post() {
+    local service_path=$1
+    local body=$2
+    local out=$3
+    curl -s -w "%{http_code}" -o "$out" -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -d "$body" \
+        "$SERVER_URL/$service_path"
+}
+
+test_preauth_device_http() {
+    local method=$1
+    local description=$2
+    local expected_http_code=$3
+
+    echo -e "\n${YELLOW}PRE_AUTH: $description${NC}"
+
+    local soap_request="<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\">\n  <s:Header/>\n  <s:Body>\n    <tds:$method/>\n  </s:Body>\n</s:Envelope>"
+
+    local code=$(preauth_post "onvif/device_service" "$soap_request" "/tmp/preauth_${method}.xml")
+    if [ "$code" = "$expected_http_code" ]; then
+        echo -e "${GREEN}✓ $method - HTTP $code as expected${NC}"
+        return 0
+    else
+        echo -e "${RED}✗ $method - expected HTTP $expected_http_code, got $code${NC}"
+        [ -f "/tmp/preauth_${method}.xml" ] && echo "Response: $(head -c 200 /tmp/preauth_${method}.xml) ..."
+        return 1
+    fi
+}
+
+test_preauth_events_http() {
+    local method=$1
+    local description=$2
+    local expected_http_code=$3
+
+    echo -e "\n${YELLOW}PRE_AUTH: $description${NC}"
+
+    local soap_request="<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tev=\"http://www.onvif.org/ver10/events/wsdl\">\n  <s:Header/>\n  <s:Body>\n    <tev:$method/>\n  </s:Body>\n</s:Envelope>"
+
+    local code=$(preauth_post "onvif/events_service" "$soap_request" "/tmp/preauth_tev_${method}.xml")
+    if [ "$code" = "$expected_http_code" ]; then
+        echo -e "${GREEN}✓ tev:$method - HTTP $code as expected${NC}"
+        return 0
+    else
+        echo -e "${RED}✗ tev:$method - expected HTTP $expected_http_code, got $code${NC}"
+        [ -f "/tmp/preauth_tev_${method}.xml" ] && echo "Response: $(head -c 200 /tmp/preauth_tev_${method}.xml) ..."
+        return 1
+    fi
+}
+
+
+
 
 # Function to test basic HTTP connectivity
 test_http_connectivity() {
@@ -309,10 +377,40 @@ echo -e "\n${BLUE}=== Running Tests ===${NC}"
 test_http_connectivity
 test_cgi_execution
 
+
+# PRE_AUTH verification (must be accessible without auth)
+echo -e "\n${BLUE}=== PRE_AUTH Verification ===${NC}"
+# Expected 200 without auth
+test_preauth_device_http "GetSystemDateAndTime" "Device:GetSystemDateAndTime should be pre-auth" 200
+test_preauth_device_http "GetWsdlUrl"         "Device:GetWsdlUrl should be pre-auth" 200
+test_preauth_device_http "GetHostname"        "Device:GetHostname should be pre-auth" 200
+test_preauth_device_http "GetEndpointReference" "Device:GetEndpointReference should be pre-auth" 200
+test_preauth_device_http "GetServices"        "Device:GetServices should be pre-auth" 200
+test_preauth_device_http "GetServiceCapabilities" "Device:GetServiceCapabilities should be pre-auth" 200
+test_preauth_device_http "GetCapabilities"     "Device:GetCapabilities should be pre-auth" 200
+# Events service pre-auth
+test_preauth_events_http "GetServiceCapabilities" "Events:GetServiceCapabilities should be pre-auth" 200
+
+# Expected 401 without auth (not in PRE_AUTH)
+# Note: these are implemented; they should now require auth when username is set
+if test_preauth_device_http "GetDeviceInformation" "Device:GetDeviceInformation should require auth" 401; then
+  echo -e "${GREEN}\u2713 Device:GetDeviceInformation requires auth (HTTP 401)${NC}"
+fi
+if test_preauth_device_http "GetUsers" "Device:GetUsers should require auth" 401; then
+  echo -e "${GREEN}\u2713 Device:GetUsers requires auth (HTTP 401)${NC}"
+fi
+
 # Test basic ONVIF device services (no auth required)
 test_onvif_service "device_service" "GetSystemDateAndTime" "Get System Date and Time" false
+# Requires auth: expect SOAP fault
 test_onvif_service "device_service" "GetDeviceInformation" "Get Device Information" false
+# General capability retrieval
 test_onvif_service "device_service" "GetCapabilities" "Get Device Capabilities" false
+# Assert DHCP flag now defaults to true per spec convenience
+test_onvif_service "device_service" "GetHostname" "Get Hostname" false "<tt:FromDHCP>true</tt:FromDHCP>"
+# Assert EPR includes an Address element with HTTP URL
+test_onvif_service "device_service" "GetEndpointReference" "Get EndpointReference" false "<wsa5:Address>http://"
+# Basic check for services
 test_onvif_service "device_service" "GetServices" "Get Available Services" false
 
 # Test media services (auth required)
@@ -328,6 +426,8 @@ test_ptz_get_configurations() {
 
     local soap_request=$(generate_auth_soap "GetConfigurations")
     if [ -z "$soap_request" ]; then
+
+
         echo -e "${YELLOW}⚠ Skipping PTZ tests - authentication script not available${NC}"
         return 0
     fi
@@ -612,6 +712,14 @@ test_ptz_get_nodes
 test_ptz_absolute_move_valid
 test_ptz_absolute_move_invalid
 test_ptz_get_status
+
+
+# Events (PullPoint) Tests
+if bash tests/container_test_events.sh; then
+  echo -e "${GREEN}✓ Events tests - SUCCESS${NC}"
+else
+  echo -e "${RED}✗ Events tests - FAILED${NC}"
+fi
 
 echo -e "\n${BLUE}=== Test Summary ===${NC}"
 echo -e "${GREEN}Tests completed. Check output above for results.${NC}"

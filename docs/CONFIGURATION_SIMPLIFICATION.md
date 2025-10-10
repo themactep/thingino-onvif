@@ -64,12 +64,13 @@ All configuration is now consolidated into a single `onvif.json` file with the f
         }
     ],
     "events_enable": 1,
+    "events_min_interval_ms": 1000,
     "events": [
         {
             "topic": "tns1:VideoSource/MotionAlarm",
             "source_name": "VideoSourceConfigurationToken",
             "source_type": "tt:ReferenceToken",
-            "source_value": "VideoSourceToken",
+            "source_value": "VideoSourceConfigToken",
             "input_file": "/tmp/motion_alarm"
         }
     ]
