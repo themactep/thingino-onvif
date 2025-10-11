@@ -924,9 +924,11 @@ int events_renew()
     gen_uuid(msg_uuid);
     relates_to_uuid = get_element("MessageID", "Header");
     if (relates_to_uuid == NULL) {
-        log_error("No MessageID element for Renew method");
-        send_action_failed_fault("events_service", -8);
-        return -7;
+        // Be tolerant: some clients omit MessageID in Renew
+        log_warn("Renew: missing MessageID; generating one for RelatesTo");
+        static char rel_uuid_buf[UUID_LEN + 1];
+        gen_uuid(rel_uuid_buf);
+        relates_to_uuid = rel_uuid_buf;
     }
 
     to_iso_date(iso_str, sizeof(iso_str), now);
@@ -987,6 +989,7 @@ int events_get_event_properties()
         if (c == 0)
             total_size = size;
 
+        int included_any_topic = 0;
         for (i = 0; i < service_ctx.events_num; i++) {
             // Skip events with NULL topic to prevent segfaults
             if (service_ctx.events[i].topic == NULL) {
@@ -1060,6 +1063,47 @@ int events_get_event_properties()
                        data_type,
                        "%TOPIC_L3_END%",
                        topic_le[2],
+                       "%TOPIC_L2_END%",
+                       topic_le[1],
+                       "%TOPIC_L1_END%",
+                       topic_le[0]);
+            if (c == 0)
+                total_size += size;
+            included_any_topic = 1;
+        }
+
+        // Fallback: if no topics are configured, still advertise Motion capability for compatibility (e.g., tinyCam)
+        if (!included_any_topic) {
+            // L1: tns1:VideoSource, L2: MotionAlarm, no L3
+            strcpy(topic_ls[0], "<tns1:VideoSource>");
+            strcpy(topic_le[0], "</tns1:VideoSource>");
+            strcpy(topic_ls[1], "<MotionAlarm  wstop:topic=\"true\">");
+            strcpy(topic_le[1], "</MotionAlarm>");
+            topic_ls[2][0] = '\0';
+            topic_le[2][0] = '\0';
+            strcpy(data_name, "IsMotion");
+            strcpy(data_type, "xsd:boolean");
+            const char *safe_source_name = "VideoSourceConfigurationToken";
+            const char *safe_source_type = "tt:ReferenceToken";
+            size = cat(dest,
+                       "events_service_files/GetEventProperties_2.xml",
+                       20,
+                       "%TOPIC_L1_START%",
+                       topic_ls[0],
+                       "%TOPIC_L2_START%",
+                       topic_ls[1],
+                       "%TOPIC_L3_START%",
+                       "",
+                       "%SOURCE_NAME%",
+                       safe_source_name,
+                       "%SOURCE_TYPE%",
+                       safe_source_type,
+                       "%DATA_NAME%",
+                       data_name,
+                       "%DATA_TYPE%",
+                       data_type,
+                       "%TOPIC_L3_END%",
+                       "",
                        "%TOPIC_L2_END%",
                        topic_le[1],
                        "%TOPIC_L1_END%",
