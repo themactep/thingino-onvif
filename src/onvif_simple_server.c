@@ -191,6 +191,8 @@ int main(int argc, char **argv)
         tmp = argv[0];
     }
     prog_name = basename(tmp);
+    // Log process and parent IDs to help diagnose zombie/PPID issues
+    log_info("CGI started pid=%d ppid=%d prog=%s", (int) getpid(), (int) getppid(), prog_name);
 
     if (conf_file[0] == '\0') {
         print_usage(argv[0]);
@@ -296,12 +298,48 @@ int main(int argc, char **argv)
     //     exit(EXIT_FAILURE);
     // }
 
-    input_size = fread(input, 1, 16 * 1024 * sizeof(char), stdin);
+    // Read full request based on CONTENT_LENGTH (if provided)
+    const char *cl = getenv("CONTENT_LENGTH");
+    long expected = -1;
+    if (cl && *cl) {
+        char *endp = NULL;
+        expected = strtol(cl, &endp, 10);
+        if (endp == cl || expected < 0)
+            expected = -1;
+    }
+
+    size_t total = 0;
+    while (1) {
+        size_t capacity_left = sizeof(input_buffer) - total;
+        if (capacity_left == 0)
+            break;
+        size_t to_read;
+        if (expected >= 0) {
+            if (total >= (size_t) expected)
+                break;
+            size_t remaining = (size_t) expected - total;
+            to_read = remaining < capacity_left ? remaining : capacity_left;
+        } else {
+            to_read = capacity_left;
+        }
+        size_t got = fread(input + total, 1, to_read, stdin);
+        if (got == 0)
+            break;
+        total += got;
+        if (expected < 0 && got < to_read)
+            break; // EOF for unknown length
+    }
+    input_size = (int) total;
+
+    if (expected >= 0 && total < (size_t) expected) {
+        log_warn("Short read from stdin: expected %ld bytes, got %zu", expected, total);
+    }
+    if (expected >= 0 && (size_t) expected > sizeof(input_buffer)) {
+        log_warn("Request truncated to %zu bytes (CONTENT_LENGTH=%ld exceeds buffer)", sizeof(input_buffer), expected);
+    }
 
     if (input_size == 0) {
         log_fatal("Error: input is empty");
-        // Don't free static buffer: free(input);
-        // Don't free static buffer: free(conf_file);
         exit(EXIT_FAILURE);
     }
 

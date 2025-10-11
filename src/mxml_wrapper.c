@@ -22,6 +22,8 @@
 #include "string.h"
 #include "utils.h"
 
+#include <stdlib.h>
+
 // In mxml v4, mxmlLoadString returns a document node, not the root element
 // We need to keep track of both for proper memory management
 static mxml_node_t *doc_xml = NULL; // Document node (for cleanup)
@@ -44,7 +46,18 @@ void init_xml(char *buffer, int buffer_size)
     int log_len = (buffer_size > 200) ? 200 : buffer_size;
     log_debug("init_xml: XML content (first %d chars): %.200s", log_len, buffer);
 
-    doc_xml = mxmlLoadString(NULL, NULL, buffer);
+    // Ensure null-terminated input for mxmlLoadString
+    char *tmp_buf = (char *) malloc((size_t) buffer_size + 1);
+    if (!tmp_buf) {
+        log_error("init_xml: memory allocation failed for temporary XML buffer");
+        root_xml = NULL;
+        return;
+    }
+    memcpy(tmp_buf, buffer, (size_t) buffer_size);
+    tmp_buf[buffer_size] = '\0';
+
+    doc_xml = mxmlLoadString(NULL, NULL, tmp_buf);
+    free(tmp_buf);
     if (!doc_xml) {
         log_error("Failed to parse XML string - mxmlLoadString returned NULL");
         log_error("Buffer size: %d, Buffer content: %.100s", buffer_size, buffer);
