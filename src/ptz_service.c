@@ -16,6 +16,7 @@
 
 #include "ptz_service.h"
 
+#include "conf.h"
 #include "fault.h"
 #include "log.h"
 #include "mxml_wrapper.h"
@@ -27,6 +28,9 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
 
 extern service_context_t service_ctx;
 presets_t presets;
@@ -98,9 +102,201 @@ void destroy_presets()
     free(presets.items);
 }
 
+// ---- Preset Tours storage ----
+
+typedef struct {
+    char token[64];
+    char name[64];
+    char status[16]; // Idle/Touring/Paused
+} preset_tour_t;
+
+static preset_tour_t *g_tours = NULL;
+static int g_tours_count = 0;
+static int g_tours_loaded = 0;
+
+static const char *preset_tours_file_path()
+{
+    return DEFAULT_CONF_DIR "/preset_tours.json";
+}
+
+static void tours_ensure_loaded()
+{
+    if (g_tours_loaded)
+        return;
+    g_tours_loaded = 1;
+    FILE *f = fopen(preset_tours_file_path(), "r");
+    if (!f)
+        return;
+    fseek(f, 0, SEEK_END);
+    long len = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (len <= 0 || len > 1 << 20) {
+        fclose(f);
+        return;
+    }
+    char *buf = (char *) malloc(len + 1);
+    if (!buf) {
+        fclose(f);
+        return;
+    }
+    fread(buf, 1, len, f);
+    buf[len] = '\0';
+    fclose(f);
+
+    // Pass 1: TitleCase keys (Token/Name/Status)
+    int before = g_tours_count;
+    char *p = buf;
+    while ((p = strstr(p, "\"Token\"")) != NULL) {
+        char token[64] = {0}, name[64] = {0}, status[16] = {0};
+        char *colon = strchr(p, ':');
+        if (!colon)
+            break;
+        char *valq1 = strchr(colon, '"');
+        if (!valq1)
+            break;
+        char *valq2 = strchr(valq1 + 1, '"');
+        if (!valq2)
+            break;
+        size_t tlen = (size_t) (valq2 - (valq1 + 1));
+        if (tlen >= sizeof(token))
+            tlen = sizeof(token) - 1;
+        strncpy(token, valq1 + 1, tlen);
+        token[tlen] = '\0';
+        // Name (optional)
+        char *np = strstr(p, "\"Name\"");
+        if (np) {
+            char *ncolon = strchr(np, ':');
+            char *nq1 = ncolon ? strchr(ncolon, '"') : NULL;
+            char *nq2 = nq1 ? strchr(nq1 + 1, '"') : NULL;
+            if (nq1 && nq2) {
+                size_t nlen = (size_t) (nq2 - (nq1 + 1));
+                if (nlen >= sizeof(name))
+                    nlen = sizeof(name) - 1;
+                strncpy(name, nq1 + 1, nlen);
+                name[nlen] = '\0';
+            }
+        }
+        // Status (optional)
+        char *sp = strstr(p, "\"Status\"");
+        if (sp) {
+            char *scolon = strchr(sp, ':');
+            char *sq1 = scolon ? strchr(scolon, '"') : NULL;
+            char *sq2 = sq1 ? strchr(sq1 + 1, '"') : NULL;
+            if (sq1 && sq2) {
+                size_t slen = (size_t) (sq2 - (sq1 + 1));
+                if (slen >= sizeof(status))
+                    slen = sizeof(status) - 1;
+                strncpy(status, sq1 + 1, slen);
+                status[slen] = '\0';
+            }
+        }
+        if (token[0]) {
+            g_tours = (preset_tour_t *) realloc(g_tours, sizeof(preset_tour_t) * (g_tours_count + 1));
+            memset(&g_tours[g_tours_count], 0, sizeof(preset_tour_t));
+            strncpy(g_tours[g_tours_count].token, token, sizeof(g_tours[g_tours_count].token) - 1);
+            if (name[0])
+                strncpy(g_tours[g_tours_count].name, name, sizeof(g_tours[g_tours_count].name) - 1);
+            strncpy(g_tours[g_tours_count].status, status[0] ? status : "Idle", sizeof(g_tours[g_tours_count].status) - 1);
+            g_tours_count++;
+        }
+        p = valq2 + 1;
+    }
+
+    // Pass 2: lowercase keys (token/name/status) only if nothing loaded in pass 1
+    if (g_tours_count == before) {
+        p = buf;
+        while ((p = strstr(p, "\"token\"")) != NULL) {
+            char token[64] = {0}, name[64] = {0}, status[16] = {0};
+            char *colon = strchr(p, ':');
+            if (!colon)
+                break;
+            char *valq1 = strchr(colon, '"');
+            if (!valq1)
+                break;
+            char *valq2 = strchr(valq1 + 1, '"');
+            if (!valq2)
+                break;
+            size_t tlen = (size_t) (valq2 - (valq1 + 1));
+            if (tlen >= sizeof(token))
+                tlen = sizeof(token) - 1;
+            strncpy(token, valq1 + 1, tlen);
+            token[tlen] = '\0';
+            // name (optional)
+            char *np = strstr(p, "\"name\"");
+            if (np) {
+                char *ncolon = strchr(np, ':');
+                char *nq1 = ncolon ? strchr(ncolon, '"') : NULL;
+                char *nq2 = nq1 ? strchr(nq1 + 1, '"') : NULL;
+                if (nq1 && nq2) {
+                    size_t nlen = (size_t) (nq2 - (nq1 + 1));
+                    if (nlen >= sizeof(name))
+                        nlen = sizeof(name) - 1;
+                    strncpy(name, nq1 + 1, nlen);
+                    name[nlen] = '\0';
+                }
+            }
+            // status (optional)
+            char *sp = strstr(p, "\"status\"");
+            if (sp) {
+                char *scolon = strchr(sp, ':');
+                char *sq1 = scolon ? strchr(scolon, '"') : NULL;
+                char *sq2 = sq1 ? strchr(sq1 + 1, '"') : NULL;
+                if (sq1 && sq2) {
+                    size_t slen = (size_t) (sq2 - (sq1 + 1));
+                    if (slen >= sizeof(status))
+                        slen = sizeof(status) - 1;
+                    strncpy(status, sq1 + 1, slen);
+                    status[slen] = '\0';
+                }
+            }
+            if (token[0]) {
+                g_tours = (preset_tour_t *) realloc(g_tours, sizeof(preset_tour_t) * (g_tours_count + 1));
+                memset(&g_tours[g_tours_count], 0, sizeof(preset_tour_t));
+                strncpy(g_tours[g_tours_count].token, token, sizeof(g_tours[g_tours_count].token) - 1);
+                if (name[0])
+                    strncpy(g_tours[g_tours_count].name, name, sizeof(g_tours[g_tours_count].name) - 1);
+                strncpy(g_tours[g_tours_count].status, status[0] ? status : "Idle", sizeof(g_tours[g_tours_count].status) - 1);
+                g_tours_count++;
+            }
+            p = valq2 + 1;
+        }
+    }
+
+    free(buf);
+}
+
+static void tours_save()
+{
+    // Ensure directory exists
+    mkdir(DEFAULT_CONF_DIR, 0755);
+    FILE *f = fopen(preset_tours_file_path(), "w");
+    if (!f)
+        return;
+    fprintf(f, "{\n  \"preset_tours\": [\n");
+    for (int i = 0; i < g_tours_count; i++) {
+        fprintf(f,
+                "    { \"token\": \"%s\", \"name\": \"%s\", \"status\": \"%s\" }%s\n",
+                g_tours[i].token,
+                g_tours[i].name,
+                g_tours[i].status[0] ? g_tours[i].status : "Idle",
+                (i == g_tours_count - 1) ? "" : ",");
+    }
+    fprintf(f, "  ]\n}\n");
+    fclose(f);
+}
+
+static int tour_index_by_token(const char *token)
+{
+    for (int i = 0; i < g_tours_count; i++) {
+        if (strcmp(g_tours[i].token, token) == 0)
+            return i;
+    }
+    return -1;
+}
+
 int ptz_get_service_capabilities()
 {
-    char move_status[8], status_position[8];
+    char move_status[8], status_position[8], move_and_track[64];
 
     if (service_ctx.ptz_node.is_moving != NULL) {
         strcpy(move_status, "true");
@@ -112,12 +308,33 @@ int ptz_get_service_capabilities()
     } else {
         strcpy(status_position, "false");
     }
+    if (service_ctx.ptz_node.start_tracking != NULL) {
+        strcpy(move_and_track, "PresetToken PTZVector");
+    } else {
+        strcpy(move_and_track, "");
+    }
 
-    long size = cat(NULL, "ptz_service_files/GetServiceCapabilities.xml", 4, "%MOVE_STATUS%", move_status, "%STATUS_POSITION%", status_position);
+    long size = cat(NULL,
+                    "ptz_service_files/GetServiceCapabilities.xml",
+                    6,
+                    "%MOVE_STATUS%",
+                    move_status,
+                    "%STATUS_POSITION%",
+                    status_position,
+                    "%MOVE_AND_TRACK%",
+                    move_and_track);
 
     output_http_headers(size);
 
-    return cat("stdout", "ptz_service_files/GetServiceCapabilities.xml", 4, "%MOVE_STATUS%", move_status, "%STATUS_POSITION%", status_position);
+    return cat("stdout",
+               "ptz_service_files/GetServiceCapabilities.xml",
+               6,
+               "%MOVE_STATUS%",
+               move_status,
+               "%STATUS_POSITION%",
+               status_position,
+               "%MOVE_AND_TRACK%",
+               move_and_track);
 }
 
 int ptz_get_configurations()
@@ -302,9 +519,12 @@ int ptz_get_nodes()
     sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
 
+    char max_tours[16];
+    sprintf(max_tours, "%d", service_ctx.ptz_node.max_preset_tours);
+
     long size = cat(NULL,
                     "ptz_service_files/GetNodes.xml",
-                    12,
+                    14,
                     "%MIN_X%",
                     min_x,
                     "%MAX_X%",
@@ -316,13 +536,15 @@ int ptz_get_nodes()
                     "%MIN_Z%",
                     min_z,
                     "%MAX_Z%",
-                    max_z);
+                    max_z,
+                    "%MAX_PRESET_TOURS%",
+                    max_tours);
 
     output_http_headers(size);
 
     return cat("stdout",
                "ptz_service_files/GetNodes.xml",
-               12,
+               14,
                "%MIN_X%",
                min_x,
                "%MAX_X%",
@@ -334,7 +556,9 @@ int ptz_get_nodes()
                "%MIN_Z%",
                min_z,
                "%MAX_Z%",
-               max_z);
+               max_z,
+               "%MAX_PRESET_TOURS%",
+               max_tours);
 }
 
 int ptz_get_node()
@@ -359,9 +583,12 @@ int ptz_get_node()
         return -1;
     }
 
+    char max_tours[16];
+    sprintf(max_tours, "%d", service_ctx.ptz_node.max_preset_tours);
+
     long size = cat(NULL,
                     "ptz_service_files/GetNode.xml",
-                    12,
+                    14,
                     "%MIN_X%",
                     min_x,
                     "%MAX_X%",
@@ -373,13 +600,15 @@ int ptz_get_node()
                     "%MIN_Z%",
                     min_z,
                     "%MAX_Z%",
-                    max_z);
+                    max_z,
+                    "%MAX_PRESET_TOURS%",
+                    max_tours);
 
     output_http_headers(size);
 
     return cat("stdout",
                "ptz_service_files/GetNode.xml",
-               12,
+               14,
                "%MIN_X%",
                min_x,
                "%MAX_X%",
@@ -391,7 +620,9 @@ int ptz_get_node()
                "%MIN_Z%",
                min_z,
                "%MAX_Z%",
-               max_z);
+               max_z,
+               "%MAX_PRESET_TOURS%",
+               max_tours);
 }
 
 int ptz_get_presets()
@@ -573,7 +804,9 @@ int ptz_continuous_move()
     const char *x = NULL;
     const char *y = NULL;
     const char *z = NULL;
-    double dx, dy, dz;
+    double dx = 0.0, dy = 0.0, dz = 0.0;
+    int pantilt_present = 0;
+    int zoom_present = 0;
     char sys_command[MAX_LEN];
     int ret = -1;
     mxml_node_t *node;
@@ -617,6 +850,7 @@ int ptz_continuous_move()
         mxml_node_t *pantilt_node = get_element_ptr(velocity_node, "PanTilt", NULL);
         log_debug("PTZ: PanTilt node: %p", pantilt_node);
         if (pantilt_node != NULL) {
+            pantilt_present = 1;
             x = get_attribute(pantilt_node, "x");
             y = get_attribute(pantilt_node, "y");
             log_debug("PTZ: Raw X attribute: %s", x ? x : "NULL");
@@ -626,6 +860,7 @@ int ptz_continuous_move()
         // Look for Zoom as sibling of PanTilt under Velocity, not inside PanTilt
         mxml_node_t *zoom_node = get_element_ptr(velocity_node, "Zoom", NULL);
         if (zoom_node != NULL) {
+            zoom_present = 1;
             z = get_attribute(zoom_node, "x");
             log_debug("PTZ: Raw Z attribute: %s", z ? z : "NULL");
         }
@@ -703,6 +938,20 @@ int ptz_continuous_move()
         }
     }
 
+    // Per spec: zero velocity in an axis shall stop that axis
+    if (pantilt_present && x != NULL && y != NULL && dx == 0.0 && dy == 0.0 && service_ctx.ptz_node.move_stop != NULL) {
+        sprintf(sys_command, service_ctx.ptz_node.move_stop, "pantilt");
+        log_debug("PTZ: Stopping pan/tilt due to zero velocity");
+        system(sys_command);
+        ret = 0;
+    }
+    if (zoom_present && z != NULL && dz == 0.0 && service_ctx.ptz_node.move_stop != NULL) {
+        sprintf(sys_command, service_ctx.ptz_node.move_stop, "zoom");
+        log_debug("PTZ: Stopping zoom due to zero velocity");
+        system(sys_command);
+        ret = 0;
+    }
+
     long size = cat(NULL, "ptz_service_files/ContinuousMove.xml", 0);
 
     output_http_headers(size);
@@ -720,6 +969,8 @@ int ptz_relative_move()
     double dx = 0;
     double dy = 0;
     double dz = 0;
+    double pt_speed = -1.0;
+    double zoom_speed = -1.0;
     char sys_command_tmp[MAX_LEN];
     char sys_command[MAX_LEN];
     int ret = 0;
@@ -768,9 +1019,45 @@ int ptz_relative_move()
         }
     }
 
+    // Optional Speed parsing
     node = get_element_ptr(NULL, "Speed", "Body");
     if (node != NULL) {
-        // do nothing
+        mxml_node_t *pt = get_element_in_element_ptr("PanTilt", node);
+        if (pt) {
+            const char *sx = get_attribute(pt, "x");
+            const char *sy = get_attribute(pt, "y");
+            if (sx) {
+                double d = atof(sx);
+                if (d < 0)
+                    d = -d;
+                pt_speed = d;
+            }
+            if (sy) {
+                double d = atof(sy);
+                if (d < 0)
+                    d = -d;
+                if (pt_speed < 0 || d > pt_speed)
+                    pt_speed = d;
+            }
+            if (pt_speed < 0)
+                pt_speed = 0;
+            if (pt_speed > 1)
+                pt_speed = 1;
+        }
+        mxml_node_t *zm = get_element_in_element_ptr("Zoom", node);
+        if (zm) {
+            const char *sz = get_attribute(zm, "x");
+            if (sz) {
+                double d = atof(sz);
+                if (d < 0)
+                    d = -d;
+                zoom_speed = d;
+                if (zoom_speed < 0)
+                    zoom_speed = 0;
+                if (zoom_speed > 1)
+                    zoom_speed = 1;
+            }
+        }
     }
 
     if (node_p != NULL) {
@@ -794,7 +1081,13 @@ int ptz_relative_move()
                             ret = -7;
                         }
                     }
-                    sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy, dz);
+                    if (service_ctx.ptz_node.jump_to_rel_speed != NULL && (pt_speed >= 0.0 || zoom_speed >= 0.0)) {
+                        double pts = (pt_speed >= 0.0) ? pt_speed : 0.0;
+                        double zs = (zoom_speed >= 0.0) ? zoom_speed : 0.0;
+                        sprintf(sys_command, service_ctx.ptz_node.jump_to_rel_speed, dx, dy, dz, pts, zs);
+                    } else {
+                        sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, dx, dy, dz);
+                    }
                 }
             }
         } else if (strcmp("http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationSpaceFov", space_p) == 0) {
@@ -838,6 +1131,20 @@ int ptz_relative_move()
         }
     }
 
+    // Zoom-only relative move when no PanTilt is provided
+    if ((node_p == NULL) && (z != NULL)) {
+        dz = atof(z);
+        if ((dz > service_ctx.ptz_node.max_step_z) || (dz < -service_ctx.ptz_node.max_step_z)) {
+            ret = -7;
+        } else {
+            if (service_ctx.ptz_node.jump_to_rel_speed != NULL && zoom_speed >= 0.0) {
+                sprintf(sys_command, service_ctx.ptz_node.jump_to_rel_speed, 0.0, 0.0, dz, 0.0, zoom_speed);
+            } else {
+                sprintf(sys_command, service_ctx.ptz_node.jump_to_rel, 0.0, 0.0, dz);
+            }
+        }
+    }
+
     if (ret == 0) {
         system(sys_command);
 
@@ -866,6 +1173,8 @@ int ptz_absolute_move()
     double dx = 0.0;
     double dy = 0.0;
     double dz = 0.0;
+    double pt_speed = -1.0;
+    double zoom_speed = -1.0;
     char sys_command_tmp[MAX_LEN];
     char sys_command[MAX_LEN];
     int ret = 0;
@@ -903,6 +1212,47 @@ int ptz_absolute_move()
         node_c = get_element_in_element_ptr("PanTilt", node);
         if (node_c != NULL) {
             x = get_attribute(node_c, "x");
+            // Optional Speed parsing
+            mxml_node_t *speed_node = get_element_ptr(NULL, "Speed", "Body");
+            if (speed_node != NULL) {
+                mxml_node_t *pt = get_element_in_element_ptr("PanTilt", speed_node);
+                if (pt) {
+                    const char *sx = get_attribute(pt, "x");
+                    const char *sy = get_attribute(pt, "y");
+                    if (sx) {
+                        double d = atof(sx);
+                        if (d < 0)
+                            d = -d;
+                        pt_speed = d;
+                    }
+                    if (sy) {
+                        double d = atof(sy);
+                        if (d < 0)
+                            d = -d;
+                        if (pt_speed < 0 || d > pt_speed)
+                            pt_speed = d;
+                    }
+                    if (pt_speed < 0)
+                        pt_speed = 0;
+                    if (pt_speed > 1)
+                        pt_speed = 1;
+                }
+                mxml_node_t *zm = get_element_in_element_ptr("Zoom", speed_node);
+                if (zm) {
+                    const char *sz = get_attribute(zm, "x");
+                    if (sz) {
+                        double d = atof(sz);
+                        if (d < 0)
+                            d = -d;
+                        zoom_speed = d;
+                        if (zoom_speed < 0)
+                            zoom_speed = 0;
+                        if (zoom_speed > 1)
+                            zoom_speed = 1;
+                    }
+                }
+            }
+
             y = get_attribute(node_c, "y");
         }
         node_c = get_element_in_element_ptr("Zoom", node);
@@ -935,7 +1285,25 @@ int ptz_absolute_move()
                     ret = -7;
                 }
             }
-            sprintf(sys_command, service_ctx.ptz_node.jump_to_abs, dx, dy, dz);
+            if (service_ctx.ptz_node.jump_to_abs_speed != NULL && (pt_speed >= 0.0 || zoom_speed >= 0.0)) {
+                double pts = (pt_speed >= 0.0) ? pt_speed : 0.0;
+                double zs = (zoom_speed >= 0.0) ? zoom_speed : 0.0;
+                sprintf(sys_command, service_ctx.ptz_node.jump_to_abs_speed, dx, dy, dz, pts, zs);
+            } else {
+                sprintf(sys_command, service_ctx.ptz_node.jump_to_abs, dx, dy, dz);
+            }
+        } else if (node_c == NULL && z != NULL) {
+            // Zoom-only absolute move
+            dz = atof(z);
+            if ((dz > service_ctx.ptz_node.max_step_z) || (dz < service_ctx.ptz_node.min_step_z)) {
+                ret = -7;
+            } else {
+                if (service_ctx.ptz_node.jump_to_abs_speed != NULL && zoom_speed >= 0.0) {
+                    sprintf(sys_command, service_ctx.ptz_node.jump_to_abs_speed, 0.0, 0.0, dz, 0.0, zoom_speed);
+                } else {
+                    sprintf(sys_command, service_ctx.ptz_node.jump_to_abs, 0.0, 0.0, dz);
+                }
+            }
         }
     }
 
@@ -1148,6 +1516,41 @@ int ptz_set_preset()
     mxml_node_t *node;
     char preset_token_out[16];
     int preset_number = -1;
+    // Validate ProfileToken maps to an existing profile
+    const char *profile_token = get_element("ProfileToken", "Body");
+    if (profile_token == NULL) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token does not exist");
+        return -2;
+    }
+    int profile_ok = 0;
+    for (int pi = 0; pi < service_ctx.profiles_num; ++pi) {
+        if (service_ctx.profiles[pi].name && strcasecmp(service_ctx.profiles[pi].name, profile_token) == 0) {
+            profile_ok = 1;
+            break;
+        }
+    }
+    if (!profile_ok) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoProfile", "No profile", "The requested profile token does not exist");
+        return -2;
+    }
+
+    // Spec 5.4.1: fail if PTZ device is moving
+    if (service_ctx.ptz_node.is_moving != NULL) {
+        FILE *fp_mv = popen(service_ctx.ptz_node.is_moving, "r");
+        if (fp_mv != NULL) {
+            char buf_mv[32];
+            if (fgets(buf_mv, sizeof(buf_mv), fp_mv) != NULL) {
+                int moving = 0;
+                if (sscanf(buf_mv, "%d", &moving) == 1 && moving == 1) {
+                    send_fault("ptz_service", "Receiver", "ter:Action", "ter:MovingPTZ", "Moving PTZ", "Preset cannot be set while PTZ unit is moving");
+                    pclose(fp_mv);
+                    return -3;
+                }
+            }
+            pclose(fp_mv);
+        }
+    }
+
     int preset_found;
     int presets_total_number;
     char name_uuid[UUID_LEN + 1];
@@ -1335,6 +1738,473 @@ int ptz_set_home_position()
     output_http_headers(size);
 
     return cat("stdout", "ptz_service_files/SetHomePosition.xml", 0);
+}
+
+int ptz_send_auxiliary_command()
+{
+    mxml_node_t *node;
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+
+    const char *aux = get_element("AuxiliaryData", "Body");
+    if (aux == NULL) {
+        aux = "";
+    }
+
+    long size2 = cat(NULL, "ptz_service_files/SendAuxiliaryCommand.xml", 2, "%AUX_RESPONSE%", aux);
+
+    output_http_headers(size2);
+
+    return cat("stdout", "ptz_service_files/SendAuxiliaryCommand.xml", 2, "%AUX_RESPONSE%", aux);
+}
+
+int ptz_get_preset_tours()
+{
+    mxml_node_t *node;
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+    tours_ensure_loaded();
+
+    long size = 0, total = 0;
+    char dest_a[] = "stdout";
+    char *dest;
+    for (int pass = 0; pass < 2; pass++) {
+        dest = (pass == 0) ? NULL : dest_a;
+        size = cat(dest, "ptz_service_files/GetPresetTours_1.xml", 0);
+        if (pass == 0)
+            total = size;
+        else
+            fflush(stdout);
+        for (int i = 0; i < g_tours_count; i++) {
+            size = cat(dest,
+                       "ptz_service_files/GetPresetTours_item.xml",
+                       6,
+                       "%TOKEN%",
+                       g_tours[i].token,
+                       "%NAME%",
+                       g_tours[i].name[0] ? g_tours[i].name : "",
+                       "%STATUS%",
+                       g_tours[i].status[0] ? g_tours[i].status : "Idle");
+            if (pass == 0)
+                total += size;
+            else
+                fflush(stdout);
+        }
+        size = cat(dest, "ptz_service_files/GetPresetTours_3.xml", 0);
+        if (pass == 0)
+            total += size;
+        else
+            fflush(stdout);
+        if (pass == 0)
+            output_http_headers(total);
+    }
+    return total;
+}
+
+int ptz_get_preset_tour()
+{
+    mxml_node_t *node;
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+    const char *tour_token = get_element("PresetTourToken", "Body");
+    if (!tour_token) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset tour token does not exist");
+        return -3;
+    }
+    tours_ensure_loaded();
+    int idx = tour_index_by_token(tour_token);
+    if (idx < 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset tour token does not exist");
+        return -4;
+    }
+    long size = cat(NULL,
+                    "ptz_service_files/GetPresetTour.xml",
+                    6,
+                    "%TOKEN%",
+                    g_tours[idx].token,
+                    "%NAME%",
+                    g_tours[idx].name[0] ? g_tours[idx].name : "",
+                    "%STATUS%",
+                    g_tours[idx].status[0] ? g_tours[idx].status : "Idle");
+    output_http_headers(size);
+    return cat("stdout",
+               "ptz_service_files/GetPresetTour.xml",
+               6,
+               "%TOKEN%",
+               g_tours[idx].token,
+               "%NAME%",
+               g_tours[idx].name[0] ? g_tours[idx].name : "",
+               "%STATUS%",
+               g_tours[idx].status[0] ? g_tours[idx].status : "Idle");
+}
+
+int ptz_get_preset_tour_options()
+{
+    mxml_node_t *node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+    long size = cat(NULL, "ptz_service_files/GetPresetTourOptions.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "ptz_service_files/GetPresetTourOptions.xml", 0);
+}
+
+static int next_tour_number()
+{
+    int maxn = 0;
+    int n;
+    for (int i = 0; i < g_tours_count; i++) {
+        if (sscanf(g_tours[i].token, "PresetTourToken_%d", &n) == 1) {
+            if (n > maxn)
+                maxn = n;
+        }
+    }
+    return maxn + 1;
+}
+
+int ptz_create_preset_tour()
+{
+    mxml_node_t *node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+    tours_ensure_loaded();
+    if (service_ctx.ptz_node.max_preset_tours > 0 && g_tours_count >= service_ctx.ptz_node.max_preset_tours) {
+        send_action_failed_fault("ptz_service", -3);
+        return -3;
+    }
+    const char *name = get_element("Name", "Body");
+    if (!name)
+        name = "";
+    int num = next_tour_number();
+    char token[64];
+    snprintf(token, sizeof(token), "PresetTourToken_%d", num);
+    g_tours = (preset_tour_t *) realloc(g_tours, sizeof(preset_tour_t) * (g_tours_count + 1));
+    memset(&g_tours[g_tours_count], 0, sizeof(preset_tour_t));
+    strncpy(g_tours[g_tours_count].token, token, sizeof(g_tours[g_tours_count].token) - 1);
+    if (name && name[0])
+        strncpy(g_tours[g_tours_count].name, name, sizeof(g_tours[g_tours_count].name) - 1);
+    strncpy(g_tours[g_tours_count].status, "Idle", sizeof(g_tours[g_tours_count].status) - 1);
+    g_tours_count++;
+    tours_save();
+    long size = cat(NULL, "ptz_service_files/CreatePresetTour.xml", 2, "%TOKEN%", token);
+    output_http_headers(size);
+    return cat("stdout", "ptz_service_files/CreatePresetTour.xml", 2, "%TOKEN%", token);
+}
+
+int ptz_modify_preset_tour()
+{
+    mxml_node_t *node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+    const char *tour_token = get_element("PresetTourToken", "Body");
+    if (!tour_token) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset tour token does not exist");
+        return -3;
+    }
+    tours_ensure_loaded();
+    int idx = tour_index_by_token(tour_token);
+    if (idx < 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset tour token does not exist");
+        return -4;
+    }
+    const char *name = get_element("Name", "Body");
+    if (name && name[0]) {
+        memset(g_tours[idx].name, 0, sizeof(g_tours[idx].name));
+        strncpy(g_tours[idx].name, name, sizeof(g_tours[idx].name) - 1);
+    }
+    tours_save();
+    long size = cat(NULL, "ptz_service_files/ModifyPresetTour.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "ptz_service_files/ModifyPresetTour.xml", 0);
+}
+
+int ptz_operate_preset_tour()
+{
+    mxml_node_t *node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+    const char *tour_token = get_element("PresetTourToken", "Body");
+    const char *operation = get_element("Operation", "Body");
+    if (!tour_token || !operation) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "Missing parameters");
+        return -3;
+    }
+    tours_ensure_loaded();
+    int idx = tour_index_by_token(tour_token);
+    if (idx < 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset tour token does not exist");
+        return -4;
+    }
+    char cmd[MAX_LEN];
+    int ok = 0;
+    if (strcasecmp(operation, "Start") == 0) {
+        if (service_ctx.ptz_node.preset_tour_start == NULL) {
+            send_action_failed_fault("ptz_service", -5);
+            return -5;
+        }
+        snprintf(cmd, sizeof(cmd), service_ctx.ptz_node.preset_tour_start, tour_token);
+        ok = 1;
+        strncpy(g_tours[idx].status, "Touring", sizeof(g_tours[idx].status) - 1);
+    } else if (strcasecmp(operation, "Stop") == 0) {
+        if (service_ctx.ptz_node.preset_tour_stop == NULL) {
+            send_action_failed_fault("ptz_service", -6);
+            return -6;
+        }
+        snprintf(cmd, sizeof(cmd), service_ctx.ptz_node.preset_tour_stop, tour_token);
+        ok = 1;
+        strncpy(g_tours[idx].status, "Idle", sizeof(g_tours[idx].status) - 1);
+    } else if (strcasecmp(operation, "Pause") == 0) {
+        if (service_ctx.ptz_node.preset_tour_pause == NULL) {
+            send_action_failed_fault("ptz_service", -7);
+            return -7;
+        }
+        snprintf(cmd, sizeof(cmd), service_ctx.ptz_node.preset_tour_pause, tour_token);
+        ok = 1;
+        strncpy(g_tours[idx].status, "Paused", sizeof(g_tours[idx].status) - 1);
+    } else {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:ActionNotSupported", "Not supported", "Operation not supported");
+        return -8;
+    }
+    if (ok) {
+        system(cmd);
+        tours_save();
+    }
+    long size = cat(NULL, "ptz_service_files/OperatePresetTour.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "ptz_service_files/OperatePresetTour.xml", 0);
+}
+
+int ptz_remove_preset_tour()
+{
+    mxml_node_t *node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+    const char *tour_token = get_element("PresetTourToken", "Body");
+    if (!tour_token) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset tour token does not exist");
+        return -3;
+    }
+    tours_ensure_loaded();
+    int idx = tour_index_by_token(tour_token);
+    if (idx < 0) {
+        send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset tour token does not exist");
+        return -4;
+    }
+    for (int i = idx; i < g_tours_count - 1; i++)
+        g_tours[i] = g_tours[i + 1];
+    g_tours_count--;
+    tours_save();
+    long size = cat(NULL, "ptz_service_files/RemovePresetTour.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "ptz_service_files/RemovePresetTour.xml", 0);
+}
+
+int ptz_move_and_start_tracking()
+{
+    mxml_node_t *node;
+    char sys_command[MAX_LEN];
+
+    node = get_element_ptr(NULL, "ProfileToken", "Body");
+    if (node == NULL) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoProfile",
+                   "No profile",
+                   "The requested profile token ProfileToken does not exist");
+        return -1;
+    }
+
+    if (service_ctx.ptz_node.enable == 0) {
+        send_fault("ptz_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoPTZProfile",
+                   "No PTZ profile",
+                   "The requested profile token does not reference a PTZ configuration");
+        return -2;
+    }
+
+    if (service_ctx.ptz_node.start_tracking == NULL) {
+        // Backend not configured yet
+        send_action_failed_fault("ptz_service", -3);
+        return -3;
+    }
+
+    // Optional move to PresetToken
+    const char *preset_token = get_element("PresetToken", "Body");
+    if (preset_token && service_ctx.ptz_node.move_preset != NULL) {
+        int preset_number = 0;
+        if (sscanf(preset_token, "PresetToken_%d", &preset_number) == 1) {
+            snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.move_preset, preset_number);
+            system(sys_command);
+        }
+    } else {
+        // Optional move to PTZVector position
+        mxml_node_t *pos = get_element_ptr(NULL, "Position", "Body");
+        if (pos && service_ctx.ptz_node.jump_to_abs != NULL) {
+            mxml_node_t *pt = get_element_in_element_ptr("PanTilt", pos);
+            mxml_node_t *zm = get_element_in_element_ptr("Zoom", pos);
+            double dx = 0.0, dy = 0.0, dz = 0.0;
+            if (pt) {
+                const char *x = get_attribute(pt, "x");
+                const char *y = get_attribute(pt, "y");
+                if (x)
+                    dx = atof(x);
+                if (y)
+                    dy = atof(y);
+            }
+            if (zm) {
+                const char *z = get_attribute(zm, "x");
+                if (z)
+                    dz = atof(z);
+            }
+            snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.jump_to_abs, dx, dy, dz);
+            system(sys_command);
+        }
+    }
+
+    // Start tracking
+    strncpy(sys_command, service_ctx.ptz_node.start_tracking, sizeof(sys_command) - 1);
+    sys_command[sizeof(sys_command) - 1] = '\0';
+    system(sys_command);
+
+    long size = cat(NULL, "ptz_service_files/MoveAndStartTracking.xml", 0);
+
+    output_http_headers(size);
+
+    return cat("stdout", "ptz_service_files/MoveAndStartTracking.xml", 0);
 }
 
 int ptz_remove_preset()

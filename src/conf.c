@@ -168,6 +168,14 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.remove_preset = NULL;
     service_ctx.ptz_node.jump_to_abs = NULL;
     service_ctx.ptz_node.jump_to_rel = NULL;
+    service_ctx.ptz_node.get_presets = NULL;
+    service_ctx.ptz_node.max_preset_tours = 0;
+    service_ctx.ptz_node.start_tracking = NULL;
+    service_ctx.ptz_node.preset_tour_start = NULL;
+    service_ctx.ptz_node.preset_tour_stop = NULL;
+    service_ctx.ptz_node.preset_tour_pause = NULL;
+    service_ctx.ptz_node.jump_to_abs_speed = NULL;
+    service_ctx.ptz_node.jump_to_rel_speed = NULL;
 
     get_string_from_json(&(service_ctx.model), json_file, "model");
     get_string_from_json(&(service_ctx.manufacturer), json_file, "manufacturer");
@@ -352,6 +360,14 @@ int process_json_conf_file(char *file)
         get_string_from_json(&(service_ctx.ptz_node.jump_to_abs), value, "jump_to_abs");
         get_string_from_json(&(service_ctx.ptz_node.jump_to_rel), value, "jump_to_rel");
         get_string_from_json(&(service_ctx.ptz_node.get_presets), value, "get_presets");
+        // Extensions
+        get_int_from_json(&(service_ctx.ptz_node.max_preset_tours), value, "max_preset_tours");
+        get_string_from_json(&(service_ctx.ptz_node.start_tracking), value, "start_tracking");
+        get_string_from_json(&(service_ctx.ptz_node.preset_tour_start), value, "preset_tour_start");
+        get_string_from_json(&(service_ctx.ptz_node.preset_tour_stop), value, "preset_tour_stop");
+        get_string_from_json(&(service_ctx.ptz_node.preset_tour_pause), value, "preset_tour_pause");
+        get_string_from_json(&(service_ctx.ptz_node.jump_to_abs_speed), value, "jump_to_abs_speed");
+        get_string_from_json(&(service_ctx.ptz_node.jump_to_rel_speed), value, "jump_to_rel_speed");
     }
 
     // Load relays configuration from main configuration file
@@ -526,6 +542,20 @@ void free_conf_file()
             free(service_ctx.ptz_node.is_moving);
         if (service_ctx.ptz_node.get_position != NULL)
             free(service_ctx.ptz_node.get_position);
+        if (service_ctx.ptz_node.get_presets != NULL)
+            free(service_ctx.ptz_node.get_presets);
+        if (service_ctx.ptz_node.start_tracking != NULL)
+            free(service_ctx.ptz_node.start_tracking);
+        if (service_ctx.ptz_node.preset_tour_start != NULL)
+            free(service_ctx.ptz_node.preset_tour_start);
+        if (service_ctx.ptz_node.preset_tour_stop != NULL)
+            free(service_ctx.ptz_node.preset_tour_stop);
+        if (service_ctx.ptz_node.preset_tour_pause != NULL)
+            free(service_ctx.ptz_node.preset_tour_pause);
+        if (service_ctx.ptz_node.jump_to_abs_speed != NULL)
+            free(service_ctx.ptz_node.jump_to_abs_speed);
+        if (service_ctx.ptz_node.jump_to_rel_speed != NULL)
+            free(service_ctx.ptz_node.jump_to_rel_speed);
     }
 
     for (i = service_ctx.relay_outputs_num - 1; i >= 0; i--) {

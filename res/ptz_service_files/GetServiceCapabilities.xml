@@ -3,7 +3,7 @@
                    xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl">
     <SOAP-ENV:Body>
         <tptz:GetServiceCapabilitiesResponse>
-            <tptz:Capabilities EFlip="false" Reverse="false" GetCompatibleConfigurations="false" MoveStatus="%MOVE_STATUS%" StatusPosition="%STATUS_POSITION%" />
+            <tptz:Capabilities EFlip="false" Reverse="false" GetCompatibleConfigurations="false" MoveStatus="%MOVE_STATUS%" StatusPosition="%STATUS_POSITION%" MoveAndTrack="%MOVE_AND_TRACK%" />
         </tptz:GetServiceCapabilitiesResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

@@ -81,6 +81,14 @@ typedef struct {
     char *jump_to_abs;
     char *jump_to_rel;
     char *get_presets;
+    // Optional extensions
+    int max_preset_tours;    // 0 means not supported
+    char *start_tracking;    // Command to start tracking (for MoveAndStartTracking)
+    char *preset_tour_start; // Backend start tour command (token)
+    char *preset_tour_stop;  // Backend stop tour command (token)
+    char *preset_tour_pause; // Backend pause tour command (token)
+    char *jump_to_abs_speed; // Absolute move with speed: fmt(dx,dy,dz,pt_speed,zoom_speed)
+    char *jump_to_rel_speed; // Relative move with speed: fmt(dx,dy,dz,pt_speed,zoom_speed)
 } ptz_node_t;
 
 typedef struct {

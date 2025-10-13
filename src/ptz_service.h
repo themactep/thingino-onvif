@@ -47,6 +47,17 @@ int ptz_get_status();
 int ptz_set_preset();
 int ptz_set_home_position();
 int ptz_remove_preset();
+int ptz_send_auxiliary_command();
+
+int ptz_move_and_start_tracking();
+// Preset Tours
+int ptz_get_preset_tours();
+int ptz_get_preset_tour();
+int ptz_get_preset_tour_options();
+int ptz_create_preset_tour();
+int ptz_modify_preset_tour();
+int ptz_operate_preset_tour();
+int ptz_remove_preset_tour();
 
 int ptz_unsupported(const char *method);
 

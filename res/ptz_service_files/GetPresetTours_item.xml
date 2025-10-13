@@ -1,0 +1,6 @@
+            <tptz:PresetTour>
+                <tt:Token>%TOKEN%</tt:Token>
+                <tt:Name>%NAME%</tt:Name>
+                <tt:Status>%STATUS%</tt:Status>
+            </tptz:PresetTour>
+

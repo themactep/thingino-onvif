@@ -89,6 +89,7 @@
                     </tt:ZoomSpeedSpace>
                 </tt:SupportedPTZSpaces>
                 <tt:MaximumNumberOfPresets>8</tt:MaximumNumberOfPresets>
+                <tt:MaximumNumberOfPresetTours>%MAX_PRESET_TOURS%</tt:MaximumNumberOfPresetTours>
                 <tt:HomeSupported>true</tt:HomeSupported>
             </tptz:PTZNode>
         </tptz:GetNodesResponse>

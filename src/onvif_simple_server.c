@@ -495,6 +495,11 @@ int main(int argc, char **argv)
         auth_error = 0;
     }
 
+    // PTZ (tptz): GetServiceCapabilities is PRE_AUTH per PTZ spec
+    if ((strcasecmp("ptz_service", prog_name) == 0) && (strcasecmp("GetServiceCapabilities", method) == 0)) {
+        auth_error = 0;
+    }
+
     if (security.enable == 1) {
         if (auth_error == 0) {
             // Skip problematic log_info in CGI: log_info("Authentication ok");
