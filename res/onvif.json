@@ -60,7 +60,8 @@
         "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
         "jump_to_abs": "/bin/motors -d h -x %f -y %f",
         "jump_to_rel": "/bin/motors -d g -x %f -y %f",
-        "get_presets": "/sbin/ptz_presets -g"
+        "get_presets": "/sbin/ptz_presets -g",
+        "continuous_move": "/bin/motors -d h -x %f -y %f"
     },
     "relays": [
         {

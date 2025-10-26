@@ -31,9 +31,15 @@ COPY wsd_files                /etc/wsd_simple_server/
 # Copy config file
 COPY onvif.json               /etc/onvif.json
 
+# Copy mock motors script for PTZ testing
+COPY motors                   /bin/motors
+
 # Change the ownership of the files to the www-data user
 # This is the user that Lighttpd runs as on Debian
 RUN chown -R www-data:www-data /app/cgi-bin
+
+# Make motors script executable
+RUN chmod +x /bin/motors
 
 # Grant execute permissions to your C apps
 RUN chmod +x \

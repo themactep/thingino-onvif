@@ -89,6 +89,7 @@ typedef struct {
     char *preset_tour_pause; // Backend pause tour command (token)
     char *jump_to_abs_speed; // Absolute move with speed: fmt(dx,dy,dz,pt_speed,zoom_speed)
     char *jump_to_rel_speed; // Relative move with speed: fmt(dx,dy,dz,pt_speed,zoom_speed)
+    char *continuous_move;   // Continuous move with both axes: fmt(x_target, y_target) for diagonal movement
 } ptz_node_t;
 
 typedef struct {

@@ -866,49 +866,87 @@ int ptz_continuous_move()
         }
     }
 
+    // Parse velocities first
     if (x != NULL) {
         dx = atof(x);
         log_debug("PTZ: ContinuousMove X velocity: %f", dx);
-
-        if (dx > 0.0) {
-            if (service_ctx.ptz_node.move_right == NULL) {
-                send_action_failed_fault("ptz_service", -3);
-                return -3;
-            }
-            sprintf(sys_command, service_ctx.ptz_node.move_right, dx);
-            log_debug("PTZ: Executing move_right command: %s", sys_command);
-            system(sys_command);
-            ret = 0;
-        } else if (dx < 0.0) {
-            if (service_ctx.ptz_node.move_left == NULL) {
-                send_action_failed_fault("ptz_service", -4);
-                return -4;
-            }
-            sprintf(sys_command, service_ctx.ptz_node.move_left, -dx);
-            log_debug("PTZ: Executing move_left command: %s", sys_command);
-            system(sys_command);
-            ret = 0;
-        }
     }
 
     if (y != NULL) {
         dy = atof(y);
         log_debug("PTZ: ContinuousMove Y velocity: %f", dy);
+    }
+
+    // Check if we have diagonal movement (both X and Y non-zero) and continuous_move command is configured
+    int has_diagonal = (x != NULL && dx != 0.0 && y != NULL && dy != 0.0);
+    int use_continuous_move = has_diagonal && (service_ctx.ptz_node.continuous_move != NULL);
+
+    if (use_continuous_move) {
+        // Use single command for true diagonal movement
+        double x_target, y_target;
+
+        // Calculate target positions based on velocity direction
+        if (dx > 0.0) {
+            x_target = service_ctx.ptz_node.max_step_x;
+        } else {
+            x_target = service_ctx.ptz_node.min_step_x;
+        }
 
         if (dy > 0.0) {
-            if (service_ctx.ptz_node.move_up == NULL) {
+            y_target = service_ctx.ptz_node.min_step_y; // Up means min
+        } else {
+            y_target = service_ctx.ptz_node.max_step_y; // Down means max
+        }
+
+        sprintf(sys_command, service_ctx.ptz_node.continuous_move, x_target, y_target);
+        log_debug("PTZ: Executing diagonal continuous_move command: %s", sys_command);
+        system(sys_command);
+        ret = 0;
+    } else {
+        // Fall back to separate axis commands
+
+        // Check for validation errors before executing any commands
+        if (x != NULL && dx != 0.0) {
+            if (dx > 0.0 && service_ctx.ptz_node.move_right == NULL) {
+                send_action_failed_fault("ptz_service", -3);
+                return -3;
+            }
+            if (dx < 0.0 && service_ctx.ptz_node.move_left == NULL) {
+                send_action_failed_fault("ptz_service", -4);
+                return -4;
+            }
+        }
+
+        if (y != NULL && dy != 0.0) {
+            if (dy > 0.0 && service_ctx.ptz_node.move_up == NULL) {
                 send_action_failed_fault("ptz_service", -5);
                 return -5;
             }
+            if (dy < 0.0 && service_ctx.ptz_node.move_down == NULL) {
+                send_action_failed_fault("ptz_service", -6);
+                return -6;
+            }
+        }
+
+        // Execute movement commands - both axes if needed for diagonal movement
+        if (x != NULL && dx > 0.0) {
+            sprintf(sys_command, service_ctx.ptz_node.move_right, dx);
+            log_debug("PTZ: Executing move_right command: %s", sys_command);
+            system(sys_command);
+            ret = 0;
+        } else if (x != NULL && dx < 0.0) {
+            sprintf(sys_command, service_ctx.ptz_node.move_left, -dx);
+            log_debug("PTZ: Executing move_left command: %s", sys_command);
+            system(sys_command);
+            ret = 0;
+        }
+
+        if (y != NULL && dy > 0.0) {
             sprintf(sys_command, service_ctx.ptz_node.move_up, dy);
             log_debug("PTZ: Executing move_up command: %s", sys_command);
             system(sys_command);
             ret = 0;
-        } else if (dy < 0.0) {
-            if (service_ctx.ptz_node.move_down == NULL) {
-                send_action_failed_fault("ptz_service", -6);
-                return -6;
-            }
+        } else if (y != NULL && dy < 0.0) {
             sprintf(sys_command, service_ctx.ptz_node.move_down, -dy);
             log_debug("PTZ: Executing move_down command: %s", sys_command);
             system(sys_command);

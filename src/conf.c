@@ -176,6 +176,7 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.preset_tour_pause = NULL;
     service_ctx.ptz_node.jump_to_abs_speed = NULL;
     service_ctx.ptz_node.jump_to_rel_speed = NULL;
+    service_ctx.ptz_node.continuous_move = NULL;
 
     get_string_from_json(&(service_ctx.model), json_file, "model");
     get_string_from_json(&(service_ctx.manufacturer), json_file, "manufacturer");
@@ -368,6 +369,7 @@ int process_json_conf_file(char *file)
         get_string_from_json(&(service_ctx.ptz_node.preset_tour_pause), value, "preset_tour_pause");
         get_string_from_json(&(service_ctx.ptz_node.jump_to_abs_speed), value, "jump_to_abs_speed");
         get_string_from_json(&(service_ctx.ptz_node.jump_to_rel_speed), value, "jump_to_rel_speed");
+        get_string_from_json(&(service_ctx.ptz_node.continuous_move), value, "continuous_move");
     }
 
     // Load relays configuration from main configuration file
@@ -556,6 +558,8 @@ void free_conf_file()
             free(service_ctx.ptz_node.jump_to_abs_speed);
         if (service_ctx.ptz_node.jump_to_rel_speed != NULL)
             free(service_ctx.ptz_node.jump_to_rel_speed);
+        if (service_ctx.ptz_node.continuous_move != NULL)
+            free(service_ctx.ptz_node.continuous_move);
     }
 
     for (i = service_ctx.relay_outputs_num - 1; i >= 0; i--) {

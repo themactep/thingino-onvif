@@ -706,12 +706,113 @@ print(soap)
     fi
 }
 
+# Test PTZ ContinuousMove with diagonal motion
+test_ptz_continuous_move_diagonal() {
+    echo -e "\n${YELLOW}Testing: PTZ ContinuousMove with diagonal motion (x=-0.666667, y=0.666667)${NC}"
+
+    local username="thingino"
+    local password="thingino"
+
+    # Generate authenticated ContinuousMove request with diagonal velocity
+    local soap_request=$(python3 -c "
+import sys, base64, hashlib, datetime, os
+sys.path.insert(0, 'tests')
+
+username = '$username'
+password = '$password'
+nonce = os.urandom(16)
+nonce_b64 = base64.b64encode(nonce).decode('utf-8')
+created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
+digest = hashlib.sha1(digest_input).digest()
+digest_b64 = base64.b64encode(digest).decode('utf-8')
+
+soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
+                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
+                   xmlns:tt=\"http://www.onvif.org/ver10/schema\"
+                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
+                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
+    <SOAP-ENV:Header>
+        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
+            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
+                <wsse:Username>{username}</wsse:Username>
+                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
+                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
+                <wsu:Created>{created}</wsu:Created>
+            </wsse:UsernameToken>
+        </wsse:Security>
+    </SOAP-ENV:Header>
+    <SOAP-ENV:Body>
+        <tptz:ContinuousMove>
+            <tptz:ProfileToken>Profile_0</tptz:ProfileToken>
+            <tptz:Velocity>
+                <tt:PanTilt x=\"-0.6666667\" y=\"0.6666667\"/>
+            </tptz:Velocity>
+        </tptz:ContinuousMove>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+print(soap)
+" 2>/dev/null)
+
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
+        return 0
+    fi
+
+    local http_code=$(curl -s -o /tmp/ptz_continuous_diagonal.xml -w "%{http_code}" -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -d "$soap_request" \
+        "$SERVER_URL/onvif/ptz_service")
+
+    local response=$(cat /tmp/ptz_continuous_diagonal.xml)
+
+    # Check container logs for diagonal movement command
+    sleep 0.5  # Give server time to process
+    local logs=$(podman logs --tail 30 $CONTAINER_NAME 2>&1)
+
+    # Look for single diagonal movement command with both X and Y
+    local has_diagonal=false
+
+    # Check for diagonal movement: -d h -x <value> -y <value> (single command with both axes)
+    if [[ $logs == *"-d h -x 0.000000 -y 0.000000"* ]]; then
+        has_diagonal=true
+    fi
+
+    if [ "$http_code" = "200" ] && [[ $response == *"ContinuousMoveResponse"* ]]; then
+        if [ "$has_diagonal" = true ]; then
+            echo -e "${GREEN}✓ PTZ ContinuousMove (diagonal) - SUCCESS (single command with both axes)${NC}"
+            if [ "$VERBOSE" = true ]; then
+                echo "Response: $response"
+                echo "Recent logs showing diagonal command:"
+                echo "$logs" | grep -E "(-d h -x .* -y )" | tail -3
+            fi
+            return 0
+        else
+            echo -e "${YELLOW}⚠ PTZ ContinuousMove (diagonal) - HTTP 200 but diagonal command not found${NC}"
+            echo "  Looking for: -d h -x 0.000000 -y 0.000000"
+            if [ "$VERBOSE" = true ]; then
+                echo "Recent logs:"
+                echo "$logs" | grep MOTORS | tail -10
+            fi
+            return 2
+        fi
+    else
+        echo -e "${RED}✗ PTZ ContinuousMove (diagonal) - FAILED (HTTP $http_code)${NC}"
+        if [ "$VERBOSE" = true ]; then
+            echo "$response"
+        fi
+        return 1
+    fi
+}
+
 # Run PTZ tests
 test_ptz_get_configurations
 test_ptz_get_nodes
 test_ptz_absolute_move_valid
 test_ptz_absolute_move_invalid
 test_ptz_get_status
+test_ptz_continuous_move_diagonal
 
 
 # Events (PullPoint) Tests

@@ -1,0 +1,218 @@
+#!/bin/sh
+
+# Mock PTZ Motors Control Script for Container Testing
+# Simulates PTZ motor control with state tracking and detailed logging
+
+STATE_FILE="/tmp/motors_state"
+LOG_PREFIX="[MOTORS]"
+
+# Initialize state file if it doesn't exist
+if [ ! -f "$STATE_FILE" ]; then
+    echo "2000.0,1000.0,1.0,0" > "$STATE_FILE"
+    # Format: x,y,z,moving (0=stopped, 1=moving)
+fi
+
+# Read current state
+read_state() {
+    if [ -f "$STATE_FILE" ]; then
+        cat "$STATE_FILE"
+    else
+        echo "2000.0,1000.0,1.0,0"
+    fi
+}
+
+# Write new state
+write_state() {
+    echo "$1" > "$STATE_FILE"
+}
+
+# Get current position
+get_position() {
+    state=$(read_state)
+    # Return only x,y,z (strip moving flag)
+    echo "$state" | cut -d',' -f1-3
+}
+
+# Get moving status
+is_moving() {
+    state=$(read_state)
+    # Return moving flag
+    echo "$state" | cut -d',' -f4
+}
+
+# Set moving status
+set_moving() {
+    state=$(read_state)
+    x=$(echo "$state" | cut -d',' -f1)
+    y=$(echo "$state" | cut -d',' -f2)
+    z=$(echo "$state" | cut -d',' -f3)
+    write_state "$x,$y,$z,$1"
+}
+
+# Update position
+update_position() {
+    local new_x="$1"
+    local new_y="$2"
+    local new_z="$3"
+    local moving="${4:-0}"
+    
+    write_state "$new_x,$new_y,$new_z,$moving"
+    echo "$LOG_PREFIX Position updated: x=$new_x, y=$new_y, z=$new_z, moving=$moving" >&2
+}
+
+# Parse command line arguments
+case "$1" in
+    "-p")
+        # Get current position
+        pos=$(get_position)
+        echo "$LOG_PREFIX Get position: $pos" >&2
+        echo "$pos"
+        exit 0
+        ;;
+        
+    "-b")
+        # Get moving status
+        moving=$(is_moving)
+        echo "$LOG_PREFIX Is moving: $moving" >&2
+        echo "$moving"
+        exit 0
+        ;;
+        
+    "-d")
+        # Movement commands
+        direction="$2"
+        shift 2
+        
+        case "$direction" in
+            "h")
+                # Absolute movement: motors -d h -x <x> -y <y> [-z <z>]
+                echo "$LOG_PREFIX Absolute move command: -d h $*" >&2
+                
+                # Parse arguments
+                x_val=""
+                y_val=""
+                z_val=""
+                
+                while [ $# -gt 0 ]; do
+                    case "$1" in
+                        "-x")
+                            x_val="$2"
+                            shift 2
+                            ;;
+                        "-y")
+                            y_val="$2"
+                            shift 2
+                            ;;
+                        "-z")
+                            z_val="$2"
+                            shift 2
+                            ;;
+                        *)
+                            shift
+                            ;;
+                    esac
+                done
+                
+                # Get current position
+                state=$(read_state)
+                curr_x=$(echo "$state" | cut -d',' -f1)
+                curr_y=$(echo "$state" | cut -d',' -f2)
+                curr_z=$(echo "$state" | cut -d',' -f3)
+                
+                # Use provided values or keep current
+                new_x="${x_val:-$curr_x}"
+                new_y="${y_val:-$curr_y}"
+                new_z="${z_val:-$curr_z}"
+                
+                echo "$LOG_PREFIX Moving to absolute position: x=$new_x, y=$new_y, z=$new_z" >&2
+                update_position "$new_x" "$new_y" "$new_z" 1
+                
+                # Simulate movement completion after a short delay
+                (sleep 0.1 && set_moving 0) &
+                ;;
+                
+            "g")
+                # Relative movement: motors -d g -x <dx> -y <dy> [-z <dz>]
+                echo "$LOG_PREFIX Relative move command: -d g $*" >&2
+                
+                # Parse arguments
+                dx_val="0"
+                dy_val="0"
+                dz_val="0"
+                
+                while [ $# -gt 0 ]; do
+                    case "$1" in
+                        "-x")
+                            dx_val="$2"
+                            shift 2
+                            ;;
+                        "-y")
+                            dy_val="$2"
+                            shift 2
+                            ;;
+                        "-z")
+                            dz_val="$2"
+                            shift 2
+                            ;;
+                        *)
+                            shift
+                            ;;
+                    esac
+                done
+                
+                # Get current position
+                state=$(read_state)
+                curr_x=$(echo "$state" | cut -d',' -f1)
+                curr_y=$(echo "$state" | cut -d',' -f2)
+                curr_z=$(echo "$state" | cut -d',' -f3)
+                
+                # Calculate new position (simple addition for mock)
+                new_x=$(awk "BEGIN {print $curr_x + $dx_val}")
+                new_y=$(awk "BEGIN {print $curr_y + $dy_val}")
+                new_z=$(awk "BEGIN {print $curr_z + $dz_val}")
+                
+                echo "$LOG_PREFIX Moving relative: dx=$dx_val, dy=$dy_val, dz=$dz_val" >&2
+                echo "$LOG_PREFIX New position: x=$new_x, y=$new_y, z=$new_z" >&2
+                update_position "$new_x" "$new_y" "$new_z" 1
+                
+                # Simulate movement completion
+                (sleep 0.1 && set_moving 0) &
+                ;;
+                
+            "s")
+                # Stop movement
+                echo "$LOG_PREFIX Stop command received" >&2
+                set_moving 0
+                ;;
+                
+            "b")
+                # Go to home position (center)
+                echo "$LOG_PREFIX Go to home position" >&2
+                update_position "2000.0" "1000.0" "1.0" 1
+                
+                # Simulate movement completion
+                (sleep 0.1 && set_moving 0) &
+                ;;
+                
+            *)
+                echo "$LOG_PREFIX ERROR: Unknown direction command: $direction" >&2
+                exit 1
+                ;;
+        esac
+        ;;
+        
+    *)
+        echo "$LOG_PREFIX ERROR: Invalid command: $1" >&2
+        echo "Usage: motors [-p|-b|-d <direction> <args>]" >&2
+        echo "  -p: Get current position (returns x,y,z)" >&2
+        echo "  -b: Get moving status (returns 0/1)" >&2
+        echo "  -d h: Absolute movement (-x <x> -y <y> [-z <z>])" >&2
+        echo "  -d g: Relative movement (-x <dx> -y <dy> [-z <dz>])" >&2
+        echo "  -d s: Stop movement" >&2
+        echo "  -d b: Go to home position" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
+
