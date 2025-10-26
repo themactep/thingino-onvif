@@ -3,7 +3,7 @@
             xmlns:wsnt="http://docs.oasis-open.org/wsn/b-2"
             xmlns:wsa="http://www.w3.org/2005/08/addressing">
   <s:Header>
-    <wsa:MessageID>urn:uuid:85f633d0-dc1d-4205-95fb-a511f98b2517</wsa:MessageID>
+    <wsa:MessageID>urn:uuid:f2934d21-3c35-4603-a7fd-4e4cb92e0c3b</wsa:MessageID>
   </s:Header>
   <s:Body>
     <wsnt:Renew>
