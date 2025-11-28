@@ -98,6 +98,7 @@
                     <tt:Minor>12</tt:Minor>
                 </tds:Version>
             </tds:Service>
+%IMAGING_SERVICE_BLOCK%
             <tds:Service>
                 <tds:Namespace>http://www.onvif.org/ver20/media/wsdl</tds:Namespace>
                 <tds:XAddr>%MEDIA2_SERVICE_ADDRESS%</tds:XAddr>

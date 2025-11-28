@@ -44,6 +44,7 @@
                     <tt:Minor>12</tt:Minor>
                 </tds:Version>
             </tds:Service>
+%IMAGING_SERVICE_BLOCK%
         </tds:GetServicesResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

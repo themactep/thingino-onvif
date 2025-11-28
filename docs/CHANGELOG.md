@@ -13,6 +13,7 @@
   - Monolithic `onvif_simple_server.json.example`
   - `extras/` directory contents not used by Thingino build (patch/build helpers)
 - Cleaned up old references to `/etc/onvif_simple_server.json`; defaults now `/etc/onvif.json` and `/etc/onvif.d`
+- Implemented ONVIF Imaging service (ver20) with IrCutFilter support, JSON configuration (`imaging` block), new CGI handlers, and `tools/onvif/test_imaging.sh` for validation.
 
 ## Migration Notes (Monolithic -> Modular)
 - Config is no longer a single monolithic JSON file

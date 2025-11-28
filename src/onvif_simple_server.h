@@ -100,6 +100,19 @@ typedef struct {
     char *input_file;
 } event_t;
 
+typedef enum { IRCUT_MODE_UNSPECIFIED = 0, IRCUT_MODE_ON, IRCUT_MODE_OFF, IRCUT_MODE_AUTO } ircut_mode_t;
+
+typedef struct {
+    char *video_source_token;
+    ircut_mode_t ircut_mode;
+    int supports_ircut_on;
+    int supports_ircut_off;
+    int supports_ircut_auto;
+    char *cmd_ircut_on;
+    char *cmd_ircut_off;
+    char *cmd_ircut_auto;
+} imaging_entry_t;
+
 typedef struct {
     int port;
     char *username;
@@ -137,6 +150,9 @@ typedef struct {
     // Raw XML logging configuration
     char *raw_log_directory;   // Path to external storage for raw XML logs (optional)
     int raw_log_on_error_only; // When true, log raw XML on error even if general XML logging is disabled
+
+    imaging_entry_t *imaging;
+    int imaging_num;
 } service_context_t;
 
 // Expose global context

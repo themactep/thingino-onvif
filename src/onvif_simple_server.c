@@ -182,7 +182,8 @@ int main(int argc, char **argv)
     if (argc > 1) {
         tmp = argv[argc - 1];
         if ((strstr(tmp, "device_service") != NULL) || (strstr(tmp, "media_service") != NULL) || (strstr(tmp, "media2_service") != NULL)
-            || (strstr(tmp, "ptz_service") != NULL) || (strstr(tmp, "events_service") != NULL) || (strstr(tmp, "deviceio_service") != NULL)) {
+            || (strstr(tmp, "ptz_service") != NULL) || (strstr(tmp, "events_service") != NULL) || (strstr(tmp, "deviceio_service") != NULL)
+            || (strstr(tmp, "imaging_service") != NULL)) {
             tmp = argv[argc - 1];
         } else {
             tmp = argv[0];
@@ -497,6 +498,11 @@ int main(int argc, char **argv)
 
     // PTZ (tptz): GetServiceCapabilities is PRE_AUTH per PTZ spec
     if ((strcasecmp("ptz_service", prog_name) == 0) && (strcasecmp("GetServiceCapabilities", method) == 0)) {
+        auth_error = 0;
+    }
+
+    // Imaging (timg): GetServiceCapabilities is PRE_AUTH per spec
+    if ((strcasecmp("imaging_service", prog_name) == 0) && (strcasecmp("GetServiceCapabilities", method) == 0)) {
         auth_error = 0;
     }
 

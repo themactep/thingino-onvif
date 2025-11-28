@@ -21,6 +21,7 @@
 #include "deviceio_service.h"
 #include "events_service.h"
 #include "fault.h"
+#include "imaging_service.h"
 #include "log.h"
 #include "media2_service.h"
 #include "media_service.h"
@@ -114,6 +115,12 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"media_service", "SetVideoEncoderConfiguration", media_set_video_encoder_configuration, condition_adv_fault_if_set},
     {"media_service", "SetAudioEncoderConfiguration", media_set_audio_encoder_configuration, condition_adv_fault_if_set},
     {"media_service", "SetAudioOutputConfiguration", media_set_audio_output_configuration, condition_adv_fault_if_set},
+
+    // Imaging service methods (exposed only when configured)
+    {"imaging_service", "GetServiceCapabilities", imaging_get_service_capabilities, NULL},
+    {"imaging_service", "GetImagingSettings", imaging_get_imaging_settings, NULL},
+    {"imaging_service", "GetOptions", imaging_get_options, NULL},
+    {"imaging_service", "SetImagingSettings", imaging_set_imaging_settings, NULL},
 
     // PTZ service methods (no conditions)
     {"ptz_service", "GetServiceCapabilities", ptz_get_service_capabilities, NULL},
@@ -233,6 +240,8 @@ int dispatch_onvif_method(const char *service, const char *method)
         return ptz_unsupported(method);
     } else if (strcasecmp("events_service", service) == 0) {
         return events_unsupported(method);
+    } else if (strcasecmp("imaging_service", service) == 0) {
+        return imaging_unsupported(method);
     } else {
         return device_unsupported(method); // Default fallback
     }

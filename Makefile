@@ -7,6 +7,7 @@ OBJECTS_O	 = $(SRC_DIR)/onvif_simple_server.o \
 		   $(SRC_DIR)/onvif_dispatch.o \
 		   $(SRC_DIR)/device_service.o \
 		   $(SRC_DIR)/media_service.o \
+		   $(SRC_DIR)/imaging_service.o \
 		   $(SRC_DIR)/media2_service.o \
 		   $(SRC_DIR)/ptz_service.o \
 		   $(SRC_DIR)/events_service.o \

@@ -160,6 +160,13 @@ If IR controls do not appear:
 - Confirm `test_deviceio.sh` shows relay tokens and `tmd` namespace OK: 1
 - If still missing, app might depend on Imaging service; consider implementing minimal Imaging (Get/SetImagingSettings with IrCutFilter) and advertise it via Device:GetServices/GetCapabilities.
 
+### Imaging service sanity check
+
+Use `tools/onvif/test_imaging.sh -h <host> -u <user> -p <pass> [-t VideoSourceToken]` to exercise the Imaging service once it is enabled. The script performs:
+- GetServiceCapabilities to confirm the endpoint is reachable.
+- GetImagingSettings / GetOptions for the supplied video source token.
+- SetImagingSettings with the currently reported IrCutFilter value (no-op) to verify write support.
+
 ## Notes
 
 - These scripts are intended for development/QA against local devices. They do not modify system state other than optional relay pulses when requested.

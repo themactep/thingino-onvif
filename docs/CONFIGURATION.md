@@ -87,6 +87,25 @@ An array of media profiles. The URL templates use `%s` placeholder for device IP
 ]
 ```
 
+## Imaging configuration (optional block in /etc/onvif.json)
+```
+"imaging": [
+  {
+    "video_source_token": "VideoSourceToken",
+    "ircut_state": "Auto",            // Initial state: On|Off|Auto
+    "ircut_modes": ["On", "Off", "Auto"],
+    "cmd_ircut_on": "ircut on",       // Shell command invoked for SetImagingSettings (optional)
+    "cmd_ircut_off": "ircut off",
+    "cmd_ircut_auto": ""
+  }
+]
+```
+
+Notes:
+- If `ircut_modes` is omitted, On/Off are assumed. Include `Auto` when hardware supports it.
+- Commands are optional; when omitted, the server still reports/updates the cached state.
+- Configure one block per ONVIF video source. The Imaging service is advertised only when at least one block is present.
+
 ## /etc/onvif.d/events.json
 ```
 {

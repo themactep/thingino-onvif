@@ -75,6 +75,16 @@
             "open": "irled on"
         }
     ],
+    "imaging": [
+        {
+            "video_source_token": "VideoSourceToken",
+            "ircut_state": "Auto",
+            "ircut_modes": ["On", "Off", "Auto"],
+            "cmd_ircut_on": "ircut on",
+            "cmd_ircut_off": "ircut off",
+            "cmd_ircut_auto": ""
+        }
+    ],
     "events_enable": 1,
     "events": [
         {

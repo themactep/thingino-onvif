@@ -102,6 +102,22 @@ void get_bool_from_json(int *var, JsonValue *j, char *name)
     }
 }
 
+static ircut_mode_t parse_ircut_mode_string(const char *value)
+{
+    if (!value)
+        return IRCUT_MODE_UNSPECIFIED;
+
+    if (strcasecmp(value, "ON") == 0 || strcasecmp(value, "On") == 0) {
+        return IRCUT_MODE_ON;
+    } else if (strcasecmp(value, "OFF") == 0 || strcasecmp(value, "Off") == 0) {
+        return IRCUT_MODE_OFF;
+    } else if (strcasecmp(value, "AUTO") == 0 || strcasecmp(value, "Auto") == 0) {
+        return IRCUT_MODE_AUTO;
+    }
+
+    return IRCUT_MODE_UNSPECIFIED;
+}
+
 int process_json_conf_file(char *file)
 {
     JsonValue *value, *item;
@@ -145,6 +161,8 @@ int process_json_conf_file(char *file)
     service_ctx.loglevel = 0;
     service_ctx.raw_log_directory = NULL;
     service_ctx.raw_log_on_error_only = 0;
+    service_ctx.imaging = NULL;
+    service_ctx.imaging_num = 0;
 
     service_ctx.ptz_node.min_step_x = 0;
     service_ctx.ptz_node.max_step_x = 360.0;
@@ -447,6 +465,90 @@ int process_json_conf_file(char *file)
         }
     }
 
+    value = get_object_item(json_file, "imaging");
+    if (value && value->type == JSON_ARRAY) {
+        int array_len = get_array_size(value);
+        for (int i = 0; i < array_len; i++) {
+            item = get_array_item(value, i);
+            if (!item || item->type != JSON_OBJECT)
+                continue;
+
+            if (service_ctx.imaging_num >= MAX_IMAGING_ENTRIES) {
+                log_warn("Ignoring imaging entry %d: max %d reached", i, MAX_IMAGING_ENTRIES);
+                break;
+            }
+
+            service_ctx.imaging_num++;
+            service_ctx.imaging = (imaging_entry_t *) realloc(service_ctx.imaging, service_ctx.imaging_num * sizeof(imaging_entry_t));
+            imaging_entry_t *entry = &service_ctx.imaging[service_ctx.imaging_num - 1];
+            memset(entry, 0, sizeof(*entry));
+            entry->ircut_mode = IRCUT_MODE_AUTO;
+
+            get_string_from_json(&(entry->video_source_token), item, "video_source_token");
+            if (entry->video_source_token == NULL) {
+                entry->video_source_token = (char *) malloc(strlen("VideoSourceToken") + 1);
+                if (entry->video_source_token)
+                    strcpy(entry->video_source_token, "VideoSourceToken");
+            }
+
+            char *tmp_state = NULL;
+            get_string_from_json(&tmp_state, item, "ircut_state");
+            if (tmp_state != NULL) {
+                ircut_mode_t parsed = parse_ircut_mode_string(tmp_state);
+                if (parsed != IRCUT_MODE_UNSPECIFIED) {
+                    entry->ircut_mode = parsed;
+                }
+                free(tmp_state);
+            }
+
+            JsonValue *modes = get_object_item(item, "ircut_modes");
+            if (modes && modes->type == JSON_ARRAY) {
+                int modes_len = get_array_size(modes);
+                for (int j = 0; j < modes_len; j++) {
+                    JsonValue *mode_val = get_array_item(modes, j);
+                    if (mode_val && mode_val->type == JSON_STRING) {
+                        ircut_mode_t parsed = parse_ircut_mode_string(mode_val->value.string);
+                        if (parsed == IRCUT_MODE_ON)
+                            entry->supports_ircut_on = 1;
+                        else if (parsed == IRCUT_MODE_OFF)
+                            entry->supports_ircut_off = 1;
+                        else if (parsed == IRCUT_MODE_AUTO)
+                            entry->supports_ircut_auto = 1;
+                    }
+                }
+            }
+
+            if (!entry->supports_ircut_on && !entry->supports_ircut_off && !entry->supports_ircut_auto) {
+                // Default to manual day/night if no explicit modes provided
+                entry->supports_ircut_on = 1;
+                entry->supports_ircut_off = 1;
+            }
+
+            get_string_from_json(&(entry->cmd_ircut_on), item, "cmd_ircut_on");
+            get_string_from_json(&(entry->cmd_ircut_off), item, "cmd_ircut_off");
+            get_string_from_json(&(entry->cmd_ircut_auto), item, "cmd_ircut_auto");
+
+            if (entry->ircut_mode == IRCUT_MODE_UNSPECIFIED) {
+                if (entry->supports_ircut_auto)
+                    entry->ircut_mode = IRCUT_MODE_AUTO;
+                else if (entry->supports_ircut_on)
+                    entry->ircut_mode = IRCUT_MODE_ON;
+                else if (entry->supports_ircut_off)
+                    entry->ircut_mode = IRCUT_MODE_OFF;
+                else
+                    entry->ircut_mode = IRCUT_MODE_AUTO;
+            }
+
+            log_debug("Imaging[%d] token=%s ircut=%d modes on:%d off:%d auto:%d",
+                      service_ctx.imaging_num - 1,
+                      entry->video_source_token ? entry->video_source_token : "(null)",
+                      entry->ircut_mode,
+                      entry->supports_ircut_on,
+                      entry->supports_ircut_off,
+                      entry->supports_ircut_auto);
+        }
+    }
+
     log_debug("adv_enable_media2: %d", service_ctx.adv_enable_media2);
     log_debug("adv_fault_if_unknown: %d", service_ctx.adv_fault_if_unknown);
     log_debug("adv_fault_if_set: %d", service_ctx.adv_fault_if_set);
@@ -570,6 +672,19 @@ void free_conf_file()
     }
     if (service_ctx.relay_outputs != NULL)
         free(service_ctx.relay_outputs);
+
+    for (i = service_ctx.imaging_num - 1; i >= 0; i--) {
+        if (service_ctx.imaging[i].video_source_token != NULL)
+            free(service_ctx.imaging[i].video_source_token);
+        if (service_ctx.imaging[i].cmd_ircut_on != NULL)
+            free(service_ctx.imaging[i].cmd_ircut_on);
+        if (service_ctx.imaging[i].cmd_ircut_off != NULL)
+            free(service_ctx.imaging[i].cmd_ircut_off);
+        if (service_ctx.imaging[i].cmd_ircut_auto != NULL)
+            free(service_ctx.imaging[i].cmd_ircut_auto);
+    }
+    if (service_ctx.imaging != NULL)
+        free(service_ctx.imaging);
 
     for (i = service_ctx.profiles_num - 1; i >= 0; i--) {
         if (service_ctx.profiles[i].snapurl != NULL)
