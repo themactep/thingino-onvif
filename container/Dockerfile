@@ -18,6 +18,7 @@ COPY device_service_files     /app/cgi-bin/device_service_files/
 COPY deviceio_service_files   /app/cgi-bin/deviceio_service_files/
 COPY events_service_files     /app/cgi-bin/events_service_files/
 COPY generic_files            /app/cgi-bin/generic_files/
+COPY imaging_service_files    /app/cgi-bin/imaging_service_files/
 COPY media_service_files      /app/cgi-bin/media_service_files/
 COPY media2_service_files     /app/cgi-bin/media2_service_files/
 COPY ptz_service_files        /app/cgi-bin/ptz_service_files/
@@ -54,6 +55,7 @@ RUN echo '#!/bin/bash\nexec /app/cgi-bin/onvif_simple_server -c /etc/onvif.json 
     echo '#!/bin/bash\nexec /app/cgi-bin/onvif_simple_server -c /etc/onvif.json ptz_service' > /app/cgi-bin/ptz_service.cgi && \
     echo '#!/bin/bash\nexec /app/cgi-bin/onvif_simple_server -c /etc/onvif.json deviceio_service' > /app/cgi-bin/deviceio_service.cgi && \
     echo '#!/bin/bash\nexec /app/cgi-bin/onvif_simple_server -c /etc/onvif.json events_service' > /app/cgi-bin/events_service.cgi && \
+    echo '#!/bin/bash\nexec /app/cgi-bin/onvif_simple_server -c /etc/onvif.json imaging_service' > /app/cgi-bin/imaging_service.cgi && \
     chmod +x /app/cgi-bin/*.cgi
 
 # Copy your custom lighttpd configuration file

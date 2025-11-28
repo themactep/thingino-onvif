@@ -1,3 +1,92 @@
+# Imaging Service Test (with WSSE auth)
+test_imaging_service() {
+    echo -e "\n${YELLOW}Testing: ONVIF Imaging Service${NC}"
+    local username="thingino"
+    local password="thingino"
+    local token="VideoSourceToken"
+    local imaging_url="$SERVER_URL/onvif/imaging_service"
+    # shellcheck source=tools/onvif/lib_wsse.sh
+    [ -f tools/onvif/lib_wsse.sh ] && source tools/onvif/lib_wsse.sh
+
+    # GetServiceCapabilities (no auth required)
+    local req_caps='<?xml version="1.0" encoding="utf-8"?>\n'
+    req_caps+='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">\n'
+    req_caps+='  <s:Header/>'
+    req_caps+='  <s:Body><timg:GetServiceCapabilities/></s:Body>\n'
+    req_caps+='</s:Envelope>'
+    local resp_caps=$(curl -s -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -H "SOAPAction: \"http://www.onvif.org/ver20/imaging/wsdl/GetServiceCapabilities\"" \
+        -d "$req_caps" "$imaging_url")
+    if [[ $resp_caps == *"<timg:Capabilities"* ]]; then
+        echo -e "${GREEN}✓ Imaging GetServiceCapabilities - SUCCESS${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_caps"; fi
+    else
+        echo -e "${RED}✗ Imaging GetServiceCapabilities - FAILED${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_caps"; fi
+    fi
+
+    # GetImagingSettings (with WSSE)
+    local wsse_header=$(onvif_wsse_header "$username" "$password")
+    local req_settings='<?xml version="1.0" encoding="utf-8"?>\n'
+    req_settings+='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">\n'
+    req_settings+="  <s:Header>$wsse_header</s:Header>"
+    req_settings+='  <s:Body><timg:GetImagingSettings><timg:VideoSourceToken>'$token'</timg:VideoSourceToken></timg:GetImagingSettings></s:Body>\n'
+    req_settings+='</s:Envelope>'
+    local resp_settings=$(curl -s -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -H "SOAPAction: \"http://www.onvif.org/ver20/imaging/wsdl/GetImagingSettings\"" \
+        -d "$req_settings" "$imaging_url")
+    if [[ $resp_settings == *"<timg:GetImagingSettingsResponse"* ]]; then
+        echo -e "${GREEN}✓ Imaging GetImagingSettings - SUCCESS${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_settings"; fi
+    else
+        echo -e "${RED}✗ Imaging GetImagingSettings - FAILED${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_settings"; fi
+    fi
+
+    # GetOptions (with WSSE)
+    wsse_header=$(onvif_wsse_header "$username" "$password")
+    local req_options='<?xml version="1.0" encoding="utf-8"?>\n'
+    req_options+='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">\n'
+    req_options+="  <s:Header>$wsse_header</s:Header>"
+    req_options+='  <s:Body><timg:GetOptions><timg:VideoSourceToken>'$token'</timg:VideoSourceToken></timg:GetOptions></s:Body>\n'
+    req_options+='</s:Envelope>'
+    local resp_options=$(curl -s -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -H "SOAPAction: \"http://www.onvif.org/ver20/imaging/wsdl/GetOptions\"" \
+        -d "$req_options" "$imaging_url")
+    if [[ $resp_options == *"<timg:GetOptionsResponse"* ]]; then
+        echo -e "${GREEN}✓ Imaging GetOptions - SUCCESS${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_options"; fi
+    else
+        echo -e "${RED}✗ Imaging GetOptions - FAILED${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_options"; fi
+    fi
+
+    # SetImagingSettings (noop, with WSSE)
+    local current_ir=$(echo "$resp_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
+    [[ -n $current_ir ]] || current_ir="ON"
+    wsse_header=$(onvif_wsse_header "$username" "$password")
+    local req_set='<?xml version="1.0" encoding="utf-8"?>\n'
+    req_set+='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema">\n'
+    req_set+="  <s:Header>$wsse_header</s:Header>"
+    req_set+='  <s:Body><timg:SetImagingSettings><timg:VideoSourceToken>'$token'</timg:VideoSourceToken><timg:ImagingSettings><tt:ImagingSettings20 token="'$token'">'
+    req_set+='<tt:IrCutFilter>'$current_ir'</tt:IrCutFilter>'
+    req_set+='</tt:ImagingSettings20></timg:ImagingSettings></timg:SetImagingSettings></s:Body>\n'
+    req_set+='</s:Envelope>'
+    local resp_set=$(curl -s -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -H "SOAPAction: \"http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings\"" \
+        -d "$req_set" "$imaging_url")
+    if [[ $resp_set == *"<timg:SetImagingSettingsResponse"* || $resp_set == *"<s:Body/>"* ]]; then
+        echo -e "${GREEN}✓ Imaging SetImagingSettings - SUCCESS${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_set"; fi
+    else
+        echo -e "${RED}✗ Imaging SetImagingSettings - FAILED${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_set"; fi
+    fi
+}
 #!/bin/bash
 
 # ONVIF Simple Server Container Test Script
@@ -815,11 +904,15 @@ test_ptz_get_status
 test_ptz_continuous_move_diagonal
 
 
+
+# Imaging Service Tests
+test_imaging_service
+
 # Events (PullPoint) Tests
 if bash tests/container_test_events.sh; then
-  echo -e "${GREEN}✓ Events tests - SUCCESS${NC}"
+    echo -e "${GREEN}✓ Events tests - SUCCESS${NC}"
 else
-  echo -e "${RED}✗ Events tests - FAILED${NC}"
+    echo -e "${RED}✗ Events tests - FAILED${NC}"
 fi
 
 echo -e "\n${BLUE}=== Test Summary ===${NC}"
