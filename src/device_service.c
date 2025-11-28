@@ -722,6 +722,8 @@ int device_get_capabilities()
     char ptz_service_address[MAX_LEN];
     char events_service_address[MAX_LEN];
     char deviceio_service_address[MAX_LEN];
+    char imaging_service_address[MAX_LEN];
+    char imaging_capabilities_block[256];
     char port[8];
     int icategory;
     const char *category;
