@@ -68,27 +68,16 @@ int device_get_services()
     sprintf(ptz_service_address, "http://%s%s/onvif/ptz_service", address, port);
     sprintf(events_service_address, "http://%s%s/onvif/events_service", address, port);
     sprintf(deviceio_service_address, "http://%s%s/onvif/deviceio_service", address, port);
+
     sprintf(imaging_service_address, "http://%s%s/onvif/imaging_service", address, port);
 
+    log_debug("[device_service] imaging_num at service advertisement: %d", service_ctx.imaging_num);
     if (service_ctx.imaging_num > 0) {
-        snprintf(imaging_service_block,
-                 sizeof(imaging_service_block),
-                 "            <tds:Service>\n"
-                 "                <tds:Namespace>http://www.onvif.org/ver20/imaging/wsdl</tds:Namespace>\n"
-                 "                <tds:XAddr>%s</tds:XAddr>\n"
-                 "                <tds:Capabilities>\n"
-                 "                    <timg:Capabilities xmlns:timg=\"http://www.onvif.org/ver20/imaging/wsdl\">\n"
-                 "                        <timg:ImageStabilization>false</timg:ImageStabilization>\n"
-                 "                        <timg:ImagingPresets>false</timg:ImagingPresets>\n"
-                 "                        <timg:AdaptablePreset>false</timg:AdaptablePreset>\n"
-                 "                    </timg:Capabilities>\n"
-                 "                </tds:Capabilities>\n"
-                 "                <tds:Version>\n"
-                 "                    <tt:Major>22</tt:Major>\n"
-                 "                    <tt:Minor>6</tt:Minor>\n"
-                 "                </tds:Version>\n"
-                 "            </tds:Service>\n",
-                 imaging_service_address);
+        snprintf(
+            imaging_service_block,
+            sizeof(imaging_service_block),
+            "<tds:Service><tds:Namespace>http://www.onvif.org/ver20/imaging/wsdl</tds:Namespace><tds:XAddr>%s</tds:XAddr><tds:Capabilities><timg:Capabilities xmlns:timg=\"http://www.onvif.org/ver20/imaging/wsdl\"><timg:ImageStabilization>false</timg:ImageStabilization><timg:ImagingPresets>false</timg:ImagingPresets><timg:AdaptablePreset>false</timg:AdaptablePreset></timg:Capabilities></tds:Capabilities><tds:Version><tt:Major>22</tt:Major><tt:Minor>6</tt:Minor></tds:Version></tds:Service>",
+            imaging_service_address);
     } else {
         imaging_service_block[0] = '\0';
     }
@@ -772,9 +761,7 @@ int device_get_capabilities()
     if (service_ctx.imaging_num > 0) {
         snprintf(imaging_capabilities_block,
                  sizeof(imaging_capabilities_block),
-                 "                <tt:Imaging>\n"
-                 "                    <tt:XAddr>%s</tt:XAddr>\n"
-                 "                </tt:Imaging>\n",
+                 "<tt:Imaging><tt:XAddr>%s</tt:XAddr></tt:Imaging>",
                  imaging_service_address);
     } else {
         imaging_capabilities_block[0] = '\0';
