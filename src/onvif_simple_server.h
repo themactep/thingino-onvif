@@ -103,6 +103,70 @@ typedef struct {
 typedef enum { IRCUT_MODE_UNSPECIFIED = 0, IRCUT_MODE_ON, IRCUT_MODE_OFF, IRCUT_MODE_AUTO } ircut_mode_t;
 
 typedef struct {
+    int present;
+    float value;
+    int has_value;
+    float min;
+    int has_min;
+    float max;
+    int has_max;
+} imaging_float_value_t;
+
+typedef struct {
+    char **items;
+    int count;
+} imaging_string_list_t;
+
+typedef struct {
+    int present;
+    char *mode;
+    imaging_string_list_t modes;
+    imaging_float_value_t level;
+} imaging_mode_level_t;
+
+typedef struct {
+    int present;
+    char *mode;
+    imaging_string_list_t modes;
+    char *priority;
+    imaging_string_list_t priorities;
+    imaging_float_value_t min_exposure_time;
+    imaging_float_value_t max_exposure_time;
+    imaging_float_value_t exposure_time;
+    imaging_float_value_t min_gain;
+    imaging_float_value_t max_gain;
+    imaging_float_value_t gain;
+    imaging_float_value_t min_iris;
+    imaging_float_value_t max_iris;
+    imaging_float_value_t iris;
+} imaging_exposure_config_t;
+
+typedef struct {
+    int present;
+    char *mode;
+    imaging_string_list_t modes;
+    imaging_float_value_t default_speed;
+    imaging_float_value_t near_limit;
+    imaging_float_value_t far_limit;
+} imaging_focus_config_t;
+
+typedef struct {
+    int present;
+    char *mode;
+    imaging_string_list_t modes;
+    imaging_float_value_t cr_gain;
+    imaging_float_value_t cb_gain;
+} imaging_white_balance_config_t;
+
+typedef struct {
+    int present;
+    char *boundary_type;
+    imaging_string_list_t boundary_types;
+    imaging_float_value_t boundary_offset;
+    imaging_float_value_t response_time;
+} imaging_ircut_auto_adjustment_t;
+
+typedef struct {
     char *video_source_token;
     ircut_mode_t ircut_mode;
     int supports_ircut_on;
@@ -111,6 +175,21 @@ typedef struct {
     char *cmd_ircut_on;
     char *cmd_ircut_off;
     char *cmd_ircut_auto;
+
+    imaging_mode_level_t backlight;
+    imaging_float_value_t brightness;
+    imaging_float_value_t color_saturation;
+    imaging_float_value_t contrast;
+    imaging_float_value_t sharpness;
+    imaging_exposure_config_t exposure;
+    imaging_focus_config_t focus;
+    imaging_mode_level_t wide_dynamic_range;
+    imaging_white_balance_config_t white_balance;
+    imaging_ircut_auto_adjustment_t ircut_auto_adjustment;
+    imaging_mode_level_t image_stabilization;
+    imaging_mode_level_t tone_compensation;
+    imaging_mode_level_t defogging;
+    imaging_float_value_t noise_reduction;
 } imaging_entry_t;
 
 typedef struct {

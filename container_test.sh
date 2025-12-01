@@ -1,100 +1,213 @@
-# Imaging Service Test (with WSSE auth)
-test_imaging_service() {
-    echo -e "\n${YELLOW}Testing: ONVIF Imaging Service${NC}"
-    local username="thingino"
-    local password="thingino"
-    local token="VideoSourceToken"
-    local imaging_url="$SERVER_URL/onvif/imaging_service"
-    # shellcheck source=tools/onvif/lib_wsse.sh
-    [ -f tools/onvif/lib_wsse.sh ] && source tools/onvif/lib_wsse.sh
-
-    # GetServiceCapabilities (no auth required)
-    local req_caps='<?xml version="1.0" encoding="utf-8"?>\n'
-    req_caps+='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">\n'
-    req_caps+='  <s:Header/>'
-    req_caps+='  <s:Body><timg:GetServiceCapabilities/></s:Body>\n'
-    req_caps+='</s:Envelope>'
-    local resp_caps=$(curl -s -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -H "SOAPAction: \"http://www.onvif.org/ver20/imaging/wsdl/GetServiceCapabilities\"" \
-        -d "$req_caps" "$imaging_url")
-    if [[ $resp_caps == *"<timg:Capabilities"* ]]; then
-        echo -e "${GREEN}✓ Imaging GetServiceCapabilities - SUCCESS${NC}"
-        if [ "$VERBOSE" = true ]; then echo "$resp_caps"; fi
-    else
-        echo -e "${RED}✗ Imaging GetServiceCapabilities - FAILED${NC}"
-        if [ "$VERBOSE" = true ]; then echo "$resp_caps"; fi
-    fi
-
-    # GetImagingSettings (with WSSE)
-    local wsse_header=$(onvif_wsse_header "$username" "$password")
-    local req_settings='<?xml version="1.0" encoding="utf-8"?>\n'
-    req_settings+='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">\n'
-    req_settings+="  <s:Header>$wsse_header</s:Header>"
-    req_settings+='  <s:Body><timg:GetImagingSettings><timg:VideoSourceToken>'$token'</timg:VideoSourceToken></timg:GetImagingSettings></s:Body>\n'
-    req_settings+='</s:Envelope>'
-    local resp_settings=$(curl -s -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -H "SOAPAction: \"http://www.onvif.org/ver20/imaging/wsdl/GetImagingSettings\"" \
-        -d "$req_settings" "$imaging_url")
-    if [[ $resp_settings == *"<timg:GetImagingSettingsResponse"* ]]; then
-        echo -e "${GREEN}✓ Imaging GetImagingSettings - SUCCESS${NC}"
-        if [ "$VERBOSE" = true ]; then echo "$resp_settings"; fi
-    else
-        echo -e "${RED}✗ Imaging GetImagingSettings - FAILED${NC}"
-        if [ "$VERBOSE" = true ]; then echo "$resp_settings"; fi
-    fi
-
-    # GetOptions (with WSSE)
-    wsse_header=$(onvif_wsse_header "$username" "$password")
-    local req_options='<?xml version="1.0" encoding="utf-8"?>\n'
-    req_options+='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">\n'
-    req_options+="  <s:Header>$wsse_header</s:Header>"
-    req_options+='  <s:Body><timg:GetOptions><timg:VideoSourceToken>'$token'</timg:VideoSourceToken></timg:GetOptions></s:Body>\n'
-    req_options+='</s:Envelope>'
-    local resp_options=$(curl -s -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -H "SOAPAction: \"http://www.onvif.org/ver20/imaging/wsdl/GetOptions\"" \
-        -d "$req_options" "$imaging_url")
-    if [[ $resp_options == *"<timg:GetOptionsResponse"* ]]; then
-        echo -e "${GREEN}✓ Imaging GetOptions - SUCCESS${NC}"
-        if [ "$VERBOSE" = true ]; then echo "$resp_options"; fi
-    else
-        echo -e "${RED}✗ Imaging GetOptions - FAILED${NC}"
-        if [ "$VERBOSE" = true ]; then echo "$resp_options"; fi
-    fi
-
-    # SetImagingSettings (noop, with WSSE)
-    local current_ir=$(echo "$resp_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
-    [[ -n $current_ir ]] || current_ir="ON"
-    wsse_header=$(onvif_wsse_header "$username" "$password")
-    local req_set='<?xml version="1.0" encoding="utf-8"?>\n'
-    req_set+='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl" xmlns:tt="http://www.onvif.org/ver10/schema">\n'
-    req_set+="  <s:Header>$wsse_header</s:Header>"
-    req_set+='  <s:Body><timg:SetImagingSettings><timg:VideoSourceToken>'$token'</timg:VideoSourceToken><timg:ImagingSettings><tt:ImagingSettings20 token="'$token'">'
-    req_set+='<tt:IrCutFilter>'$current_ir'</tt:IrCutFilter>'
-    req_set+='</tt:ImagingSettings20></timg:ImagingSettings></timg:SetImagingSettings></s:Body>\n'
-    req_set+='</s:Envelope>'
-    local resp_set=$(curl -s -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -H "SOAPAction: \"http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings\"" \
-        -d "$req_set" "$imaging_url")
-    if [[ $resp_set == *"<timg:SetImagingSettingsResponse"* || $resp_set == *"<s:Body/>"* ]]; then
-        echo -e "${GREEN}✓ Imaging SetImagingSettings - SUCCESS${NC}"
-        if [ "$VERBOSE" = true ]; then echo "$resp_set"; fi
-    else
-        echo -e "${RED}✗ Imaging SetImagingSettings - FAILED${NC}"
-        if [ "$VERBOSE" = true ]; then echo "$resp_set"; fi
-    fi
-}
 #!/bin/bash
 
 # ONVIF Simple Server Container Test Script
 # This script tests the ONVIF server functionality through HTTP requests
 
+# Test ONVIF Audio Backchannel (AudioOutput) endpoints
+test_audio_output_endpoints() {
+    echo -e "\n${YELLOW}Testing: Audio Output (Backchannel) endpoints via test_onvif_service${NC}"
+
+    # These endpoints require authentication; rely on the existing auth generator.
+    test_onvif_service "media_service" "GetAudioOutputs" "Get Audio Outputs (Backchannel)" true "<trt:GetAudioOutputsResponse"
+    test_onvif_service "media_service" "GetAudioOutputConfiguration" "Get Audio Output Configuration (Backchannel)" true "<trt:GetAudioOutputConfigurationResponse"
+    test_onvif_service "media_service" "GetAudioOutputConfigurations" "Get Audio Output Configurations (Backchannel)" true "<trt:GetAudioOutputConfigurationsResponse"
+    test_onvif_service "media_service" "GetAudioOutputConfigurationOptions" "Get Audio Output Configuration Options (Backchannel)" true "<trt:GetAudioOutputConfigurationOptionsResponse"
+    test_onvif_service "media_service" "GetCompatibleAudioOutputConfigurations" "Get Compatible Audio Output Configurations (Backchannel)" true "<trt:GetCompatibleAudioOutputConfigurationsResponse"
+}
+
+# Helper to inject WSSE header and tokens into imaging SOAP templates
+render_imaging_template() {
+    local template_path=$1
+    local wsse_header=$2
+    local token_value=${3:-"VideoSourceToken"}
+    local ir_value=${4:-""}
+
+    awk -v hdr="$wsse_header" -v token="$token_value" -v ir="$ir_value" '
+        {
+            gsub(/\{wsse_header\}/, hdr);
+            gsub(/\{video_source_token\}/, token);
+            gsub(/\{ir_cut_filter\}/, ir);
+            print;
+        }
+    ' "$template_path"
+}
+
+# Imaging Service Test (with WSSE auth)
+test_imaging_service() {
+    echo -e "\n${YELLOW}Testing: ONVIF Imaging Service${NC}"
+
+    # use global credentials
+    local token="VideoSourceToken"
+
+    # source WSSE header helper and build header for templates
+    # shellcheck source=tools/onvif/lib_wsse.sh
+    [ -f tools/onvif/lib_wsse.sh ] && source tools/onvif/lib_wsse.sh
+    local wsse_header=$(onvif_wsse_header "$DEFAULT_USERNAME" "$DEFAULT_PASSWORD")
+
+    local tmp_resp
+    local resp
+    local resp_settings
+    local resp_caps
+    local resp_options
+
+    # Validate GetServiceCapabilities with WSSE header
+    tmp_resp=$(mktemp)
+    local req_caps
+    req_caps=$(render_imaging_template "tests/soap_templates/imaging_get_service_capabilities.xml" "$wsse_header" "$token")
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/imaging_service" "http://www.onvif.org/ver20/imaging/wsdl/GetServiceCapabilities" "$req_caps" "$tmp_resp")
+    resp_caps=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
+    if [ "$response_code" != "200" ]; then
+        echo -e "${RED}✗ Imaging GetServiceCapabilities - FAILED (HTTP $response_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp_caps"
+    elif [[ $resp_caps == *"<timg:GetServiceCapabilitiesResponse"* ]]; then
+        echo -e "${GREEN}✓ Imaging GetServiceCapabilities - SUCCESS${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp_caps"
+    else
+        echo -e "${RED}✗ Imaging GetServiceCapabilities - FAILED (unexpected body)${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp_caps"
+    fi
+
+    # Get current ImagingSettings (with WSSE) - keep original to obtain current state
+    tmp_resp=$(mktemp)
+    local req_settings
+    req_settings=$(render_imaging_template "tests/soap_templates/imaging_get_imaging_settings.xml" "$wsse_header" "$token")
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/imaging_service" "http://www.onvif.org/ver20/imaging/wsdl/GetImagingSettings" "$req_settings" "$tmp_resp")
+    resp_settings=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
+    if [ "$response_code" != "200" ]; then
+        echo -e "${RED}✗ Imaging GetImagingSettings - FAILED (HTTP $response_code)${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp_settings"; fi
+    elif [[ $resp_settings == *"<tt:VideoSourceToken>$token</tt:VideoSourceToken>"* && $resp_settings == *"<tt:IrCutFilter>"* ]]; then
+        echo -e "${GREEN}✓ Imaging GetImagingSettings - SUCCESS${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp_settings"
+    else
+        echo -e "${YELLOW}⚠ Imaging GetImagingSettings - response missing VideoSourceToken/IrCutFilter${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp_settings"
+    fi
+
+    # Record original IR Cut filter so we can restore it later
+    local original_ir
+    original_ir=$(echo "$resp_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
+    [[ -n $original_ir ]] || original_ir="On"
+
+    # Verify GetOptions returns the expanded structures
+    tmp_resp=$(mktemp)
+    local req_options
+    req_options=$(render_imaging_template "tests/soap_templates/imaging_get_options.xml" "$wsse_header" "$token")
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/imaging_service" "http://www.onvif.org/ver20/imaging/wsdl/GetOptions" "$req_options" "$tmp_resp")
+    resp_options=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
+    if [ "$response_code" != "200" ]; then
+        echo -e "${RED}✗ Imaging GetOptions - FAILED (HTTP $response_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp_options"
+    elif [[ $resp_options == *"<tt:VideoSourceToken>$token</tt:VideoSourceToken>"* && $resp_options == *"<tt:IrCutFilterModes>"* ]]; then
+        echo -e "${GREEN}✓ Imaging GetOptions - SUCCESS${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp_options"
+    else
+        echo -e "${YELLOW}⚠ Imaging GetOptions - response missing VideoSourceToken/IrCutFilterModes${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp_options"
+    fi
+
+    # SetImagingSettings: flip IrCutFilter to a different value, verify change, then restore
+    local current_ir
+    current_ir=$(echo "$resp_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
+    [[ -n $current_ir ]] || current_ir="$original_ir"
+
+    # choose target value (toggle between On/Off; default to On if unknown)
+    local lc; lc=$(echo "$current_ir" | tr '[:upper:]' '[:lower:]')
+    local target_ir
+    if [ "$lc" = "on" ]; then
+        target_ir="Off"
+    elif [ "$lc" = "off" ]; then
+        target_ir="On"
+    else
+        target_ir="On"
+    fi
+
+    echo -e "[INFO] Imaging: current IrCutFilter=$current_ir -> setting to $target_ir to verify SetImagingSettings"
+
+    tmp_resp=$(mktemp)
+    local req_set
+    req_set=$(render_imaging_template "tests/soap_templates/imaging_set_imaging_settings.xml" "$wsse_header" "$token" "$target_ir")
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/imaging_service" "http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings" "$req_set" "$tmp_resp")
+    resp=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
+    if [ "$response_code" != "200" ]; then
+        echo -e "${RED}✗ Imaging SetImagingSettings (to $target_ir) - FAILED (HTTP $response_code)${NC}"
+        if [ "$VERBOSE" = true ]; then echo "$resp"; fi
+    else
+        if [[ $resp == *"<timg:SetImagingSettingsResponse"* || $resp == *"<s:Body/>"* ]]; then
+            echo -e "${GREEN}✓ Imaging SetImagingSettings (to $target_ir) - SUCCESS${NC}"
+            if [ "$VERBOSE" = true ]; then echo "$resp"; fi
+            # verify via GetImagingSettings
+            tmp_resp=$(mktemp)
+            req_settings=$(render_imaging_template "tests/soap_templates/imaging_get_imaging_settings.xml" "$wsse_header" "$token")
+            response_code=$(send_soap_raw "$SERVER_URL/onvif/imaging_service" "http://www.onvif.org/ver20/imaging/wsdl/GetImagingSettings" "$req_settings" "$tmp_resp")
+            new_settings=$(cat "$tmp_resp" 2>/dev/null || true)
+            rm -f "$tmp_resp" || true
+            new_ir=$(echo "$new_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
+            if [[ "$new_ir" == "$target_ir" ]]; then
+                echo -e "${GREEN}✓ Imaging verified IrCutFilter changed to $new_ir${NC}"
+            else
+                echo -e "${RED}✗ Imaging verification failed: expected $target_ir but got '$new_ir'${NC}"
+            fi
+        else
+            echo -e "${RED}✗ Imaging SetImagingSettings (to $target_ir) - FAILED${NC}"
+            if [ "$VERBOSE" = true ]; then echo "$resp"; fi
+        fi
+    fi
+
+    # Restore original value
+    if [[ "$original_ir" != "$target_ir" ]]; then
+        tmp_resp=$(mktemp)
+        req_set=$(render_imaging_template "tests/soap_templates/imaging_set_imaging_settings.xml" "$wsse_header" "$token" "$original_ir")
+        response_code=$(send_soap_raw "$SERVER_URL/onvif/imaging_service" "http://www.onvif.org/ver20/imaging/wsdl/SetImagingSettings" "$req_set" "$tmp_resp")
+        resp=$(cat "$tmp_resp" 2>/dev/null || true)
+        rm -f "$tmp_resp" || true
+        if [[ $response_code == "200" && ( $resp == *"<timg:SetImagingSettingsResponse"* || $resp == *"<s:Body/>"* ) ]]; then
+            echo -e "${GREEN}✓ Imaging restored original IrCutFilter to $original_ir${NC}"
+        else
+            echo -e "${YELLOW}⚠ Imaging failed to restore original IrCutFilter to $original_ir (response code $response_code)${NC}"
+            if [ "$VERBOSE" = true ]; then echo "$resp"; fi
+        fi
+    fi
+}
+
+# Default runtime/config values
 CONTAINER_NAME="oss"
 SERVER_URL="http://localhost:8000"
 VERBOSE=false
+
+# Default credentials used by tests
+DEFAULT_USERNAME="thingino"
+DEFAULT_PASSWORD="thingino"
+
+# Helper: send SOAP payload from a temp file (preserves exact bytes) and archive sent request
+send_soap_raw() {
+    # args: URL, SOAP_ACTION, SOAP_CONTENT, OUTFILE
+    local url="$1"; local action="$2"; local soap_content="$3"; local outfile="$4"
+    local tmpreq
+    tmpreq=$(mktemp /tmp/soap.XXXXXX.xml)
+    printf '%s' "$soap_content" > "$tmpreq"
+    if [ -d "artifacts/raw_logs/127.0.0.1" ]; then
+        ts=$(date -u +%Y%m%d_%H%M%S)
+        cp -f "$tmpreq" "artifacts/raw_logs/127.0.0.1/${ts}_request.xml"
+    fi
+    # Use curl to write response body to outfile and print the HTTP status code to stdout.
+    # Capture curl's exit status so callers can detect transport errors separately from HTTP codes.
+    local http_code
+    http_code=$(curl -s -o "$outfile" -w "%{http_code}" -X POST \
+        -H "Content-Type: application/soap+xml; charset=utf-8" \
+        -H "SOAPAction: \"${action}\"" \
+        --data-binary @"$tmpreq" \
+        "$url")
+    local rc=$?
+    rm -f "$tmpreq"
+    # Echo the HTTP code so callers using command substitution receive it.
+    printf '%s' "$http_code"
+    return $rc
+}
 
 # Colors for output
 RED='\033[0;31m'
@@ -143,16 +256,13 @@ echo -e "${GREEN}✓ Container '$CONTAINER_NAME' is running${NC}"
 # Function to generate authenticated SOAP request
 generate_auth_soap() {
     local method=$1
-    local username="thingino"
-    local password="thingino"
-
     # Use Python script if available, otherwise skip auth
     if [ -f "tests/generate_onvif_auth.py" ]; then
         python3 -c "
 import sys
 sys.path.insert(0, 'tests')
 from generate_onvif_auth import generate_soap_request
-soap = generate_soap_request('$username', '$password', '$method')
+soap = generate_soap_request('$DEFAULT_USERNAME', '$DEFAULT_PASSWORD', '$method')
 # Remove Category element if not needed
 if '$method' == 'GetVideoSources':
     soap = soap.replace('<tds:Category>All</tds:Category>', '')
@@ -183,71 +293,62 @@ test_onvif_service() {
         fi
     else
         # Create simple SOAP request (using SOAP 1.2 format that ONVIF expects)
-        local soap_request="<?xml version=\"1.0\" encoding=\"utf-8\"?>
-<s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\"
-            xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\">
-  <s:Header/>
-  <s:Body>
-    <tds:$method/>
-  </s:Body>
-</s:Envelope>"
+        local soap_request="<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\"><s:Header/><s:Body><tds:$method/></s:Body></s:Envelope>"
     fi
 
-    # Send request
-    local response=$(curl -s -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -H "SOAPAction: \"http://www.onvif.org/ver10/device/wsdl/$method\"" \
-        -d "$soap_request" \
-        "$SERVER_URL/onvif/$service_name")
+    local response_code
+    local response
 
-    # Check if we got a valid SOAP response
-    if [ $? -eq 0 ] && [[ $response == *"<?xml"* ]] && \
-       [[ $response == *"Envelope"* ]] && \
-       [[ $response == *"Body"* ]]; then
+    # Send request (use raw file send to preserve bytes)
+    tmp_resp=$(mktemp)
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/$service_name" "http://www.onvif.org/ver10/device/wsdl/$method" "$soap_request" "$tmp_resp")
+    curl_rc=$?
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
 
+    # If curl itself failed, report transport error
+    if [ $curl_rc -ne 0 ]; then
+        echo -e "${RED}✗ $service_name/$method - FAILED (transport/curl error, rc=$curl_rc)${NC}"
+        return 1
+    fi
+
+    # Basic sanity: expect an XML envelope in the response body
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ $service_name/$method - FAILED (no response body, HTTP $response_code)${NC}"
+        return 1
+    fi
+
+    if [[ $response == *"<?xml"* ]] && [[ $response == *"Envelope"* ]] && [[ $response == *"Body"* ]]; then
         # Check if it's a SOAP Fault
         if [[ $response == *"Fault"* ]]; then
-            # Extract fault reason if possible
             if [[ $response =~ Text.*\>([^<]+)\<.*Text ]]; then
                 fault_reason="${BASH_REMATCH[1]}"
-                echo -e "${YELLOW}⚠ $service_name/$method - SOAP FAULT: $fault_reason${NC}"
+                echo -e "${YELLOW}⚠ $service_name/$method - SOAP FAULT: $fault_reason (HTTP $response_code)${NC}"
             else
-                echo -e "${YELLOW}⚠ $service_name/$method - SOAP FAULT${NC}"
+                echo -e "${YELLOW}⚠ $service_name/$method - SOAP FAULT (HTTP $response_code)${NC}"
             fi
-            if [ "$VERBOSE" = true ]; then
-                echo "Response: $response"
-            fi
-            return 2  # Return 2 for SOAP fault (different from success or error)
-        else
-            # Optional content assertion
-            if [ -n "$expected_contains" ]; then
-                if [[ $response == *"$expected_contains"* ]]; then
-                    echo -e "${GREEN}✓ $service_name/$method - SUCCESS (asserted: '$expected_contains')${NC}"
-                else
-                    echo -e "${RED}✗ $service_name/$method - FAILED (missing expected content)${NC}"
-                    echo "Expected to find: $expected_contains"
-                    if [ "$VERBOSE" = true ]; then
-                        echo "Response: $response"
-                    fi
-                    return 1
-                fi
-            else
-                echo -e "${GREEN}✓ $service_name/$method - SUCCESS${NC}"
-            fi
-            if [ "$VERBOSE" = true ]; then
-                echo "Response: $response"
-            fi
-            return 0
+            [ "$VERBOSE" = true ] && echo "Response: $response"
+            return 2
         fi
-    elif [ $? -ne 0 ]; then
-        echo -e "${RED}✗ $service_name/$method - FAILED (curl error)${NC}"
-        return 1
-    elif [[ -z "$response" ]]; then
-        echo -e "${RED}✗ $service_name/$method - FAILED (no response)${NC}"
-        return 1
+
+        # Optional content assertion
+        if [ -n "$expected_contains" ]; then
+            if [[ $response == *"$expected_contains"* ]]; then
+                echo -e "${GREEN}✓ $service_name/$method - SUCCESS (asserted: '$expected_contains')${NC}"
+            else
+                echo -e "${RED}✗ $service_name/$method - FAILED (missing expected content)${NC}"
+                echo "Expected to find: $expected_contains"
+                [ "$VERBOSE" = true ] && echo "Response: $response"
+                return 1
+            fi
+        else
+            echo -e "${GREEN}✓ $service_name/$method - SUCCESS (HTTP $response_code)${NC}"
+        fi
+        [ "$VERBOSE" = true ] && echo "Response: $response"
+        return 0
     else
-        echo -e "${RED}✗ $service_name/$method - FAILED (invalid response)${NC}"
-        echo "Response: $response"
+        echo -e "${RED}✗ $service_name/$method - FAILED (invalid SOAP response, HTTP $response_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "Response: $response"
         return 1
     fi
 }
@@ -262,9 +363,6 @@ test_ptz_service() {
 
     echo -e "\n${YELLOW}Testing: $description${NC}"
 
-    local username="thingino"
-    local password="thingino"
-
     # Generate authenticated SOAP request with custom body
     local soap_request=$(python3 -c "
 import sys
@@ -273,8 +371,8 @@ import hashlib
 import datetime
 import os
 
-username = '$username'
-password = '$password'
+username = '$DEFAULT_USERNAME'
+password = '$DEFAULT_PASSWORD'
 nonce = os.urandom(16)
 nonce_b64 = base64.b64encode(nonce).decode('utf-8')
 created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
@@ -282,36 +380,22 @@ digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
 digest = hashlib.sha1(digest_input).digest()
 digest_b64 = base64.b64encode(digest).decode('utf-8')
 
-soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
-                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
-                   xmlns:tt=\"http://www.onvif.org/ver10/schema\"
-                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
-                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
-    <SOAP-ENV:Header>
-        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
-            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
-                <wsse:Username>{username}</wsse:Username>
-                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
-                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
-                <wsu:Created>{created}</wsu:Created>
-            </wsse:UsernameToken>
-        </wsse:Security>
-    </SOAP-ENV:Header>
-    <SOAP-ENV:Body>
-        $soap_body
-    </SOAP-ENV:Body>
-</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+tpl = open('tests/soap_templates/ptz_wrapper.xml','r').read()
+# SOAP body passed in from bash via environment variable
+soap_body = os.environ.get('SOAP_BODY','')
+soap = tpl.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created, soap_body=soap_body)
 print(soap)
-")
+" )
 
     # Send request and capture both response and HTTP code
-    local http_code=$(curl -s -w "%{http_code}" -o /tmp/ptz_response.xml -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -d "$soap_request" \
-        "$SERVER_URL/onvif/ptz_service")
+    # send using send_soap_raw to preserve exact bytes
+    local http_code
+    tmp_ptz_resp=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_ptz_resp")
 
-    local response=$(cat /tmp/ptz_response.xml)
+    local response
+    response=$(cat "$tmp_ptz_resp" 2>/dev/null || true)
+    rm -f "$tmp_ptz_resp" || true
 
     # Check HTTP status code
     if [ "$http_code" != "$expected_http_code" ]; then
@@ -362,15 +446,23 @@ print(soap)
         return 1
     fi
 }
+
 # Explicit PRE_AUTH verification helpers (check HTTP status codes)
 preauth_post() {
     local service_path=$1
     local body=$2
     local out=$3
+    # write body to tmp file and POST raw bytes to preserve exact XML
+    local tmp
+    tmp=$(mktemp /tmp/preauth.XXXXXX.xml)
+    printf '%s' "$body" > "$tmp"
     curl -s -w "%{http_code}" -o "$out" -X POST \
         -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -d "$body" \
+        --data-binary @"$tmp" \
         "$SERVER_URL/$service_path"
+    local rc=$?
+    rm -f "$tmp"
+    return $rc
 }
 
 test_preauth_device_http() {
@@ -412,9 +504,6 @@ test_preauth_events_http() {
         return 1
     fi
 }
-
-
-
 
 # Function to test basic HTTP connectivity
 test_http_connectivity() {
@@ -466,17 +555,16 @@ echo -e "\n${BLUE}=== Running Tests ===${NC}"
 test_http_connectivity
 test_cgi_execution
 
-
 # PRE_AUTH verification (must be accessible without auth)
 echo -e "\n${BLUE}=== PRE_AUTH Verification ===${NC}"
 # Expected 200 without auth
 test_preauth_device_http "GetSystemDateAndTime" "Device:GetSystemDateAndTime should be pre-auth" 200
-test_preauth_device_http "GetWsdlUrl"         "Device:GetWsdlUrl should be pre-auth" 200
-test_preauth_device_http "GetHostname"        "Device:GetHostname should be pre-auth" 200
+test_preauth_device_http "GetWsdlUrl" "Device:GetWsdlUrl should be pre-auth" 200
+test_preauth_device_http "GetHostname" "Device:GetHostname should be pre-auth" 200
 test_preauth_device_http "GetEndpointReference" "Device:GetEndpointReference should be pre-auth" 200
-test_preauth_device_http "GetServices"        "Device:GetServices should be pre-auth" 200
+test_preauth_device_http "GetServices" "Device:GetServices should be pre-auth" 200
 test_preauth_device_http "GetServiceCapabilities" "Device:GetServiceCapabilities should be pre-auth" 200
-test_preauth_device_http "GetCapabilities"     "Device:GetCapabilities should be pre-auth" 200
+test_preauth_device_http "GetCapabilities" "Device:GetCapabilities should be pre-auth" 200
 # Events service pre-auth
 test_preauth_events_http "GetServiceCapabilities" "Events:GetServiceCapabilities should be pre-auth" 200
 
@@ -491,8 +579,8 @@ fi
 
 # Test basic ONVIF device services (no auth required)
 test_onvif_service "device_service" "GetSystemDateAndTime" "Get System Date and Time" false
-# Requires auth: expect SOAP fault
-test_onvif_service "device_service" "GetDeviceInformation" "Get Device Information" false
+# Requires auth: expect SOAP fault (should fail without auth)
+test_onvif_service "device_service" "GetDeviceInformation" "Get Device Information" true
 # General capability retrieval
 test_onvif_service "device_service" "GetCapabilities" "Get Device Capabilities" false
 # Assert DHCP flag now defaults to true per spec convenience
@@ -506,6 +594,9 @@ test_onvif_service "device_service" "GetServices" "Get Available Services" false
 test_onvif_service "media_service" "GetProfiles" "Get Media Profiles" true
 test_onvif_service "media_service" "GetVideoSources" "Get Video Sources" true
 
+# Audio Backchannel (AudioOutput) tests
+test_audio_output_endpoints
+
 # PTZ Tests
 echo -e "\n${BLUE}=== PTZ Functionality Tests ===${NC}"
 
@@ -515,16 +606,15 @@ test_ptz_get_configurations() {
 
     local soap_request=$(generate_auth_soap "GetConfigurations")
     if [ -z "$soap_request" ]; then
-
-
         echo -e "${YELLOW}⚠ Skipping PTZ tests - authentication script not available${NC}"
         return 0
     fi
 
-    local response=$(curl -s -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -d "$soap_request" \
-        "$SERVER_URL/onvif/ptz_service")
+    tmp_resp=$(mktemp)
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_resp")
+    local response
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
 
     if [[ $response == *"PTZConfiguration"* ]] && [[ $response == *"UseCount"* ]]; then
         # Extract UseCount value
@@ -559,10 +649,11 @@ test_ptz_get_nodes() {
         return 0
     fi
 
-    local response=$(curl -s -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -d "$soap_request" \
-        "$SERVER_URL/onvif/ptz_service")
+    tmp_resp=$(mktemp)
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_resp")
+    local response
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
 
     if [[ $response == *"PTZNode"* ]] && [[ $response == *"AbsolutePanTiltPositionSpace"* ]]; then
         echo -e "${GREEN}✓ PTZ GetNodes - SUCCESS (AbsoluteMove supported)${NC}"
@@ -580,62 +671,37 @@ test_ptz_get_nodes() {
 test_ptz_absolute_move_valid() {
     echo -e "\n${YELLOW}Testing: PTZ AbsoluteMove with valid coordinates${NC}"
 
-    local username="thingino"
-    local password="thingino"
-
-    # Generate authenticated AbsoluteMove request
-    local soap_request=$(python3 -c "
+    # Generate authenticated AbsoluteMove request using global credentials
+    local soap_request=$(python3 - <<'PY'
 import sys, base64, hashlib, datetime, os
-sys.path.insert(0, 'tests')
 
-username = '$username'
-password = '$password'
+sys.path.insert(0, 'tests')
+username = os.environ.get('DEFAULT_USERNAME', 'thingino')
+password = os.environ.get('DEFAULT_PASSWORD', 'thingino')
 nonce = os.urandom(16)
 nonce_b64 = base64.b64encode(nonce).decode('utf-8')
-created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
 digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
 digest = hashlib.sha1(digest_input).digest()
 digest_b64 = base64.b64encode(digest).decode('utf-8')
-
-soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
-                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
-                   xmlns:tt=\"http://www.onvif.org/ver10/schema\"
-                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
-                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
-    <SOAP-ENV:Header>
-        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
-            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
-                <wsse:Username>{username}</wsse:Username>
-                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
-                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
-                <wsu:Created>{created}</wsu:Created>
-            </wsse:UsernameToken>
-        </wsse:Security>
-    </SOAP-ENV:Header>
-    <SOAP-ENV:Body>
-        <tptz:AbsoluteMove>
-            <tptz:ProfileToken>Profile_0</tptz:ProfileToken>
-            <tptz:Position>
-                <tt:PanTilt x=\"1850.0\" y=\"500.0\" space=\"http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace\"/>
-            </tptz:Position>
-        </tptz:AbsoluteMove>
-    </SOAP-ENV:Body>
-</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+tpl = open('tests/soap_templates/ptz_absolute_move.xml', 'r').read()
+soap = tpl.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created, pan='1850.0', tilt='500.0', space='http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace')
 print(soap)
-" 2>/dev/null)
+PY
+)
 
     if [ -z "$soap_request" ]; then
         echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
         return 0
     fi
 
-    local http_code=$(curl -s -o /tmp/ptz_response.xml -w "%{http_code}" -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -d "$soap_request" \
-        "$SERVER_URL/onvif/ptz_service")
-
-    local response=$(cat /tmp/ptz_response.xml)
+    # Send request using send_soap_raw to preserve exact bytes and archive sent request
+    local http_code
+    tmp_ptz_resp=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_ptz_resp")
+    local response
+    response=$(cat "$tmp_ptz_resp" 2>/dev/null || true)
+    rm -f "$tmp_ptz_resp" || true
 
     if [ "$http_code" = "200" ] && [[ $response == *"AbsoluteMoveResponse"* ]]; then
         echo -e "${GREEN}✓ PTZ AbsoluteMove (valid) - SUCCESS (HTTP $http_code)${NC}"
@@ -656,62 +722,37 @@ print(soap)
 test_ptz_absolute_move_invalid() {
     echo -e "\n${YELLOW}Testing: PTZ AbsoluteMove with out-of-bounds coordinates (expect HTTP 500)${NC}"
 
-    local username="thingino"
-    local password="thingino"
-
-    # Generate authenticated AbsoluteMove request with invalid coordinates
-    local soap_request=$(python3 -c "
+    # Generate authenticated AbsoluteMove request with invalid coordinates using global credentials
+    local soap_request=$(python3 - <<'PY'
 import sys, base64, hashlib, datetime, os
-sys.path.insert(0, 'tests')
 
-username = '$username'
-password = '$password'
+sys.path.insert(0, 'tests')
+username = os.environ.get('DEFAULT_USERNAME', 'thingino')
+password = os.environ.get('DEFAULT_PASSWORD', 'thingino')
 nonce = os.urandom(16)
 nonce_b64 = base64.b64encode(nonce).decode('utf-8')
-created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
 digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
 digest = hashlib.sha1(digest_input).digest()
 digest_b64 = base64.b64encode(digest).decode('utf-8')
-
-soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
-                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
-                   xmlns:tt=\"http://www.onvif.org/ver10/schema\"
-                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
-                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
-    <SOAP-ENV:Header>
-        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
-            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
-                <wsse:Username>{username}</wsse:Username>
-                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
-                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
-                <wsu:Created>{created}</wsu:Created>
-            </wsse:UsernameToken>
-        </wsse:Security>
-    </SOAP-ENV:Header>
-    <SOAP-ENV:Body>
-        <tptz:AbsoluteMove>
-            <tptz:ProfileToken>Profile_0</tptz:ProfileToken>
-            <tptz:Position>
-                <tt:PanTilt x=\"9999.0\" y=\"9999.0\" space=\"http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace\"/>
-            </tptz:Position>
-        </tptz:AbsoluteMove>
-    </SOAP-ENV:Body>
-</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+tpl = open('tests/soap_templates/ptz_absolute_move_invalid.xml', 'r').read()
+soap = tpl.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created, pan='9999.0', tilt='9999.0', space='http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace')
 print(soap)
-" 2>/dev/null)
+PY
+)
 
     if [ -z "$soap_request" ]; then
         echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
         return 0
     fi
 
-    local http_code=$(curl -s -o /tmp/ptz_fault_response.xml -w "%{http_code}" -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -d "$soap_request" \
-        "$SERVER_URL/onvif/ptz_service")
-
-    local response=$(cat /tmp/ptz_fault_response.xml)
+    # Send request using send_soap_raw to preserve exact bytes and archive sent request
+    local http_code
+    tmp_ptz_fault=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_ptz_fault")
+    local response
+    response=$(cat "$tmp_ptz_fault" 2>/dev/null || true)
+    rm -f "$tmp_ptz_fault" || true
 
     if [ "$http_code" = "500" ] && [[ $response == *"Fault"* ]] && [[ $response == *"InvalidPosition"* ]]; then
         echo -e "${GREEN}✓ PTZ AbsoluteMove (invalid) - SUCCESS (HTTP $http_code with ter:InvalidPosition fault)${NC}"
@@ -732,56 +773,34 @@ print(soap)
 test_ptz_get_status() {
     echo -e "\n${YELLOW}Testing: PTZ GetStatus${NC}"
 
-    local username="thingino"
-    local password="thingino"
-
-    # Generate authenticated GetStatus request
-    local soap_request=$(python3 -c "
+    # Generate authenticated GetStatus request from template
+    local soap_request=$(python3 - <<'PY'
 import sys, base64, hashlib, datetime, os
 sys.path.insert(0, 'tests')
-
-username = '$username'
-password = '$password'
+username = os.environ.get('DEFAULT_USERNAME', 'thingino')
+password = os.environ.get('DEFAULT_PASSWORD', 'thingino')
 nonce = os.urandom(16)
 nonce_b64 = base64.b64encode(nonce).decode('utf-8')
-created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
 digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
 digest = hashlib.sha1(digest_input).digest()
 digest_b64 = base64.b64encode(digest).decode('utf-8')
-
-soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
-                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
-                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
-                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
-    <SOAP-ENV:Header>
-        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
-            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
-                <wsse:Username>{username}</wsse:Username>
-                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
-                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
-                <wsu:Created>{created}</wsu:Created>
-            </wsse:UsernameToken>
-        </wsse:Security>
-    </SOAP-ENV:Header>
-    <SOAP-ENV:Body>
-        <tptz:GetStatus>
-            <tptz:ProfileToken>Profile_0</tptz:ProfileToken>
-        </tptz:GetStatus>
-    </SOAP-ENV:Body>
-</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+tpl = open('tests/soap_templates/ptz_get_status.xml','r').read()
+soap = tpl.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
 print(soap)
-" 2>/dev/null)
+PY
+)
 
     if [ -z "$soap_request" ]; then
         echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
         return 0
     fi
 
-    local response=$(curl -s -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -d "$soap_request" \
-        "$SERVER_URL/onvif/ptz_service")
+    tmp_resp=$(mktemp)
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_resp")
+    local response
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
 
     if [[ $response == *"GetStatusResponse"* ]] && [[ $response == *"Position"* ]] && [[ $response == *"PanTilt"* ]]; then
         echo -e "${GREEN}✓ PTZ GetStatus - SUCCESS${NC}"
@@ -799,16 +818,13 @@ print(soap)
 test_ptz_continuous_move_diagonal() {
     echo -e "\n${YELLOW}Testing: PTZ ContinuousMove with diagonal motion (x=-0.666667, y=0.666667)${NC}"
 
-    local username="thingino"
-    local password="thingino"
-
     # Generate authenticated ContinuousMove request with diagonal velocity
     local soap_request=$(python3 -c "
 import sys, base64, hashlib, datetime, os
 sys.path.insert(0, 'tests')
 
-username = '$username'
-password = '$password'
+username = '$DEFAULT_USERNAME'
+password = '$DEFAULT_PASSWORD'
 nonce = os.urandom(16)
 nonce_b64 = base64.b64encode(nonce).decode('utf-8')
 created = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S+00:00')
@@ -816,31 +832,8 @@ digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
 digest = hashlib.sha1(digest_input).digest()
 digest_b64 = base64.b64encode(digest).decode('utf-8')
 
-soap = '''<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://www.w3.org/2003/05/soap-envelope\"
-                   xmlns:tptz=\"http://www.onvif.org/ver20/ptz/wsdl\"
-                   xmlns:tt=\"http://www.onvif.org/ver10/schema\"
-                   xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"
-                   xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
-    <SOAP-ENV:Header>
-        <wsse:Security SOAP-ENV:mustUnderstand=\"true\">
-            <wsse:UsernameToken wsu:Id=\"UsernameToken-1\">
-                <wsse:Username>{username}</wsse:Username>
-                <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest\">{digest}</wsse:Password>
-                <wsse:Nonce EncodingType=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary\">{nonce}</wsse:Nonce>
-                <wsu:Created>{created}</wsu:Created>
-            </wsse:UsernameToken>
-        </wsse:Security>
-    </SOAP-ENV:Header>
-    <SOAP-ENV:Body>
-        <tptz:ContinuousMove>
-            <tptz:ProfileToken>Profile_0</tptz:ProfileToken>
-            <tptz:Velocity>
-                <tt:PanTilt x=\"-0.6666667\" y=\"0.6666667\"/>
-            </tptz:Velocity>
-        </tptz:ContinuousMove>
-    </SOAP-ENV:Body>
-</SOAP-ENV:Envelope>'''.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
+tpl = open('tests/soap_templates/ptz_continuous_move_diagonal.xml','r').read()
+soap = tpl.format(username=username, digest=digest_b64, nonce=nonce_b64, created=created)
 print(soap)
 " 2>/dev/null)
 
@@ -849,12 +842,12 @@ print(soap)
         return 0
     fi
 
-    local http_code=$(curl -s -o /tmp/ptz_continuous_diagonal.xml -w "%{http_code}" -X POST \
-        -H "Content-Type: application/soap+xml; charset=utf-8" \
-        -d "$soap_request" \
-        "$SERVER_URL/onvif/ptz_service")
-
-    local response=$(cat /tmp/ptz_continuous_diagonal.xml)
+    local http_code
+    tmp_ptz_cont=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_ptz_cont")
+    local response
+    response=$(cat "$tmp_ptz_cont" 2>/dev/null || true)
+    rm -f "$tmp_ptz_cont" || true
 
     # Check container logs for diagonal movement command
     sleep 0.5  # Give server time to process
@@ -902,8 +895,6 @@ test_ptz_absolute_move_valid
 test_ptz_absolute_move_invalid
 test_ptz_get_status
 test_ptz_continuous_move_diagonal
-
-
 
 # Imaging Service Tests
 test_imaging_service

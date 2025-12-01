@@ -22,5 +22,6 @@ int send_fault(char *service, char *rec_send, char *subcode, char *subcode_ex, c
 int send_pull_messages_fault(char *timeout, char *message_limit);
 int send_action_failed_fault(char *service, int code);
 int send_authentication_error();
+int send_authentication_challenge();
 
 #endif //FAULT_H

@@ -1,0 +1,8 @@
+<tds:Service>
+    <tds:Namespace>http://www.onvif.org/ver20/imaging/wsdl</tds:Namespace>
+    <tds:XAddr>%IMAGING_SERVICE_ADDRESS%</tds:XAddr>
+    <tds:Version>
+        <tt:Major>2</tt:Major>
+        <tt:Minor>0</tt:Minor>
+    </tds:Version>
+</tds:Service>

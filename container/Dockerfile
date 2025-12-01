@@ -1,8 +1,13 @@
 # Use a lightweight Debian-based image
 FROM debian:stable-slim
 
-# Install Lighttpd and the CGI module
-RUN apt-get update && apt-get install -y lighttpd libcjson1 libtomcrypt1 mc libcom-err2
+# Non-interactive apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install Lighttpd, required libraries and debugging utilities
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libcjson1 libcom-err2 libtomcrypt1 lighttpd mc \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create the directory for your CGI binaries and symlinks inside the container
 WORKDIR /app/
@@ -62,6 +67,14 @@ RUN echo '#!/bin/bash\nexec /app/cgi-bin/onvif_simple_server -c /etc/onvif.json 
 COPY lighttpd.conf /etc/lighttpd/lighttpd.conf
 
 # Expose the port for the web server
+# Create a directory for raw XML logs (used when `raw_log_directory` is set in config)
+RUN mkdir -p /var/www/onvif/raw_logs && \
+    chown -R www-data:www-data /var/www/onvif && \
+    chmod -R 0755 /var/www/onvif
+
+# Allow mounting raw logs from the host
+VOLUME ["/var/www/onvif/raw_logs"]
+
 EXPOSE 8000
 
 # Command to run the Lighttpd server when the container starts

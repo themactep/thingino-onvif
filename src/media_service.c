@@ -16,6 +16,7 @@
 
 #include "media_service.h"
 
+#include "audio_output_enabled.h"
 #include "conf.h"
 #include "fault.h"
 #include "log.h"
@@ -1638,8 +1639,10 @@ int media_get_audio_decoder_configuration_options()
 
 int media_get_audio_outputs()
 {
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+    int backchannel_enabled = is_audio_output_enabled("/etc/onvif.json");
+    if (backchannel_enabled
+        && ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
+            || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)))) {
         long size = cat(NULL, "media_service_files/GetAudioOutputs.xml", 0);
 
         output_http_headers(size);
@@ -1661,8 +1664,10 @@ int media_get_audio_output_configuration()
 {
     char profiles_num[2];
 
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+    int backchannel_enabled = is_audio_output_enabled("/etc/onvif.json");
+    if (backchannel_enabled
+        && ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
+            || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)))) {
         sprintf(profiles_num, "%d", service_ctx.profiles_num);
 
         long size = cat(NULL, "media_service_files/GetAudioOutputConfiguration.xml", 2, "%PROFILES_NUM%", profiles_num);
@@ -1685,8 +1690,10 @@ int media_get_audio_output_configurations()
 {
     char profiles_num[2];
 
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+    int backchannel_enabled = is_audio_output_enabled("/etc/onvif.json");
+    if (backchannel_enabled
+        && ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
+            || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)))) {
         sprintf(profiles_num, "%d", service_ctx.profiles_num);
 
         long size = cat(NULL, "media_service_files/GetAudioOutputConfigurations.xml", 2, "%PROFILES_NUM%", profiles_num);
@@ -1707,8 +1714,10 @@ int media_get_audio_output_configurations()
 
 int media_get_audio_output_configuration_options()
 {
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+    int backchannel_enabled = is_audio_output_enabled("/etc/onvif.json");
+    if (backchannel_enabled
+        && ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
+            || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)))) {
         long size = cat(NULL, "media_service_files/GetAudioOutputConfigurationOptions.xml", 0);
 
         output_http_headers(size);
@@ -1890,8 +1899,10 @@ int media_get_compatible_audio_output_configurations()
 
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
 
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+    int backchannel_enabled = is_audio_output_enabled("/etc/onvif.json");
+    if (backchannel_enabled
+        && ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
+            || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE)))) {
         long size = cat(NULL, "media_service_files/GetCompatibleAudioOutputConfigurations.xml", 2, "%PROFILES_NUM%", profiles_num);
 
         output_http_headers(size);

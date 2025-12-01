@@ -33,6 +33,249 @@
 
 extern service_context_t service_ctx;
 
+static char *dup_cstring(const char *src)
+{
+    if (!src)
+        return NULL;
+    size_t len = strlen(src) + 1;
+    char *copy = (char *) malloc(len);
+    if (copy)
+        memcpy(copy, src, len);
+    return copy;
+}
+
+static void free_imaging_string_list(imaging_string_list_t *list)
+{
+    if (!list || list->count == 0 || list->items == NULL)
+        return;
+    for (int i = 0; i < list->count; i++) {
+        free(list->items[i]);
+    }
+    free(list->items);
+    list->items = NULL;
+    list->count = 0;
+}
+
+static void parse_string_array(JsonValue *array, imaging_string_list_t *list)
+{
+    if (!array || !list || array->type != JSON_ARRAY)
+        return;
+
+    int array_len = get_array_size(array);
+    if (array_len <= 0)
+        return;
+
+    char **items = (char **) calloc((size_t) array_len, sizeof(char *));
+    if (!items)
+        return;
+
+    int copied = 0;
+    for (int i = 0; i < array_len; i++) {
+        JsonValue *node = get_array_item(array, i);
+        if (!node || node->type != JSON_STRING || node->value.string == NULL)
+            continue;
+        char *dup = dup_cstring(node->value.string);
+        if (!dup)
+            continue;
+        items[copied++] = dup;
+    }
+
+    if (copied == 0) {
+        free(items);
+        return;
+    }
+
+    list->items = items;
+    list->count = copied;
+}
+
+static void parse_float_value(JsonValue *node, imaging_float_value_t *target)
+{
+    if (!node || !target)
+        return;
+
+    if (node->type == JSON_NUMBER) {
+        target->present = 1;
+        target->value = (float) node->value.number;
+        target->has_value = 1;
+        return;
+    }
+
+    if (node->type != JSON_OBJECT)
+        return;
+
+    target->present = 1;
+
+    JsonValue *value = get_object_item(node, "value");
+    if (value && value->type == JSON_NUMBER) {
+        target->value = (float) value->value.number;
+        target->has_value = 1;
+    }
+
+    JsonValue *min = get_object_item(node, "min");
+    if (min && min->type == JSON_NUMBER) {
+        target->min = (float) min->value.number;
+        target->has_min = 1;
+    }
+
+    JsonValue *max = get_object_item(node, "max");
+    if (max && max->type == JSON_NUMBER) {
+        target->max = (float) max->value.number;
+        target->has_max = 1;
+    }
+
+    if (!target->has_value && !target->has_min && !target->has_max)
+        target->present = 0;
+}
+
+static void parse_mode_level(JsonValue *node, imaging_mode_level_t *target)
+{
+    if (!node || !target)
+        return;
+
+    if (node->type == JSON_STRING && node->value.string) {
+        target->mode = dup_cstring(node->value.string);
+        if (target->mode)
+            target->present = 1;
+        return;
+    }
+
+    if (node->type != JSON_OBJECT)
+        return;
+
+    target->present = 1;
+
+    JsonValue *mode = get_object_item(node, "mode");
+    if (mode && mode->type == JSON_STRING && mode->value.string)
+        target->mode = dup_cstring(mode->value.string);
+
+    parse_string_array(get_object_item(node, "modes"), &target->modes);
+    parse_float_value(get_object_item(node, "level"), &target->level);
+}
+
+static void parse_focus_config(JsonValue *node, imaging_focus_config_t *target)
+{
+    if (!node || !target || node->type != JSON_OBJECT)
+        return;
+
+    target->present = 1;
+    JsonValue *mode = get_object_item(node, "mode");
+    if (mode && mode->type == JSON_STRING && mode->value.string)
+        target->mode = dup_cstring(mode->value.string);
+
+    parse_string_array(get_object_item(node, "modes"), &target->modes);
+    parse_float_value(get_object_item(node, "default_speed"), &target->default_speed);
+    parse_float_value(get_object_item(node, "near_limit"), &target->near_limit);
+    parse_float_value(get_object_item(node, "far_limit"), &target->far_limit);
+}
+
+static void parse_white_balance(JsonValue *node, imaging_white_balance_config_t *target)
+{
+    if (!node || !target || node->type != JSON_OBJECT)
+        return;
+
+    target->present = 1;
+    JsonValue *mode = get_object_item(node, "mode");
+    if (mode && mode->type == JSON_STRING && mode->value.string)
+        target->mode = dup_cstring(mode->value.string);
+
+    parse_string_array(get_object_item(node, "modes"), &target->modes);
+    parse_float_value(get_object_item(node, "cr_gain"), &target->cr_gain);
+    parse_float_value(get_object_item(node, "cb_gain"), &target->cb_gain);
+}
+
+static void parse_exposure(JsonValue *node, imaging_exposure_config_t *target)
+{
+    if (!node || !target || node->type != JSON_OBJECT)
+        return;
+
+    target->present = 1;
+
+    JsonValue *mode = get_object_item(node, "mode");
+    if (mode && mode->type == JSON_STRING && mode->value.string)
+        target->mode = dup_cstring(mode->value.string);
+
+    parse_string_array(get_object_item(node, "modes"), &target->modes);
+
+    JsonValue *priority = get_object_item(node, "priority");
+    if (priority && priority->type == JSON_STRING && priority->value.string)
+        target->priority = dup_cstring(priority->value.string);
+
+    parse_string_array(get_object_item(node, "priority_modes"), &target->priorities);
+    parse_float_value(get_object_item(node, "min_exposure_time"), &target->min_exposure_time);
+    parse_float_value(get_object_item(node, "max_exposure_time"), &target->max_exposure_time);
+    parse_float_value(get_object_item(node, "exposure_time"), &target->exposure_time);
+    parse_float_value(get_object_item(node, "min_gain"), &target->min_gain);
+    parse_float_value(get_object_item(node, "max_gain"), &target->max_gain);
+    parse_float_value(get_object_item(node, "gain"), &target->gain);
+    parse_float_value(get_object_item(node, "min_iris"), &target->min_iris);
+    parse_float_value(get_object_item(node, "max_iris"), &target->max_iris);
+    parse_float_value(get_object_item(node, "iris"), &target->iris);
+}
+
+static void parse_ircut_auto_adjust(JsonValue *node, imaging_ircut_auto_adjustment_t *target)
+{
+    if (!node || !target || node->type != JSON_OBJECT)
+        return;
+
+    target->present = 1;
+    JsonValue *boundary_type = get_object_item(node, "boundary_type");
+    if (boundary_type && boundary_type->type == JSON_STRING && boundary_type->value.string)
+        target->boundary_type = dup_cstring(boundary_type->value.string);
+
+    parse_string_array(get_object_item(node, "boundary_types"), &target->boundary_types);
+    parse_float_value(get_object_item(node, "boundary_offset"), &target->boundary_offset);
+    parse_float_value(get_object_item(node, "response_time"), &target->response_time);
+}
+
+static void free_mode_level(imaging_mode_level_t *target)
+{
+    if (!target)
+        return;
+    free(target->mode);
+    target->mode = NULL;
+    free_imaging_string_list(&target->modes);
+}
+
+static void free_focus_config(imaging_focus_config_t *target)
+{
+    if (!target)
+        return;
+    free(target->mode);
+    target->mode = NULL;
+    free_imaging_string_list(&target->modes);
+}
+
+static void free_white_balance_config(imaging_white_balance_config_t *target)
+{
+    if (!target)
+        return;
+    free(target->mode);
+    target->mode = NULL;
+    free_imaging_string_list(&target->modes);
+}
+
+static void free_exposure_config(imaging_exposure_config_t *target)
+{
+    if (!target)
+        return;
+    free(target->mode);
+    target->mode = NULL;
+    free(target->priority);
+    target->priority = NULL;
+    free_imaging_string_list(&target->modes);
+    free_imaging_string_list(&target->priorities);
+}
+
+static void free_ircut_auto_adjust(imaging_ircut_auto_adjustment_t *target)
+{
+    if (!target)
+        return;
+    free(target->boundary_type);
+    target->boundary_type = NULL;
+    free_imaging_string_list(&target->boundary_types);
+}
+
 // Remember to free the string
 void get_string_from_json(char **var, JsonValue *j, char *name)
 {
@@ -539,6 +782,21 @@ int process_json_conf_file(char *file)
                     entry->ircut_mode = IRCUT_MODE_AUTO;
             }
 
+            parse_mode_level(get_object_item(item, "backlight_compensation"), &entry->backlight);
+            parse_float_value(get_object_item(item, "brightness"), &entry->brightness);
+            parse_float_value(get_object_item(item, "color_saturation"), &entry->color_saturation);
+            parse_float_value(get_object_item(item, "contrast"), &entry->contrast);
+            parse_float_value(get_object_item(item, "sharpness"), &entry->sharpness);
+            parse_exposure(get_object_item(item, "exposure"), &entry->exposure);
+            parse_focus_config(get_object_item(item, "focus"), &entry->focus);
+            parse_mode_level(get_object_item(item, "wide_dynamic_range"), &entry->wide_dynamic_range);
+            parse_white_balance(get_object_item(item, "white_balance"), &entry->white_balance);
+            parse_ircut_auto_adjust(get_object_item(item, "ircut_auto_adjustment"), &entry->ircut_auto_adjustment);
+            parse_mode_level(get_object_item(item, "image_stabilization"), &entry->image_stabilization);
+            parse_mode_level(get_object_item(item, "tone_compensation"), &entry->tone_compensation);
+            parse_mode_level(get_object_item(item, "defogging"), &entry->defogging);
+            parse_float_value(get_object_item(item, "noise_reduction"), &entry->noise_reduction);
+
             log_debug("Imaging[%d] token=%s ircut=%d modes on:%d off:%d auto:%d",
                       service_ctx.imaging_num - 1,
                       entry->video_source_token ? entry->video_source_token : "(null)",
@@ -682,6 +940,15 @@ void free_conf_file()
             free(service_ctx.imaging[i].cmd_ircut_off);
         if (service_ctx.imaging[i].cmd_ircut_auto != NULL)
             free(service_ctx.imaging[i].cmd_ircut_auto);
+        free_mode_level(&service_ctx.imaging[i].backlight);
+        free_mode_level(&service_ctx.imaging[i].wide_dynamic_range);
+        free_mode_level(&service_ctx.imaging[i].image_stabilization);
+        free_mode_level(&service_ctx.imaging[i].tone_compensation);
+        free_mode_level(&service_ctx.imaging[i].defogging);
+        free_exposure_config(&service_ctx.imaging[i].exposure);
+        free_focus_config(&service_ctx.imaging[i].focus);
+        free_white_balance_config(&service_ctx.imaging[i].white_balance);
+        free_ircut_auto_adjust(&service_ctx.imaging[i].ircut_auto_adjustment);
     }
     if (service_ctx.imaging != NULL)
         free(service_ctx.imaging);

@@ -200,6 +200,7 @@ int events_create_pull_point_subscription()
     destroy_shared_memory((void *) subs_evts, 0);
 
     sprintf(events_service_address, "http://%s%s/onvif/events_service?sub=%d", my_address, my_port, subscription_id);
+    log_debug("CreatePullPointSubscription: events_service_address = %s", events_service_address);
 
     to_iso_date(iso_str, sizeof(iso_str), now);
     to_iso_date(iso_str_2, sizeof(iso_str_2), expire_time);
@@ -216,6 +217,15 @@ int events_create_pull_point_subscription()
                     iso_str,
                     "%TERMINATION_TIME%",
                     iso_str_2);
+    // Log the generated XML response for debugging
+    FILE *fp = fopen("/tmp/CreatePullPointSubscriptionResponse.xml", "r");
+    if (fp) {
+        char buf[1024];
+        size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
+        buf[n] = '\0';
+        log_debug("CreatePullPointSubscription XML response: %s", buf);
+        fclose(fp);
+    }
 
     output_http_headers(size);
 

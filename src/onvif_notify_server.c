@@ -477,7 +477,7 @@ int handle_inotify_events(int fd, char *dir)
             event = (const struct inotify_event *) ptr;
 
             /* Print event type. */
-            if (((event->mask & IN_CREATE) || (event->mask & IN_DELETE)) && ((event->mask & IN_ISDIR) == 0) && (event->len)) {
+            if (((event->mask & (IN_CREATE | IN_DELETE | IN_MODIFY)) != 0) && ((event->mask & IN_ISDIR) == 0) && (event->len)) {
                 sprintf(input_file, "%s/%s", dir, event->name);
                 if (event->mask & IN_CREATE) {
                     strcpy(value, "true");
@@ -485,6 +485,15 @@ int handle_inotify_events(int fd, char *dir)
                 } else if (event->mask & IN_DELETE) {
                     strcpy(value, "false");
                     log_debug("File %s deleted", input_file);
+                } else if (event->mask & IN_MODIFY) {
+                    /* Treat modify as a presence/changed signal (e.g. truncate/touch) */
+                    if (access(input_file, F_OK) == 0) {
+                        strcpy(value, "true");
+                        log_debug("File %s modified (exists)", input_file);
+                    } else {
+                        strcpy(value, "false");
+                        log_debug("File %s modified (not found)", input_file);
+                    }
                 }
 
                 for (i = 0; i < service_ctx.events_num; i++) {
@@ -776,7 +785,7 @@ int main(int argc, char **argv)
         // Mark directory for events
         // - file was created
         // - file was deleted
-        wd = inotify_add_watch(fd, INOTIFY_DIR, IN_CREATE | IN_DELETE);
+        wd = inotify_add_watch(fd, INOTIFY_DIR, IN_CREATE | IN_DELETE | IN_MODIFY);
         if (wd == -1) {
             log_fatal("Cannot watch '%s': %s\n", INOTIFY_DIR, strerror(errno));
             close(fd);

@@ -1,0 +1,8 @@
+{
+  "create_ttl_seconds": 300,
+  "initialized_IsMotion": "false",
+  "source_name": "VideoSourceConfigurationToken",
+  "source_value": "VideoSourceConfigToken",
+  "debounce_changed_events": 0,
+  "debounce_final_state": "false"
+}

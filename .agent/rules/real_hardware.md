@@ -1,12 +1,3 @@
-The target binary is intended to work on an embedded device with MIPS32 architecture.
-Compile the project using ./build.sh script, that will build dependencies.
-Do not use make directly.
-
-Use a Podman containter for testing.
-- Build the app and a container with `./container_build.sh`
-- Run the container with `./container_run.sh`
-- Run tests with `./container_test.sh`
-
 To test on the real hardware, prepare cross-comiled binaries:
 `export PATH=/opt/xb1/bin:$PATH; CROSS_COMPILE=mipsel-linux- ./build.sh`
 

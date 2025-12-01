@@ -5,9 +5,7 @@
     <SOAP-ENV:Body>
         <timg:GetOptionsResponse>
             <timg:ImagingOptions>
-                <tt:ImagingOptions20 token="%VIDEO_SOURCE_TOKEN%">
-%IRCUT_MODES%
-                </tt:ImagingOptions20>
+%IMAGING_OPTIONS%
             </timg:ImagingOptions>
         </timg:GetOptionsResponse>
     </SOAP-ENV:Body>

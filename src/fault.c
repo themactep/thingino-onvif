@@ -137,3 +137,32 @@ int send_authentication_error()
 
     return cat("stdout", "generic_files/AuthenticationError.xml", 0);
 }
+
+/**
+ * Send an HTTP 401 with a Digest WWW-Authenticate header to initiate
+ * HTTP Digest authentication. This is useful when a client issues an
+ * initial empty POST during digest negotiation; respond with a proper
+ * challenge instead of closing the connection.
+ */
+int send_authentication_challenge()
+{
+    char nonce_raw[UUID_LEN + 1];
+    unsigned long b64sz = 256;
+    char b64nonce[512];
+
+    // Generate a random UUID and base64-encode it for use as nonce
+    gen_uuid(nonce_raw);
+    b64_encode((unsigned char *) nonce_raw, (unsigned int) strlen(nonce_raw), (unsigned char *) b64nonce, &b64sz);
+    if (b64sz >= sizeof(b64nonce))
+        b64sz = sizeof(b64nonce) - 1;
+    b64nonce[b64sz] = '\0';
+
+    long size = cat(NULL, "generic_files/AuthenticationError.xml", 0);
+
+    // Emit 401 status and Digest challenge header (realm chosen as 'ONVIF')
+    fprintf(stdout, "Status: 401 Unauthorized\r\n");
+    fprintf(stdout, "WWW-Authenticate: Digest realm=\"ONVIF\", nonce=\"%s\", algorithm=SHA-1, qop=\"auth\"\r\n", b64nonce);
+    output_http_headers(size);
+
+    return cat("stdout", "generic_files/AuthenticationError.xml", 0);
+}

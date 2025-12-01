@@ -245,3 +245,4 @@ gmon.out
 # Static analysis
 cppcheck-results.xml
 scan-build-*/
+logs/

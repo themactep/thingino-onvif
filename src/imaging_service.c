@@ -20,12 +20,16 @@
 #include "log.h"
 #include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
+#include "prudynt_bridge.h"
 #include "utils.h"
 
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define IMAGING_XML_BUFFER 16384
 
 extern service_context_t service_ctx;
 
@@ -76,6 +80,501 @@ static ircut_mode_t ircut_mode_from_string(const char *value)
     return IRCUT_MODE_UNSPECIFIED;
 }
 
+static const char *find_child_value(mxml_node_t *node, const char *tag)
+{
+    if (!node || !tag)
+        return NULL;
+
+    if (mxmlGetType(node) == MXML_TYPE_ELEMENT) {
+        const char *name = mxmlGetElement(node);
+        if (name && strcmp(name, tag) == 0) {
+            mxml_node_t *text = mxmlGetFirstChild(node);
+            while (text) {
+                if (mxmlGetType(text) == MXML_TYPE_TEXT)
+                    return mxmlGetText(text, NULL);
+                text = mxmlGetNextSibling(text);
+            }
+        }
+    }
+
+    mxml_node_t *child = mxmlGetFirstChild(node);
+    while (child) {
+        const char *result = find_child_value(child, tag);
+        if (result)
+            return result;
+        child = mxmlGetNextSibling(child);
+    }
+
+    return NULL;
+}
+
+static void apply_prudynt_float(imaging_float_value_t *target, const prudynt_field_state_t *source)
+{
+    if (!target || !source || !source->present)
+        return;
+    target->present = 1;
+    target->has_value = 1;
+    target->value = source->value;
+    target->has_min = 1;
+    target->min = source->min;
+    target->has_max = 1;
+    target->max = source->max;
+}
+
+static void apply_prudynt_mode_level(imaging_mode_level_t *target, const prudynt_field_state_t *source)
+{
+    if (!target || !source || !source->present)
+        return;
+    target->present = 1;
+    apply_prudynt_float(&target->level, source);
+}
+
+static void merge_prudynt_state(imaging_entry_t *entry, const prudynt_imaging_state_t *state)
+{
+    if (!entry || !state)
+        return;
+    apply_prudynt_float(&entry->brightness, &state->brightness);
+    apply_prudynt_float(&entry->color_saturation, &state->saturation);
+    apply_prudynt_float(&entry->contrast, &state->contrast);
+    apply_prudynt_float(&entry->sharpness, &state->sharpness);
+    apply_prudynt_float(&entry->noise_reduction, &state->noise_reduction);
+    apply_prudynt_mode_level(&entry->backlight, &state->backlight);
+    apply_prudynt_mode_level(&entry->wide_dynamic_range, &state->wide_dynamic_range);
+    apply_prudynt_mode_level(&entry->tone_compensation, &state->tone);
+    apply_prudynt_mode_level(&entry->defogging, &state->defog);
+}
+
+static int parse_imaging_value(const char *text, float *out_value, int *out_is_normalized)
+{
+    if (!text || !out_value)
+        return 0;
+
+    if (out_is_normalized)
+        *out_is_normalized = 0;
+
+    char *end = NULL;
+    double value = strtod(text, &end);
+    if (text == end)
+        return 0;
+
+    if (end && *end == '%') {
+        value /= 100.0;
+        if (out_is_normalized)
+            *out_is_normalized = 1;
+    } else if (value >= 0.0 && value <= 1.0) {
+        if (out_is_normalized)
+            *out_is_normalized = 1;
+    }
+
+    *out_value = (float) value;
+    return 1;
+}
+
+static float clamp01f(float value)
+{
+    if (value < 0.0f)
+        return 0.0f;
+    if (value > 1.0f)
+        return 1.0f;
+    return value;
+}
+
+static const prudynt_field_state_t *lookup_state_field(const prudynt_imaging_state_t *state, const char *key)
+{
+    if (!state || !key)
+        return NULL;
+
+    if (strcmp(key, "brightness") == 0)
+        return &state->brightness;
+    if (strcmp(key, "contrast") == 0)
+        return &state->contrast;
+    if (strcmp(key, "saturation") == 0)
+        return &state->saturation;
+    if (strcmp(key, "sharpness") == 0)
+        return &state->sharpness;
+    if (strcmp(key, "backlight") == 0)
+        return &state->backlight;
+    if (strcmp(key, "wide_dynamic_range") == 0)
+        return &state->wide_dynamic_range;
+    if (strcmp(key, "tone") == 0)
+        return &state->tone;
+    if (strcmp(key, "defog") == 0)
+        return &state->defog;
+    if (strcmp(key, "noise_reduction") == 0)
+        return &state->noise_reduction;
+
+    return NULL;
+}
+
+static void fallback_range_for_key(const char *key, float *out_min, float *out_max)
+{
+    if (!out_min || !out_max)
+        return;
+
+    *out_min = 0.0f;
+
+    if (key && strcmp(key, "backlight") == 0) {
+        *out_max = 10.0f;
+        return;
+    }
+
+    *out_max = 255.0f;
+}
+
+static float normalize_with_state(const char *key, float value, int value_is_normalized, const prudynt_imaging_state_t *state)
+{
+    if (value_is_normalized)
+        return clamp01f(value);
+
+    const prudynt_field_state_t *field = lookup_state_field(state, key);
+    if (field && field->present && field->max > field->min) {
+        float span = field->max - field->min;
+        if (span > 0.0f)
+            return clamp01f((value - field->min) / span);
+    }
+
+    float fallback_min = 0.0f;
+    float fallback_max = 1.0f;
+    fallback_range_for_key(key, &fallback_min, &fallback_max);
+    float span = fallback_max - fallback_min;
+    if (span <= 0.0f)
+        return clamp01f(value);
+
+    return clamp01f((value - fallback_min) / span);
+}
+
+typedef struct {
+    char *start;
+    char *cursor;
+    size_t remaining;
+} xml_builder_t;
+
+static void xml_builder_init(xml_builder_t *builder, char *buffer, size_t buffer_len)
+{
+    if (!builder)
+        return;
+    builder->start = buffer;
+    builder->cursor = buffer;
+    builder->remaining = buffer_len;
+    if (buffer_len > 0 && buffer)
+        buffer[0] = '\0';
+}
+
+static void xml_builder_append(xml_builder_t *builder, const char *fmt, ...)
+{
+    if (!builder || !builder->cursor || builder->remaining == 0)
+        return;
+
+    va_list args;
+    va_start(args, fmt);
+    int written = vsnprintf(builder->cursor, builder->remaining, fmt, args);
+    va_end(args);
+
+    if (written < 0)
+        return;
+
+    if ((size_t) written >= builder->remaining) {
+        builder->cursor += builder->remaining - 1;
+        builder->remaining = 0;
+        builder->cursor[0] = '\0';
+        return;
+    }
+
+    builder->cursor += written;
+    builder->remaining -= (size_t) written;
+}
+
+static void append_string_element(xml_builder_t *builder, const char *tag, const char *value)
+{
+    if (!builder || !tag || !value || value[0] == '\0')
+        return;
+    xml_builder_append(builder, "<tt:%s>%s</tt:%s>\n", tag, value, tag);
+}
+
+static void append_float_element(xml_builder_t *builder, const char *tag, const imaging_float_value_t *value)
+{
+    if (!builder || !tag || !value || !value->present || !value->has_value)
+        return;
+    xml_builder_append(builder, "<tt:%s>%.6f</tt:%s>\n", tag, value->value, tag);
+}
+
+static void append_float_range(xml_builder_t *builder, const char *tag, const imaging_float_value_t *value)
+{
+    if (!builder || !tag || !value)
+        return;
+    if (!value->has_min && !value->has_max)
+        return;
+    xml_builder_append(builder, "<tt:%s>\n", tag);
+    if (value->has_min)
+        xml_builder_append(builder, "<tt:Min>%.6f</tt:Min>", value->min);
+    if (value->has_max)
+        xml_builder_append(builder, "<tt:Max>%.6f</tt:Max>", value->max);
+    xml_builder_append(builder, "</tt:%s>\n", tag);
+}
+
+static void append_string_list(xml_builder_t *builder, const char *tag, const imaging_string_list_t *list)
+{
+    if (!builder || !tag || !list || list->count == 0 || list->items == NULL)
+        return;
+    for (int i = 0; i < list->count; i++) {
+        if (!list->items[i])
+            continue;
+        xml_builder_append(builder, "<tt:%s>%s</tt:%s>\n", tag, list->items[i], tag);
+    }
+}
+
+static void append_mode_level_setting(xml_builder_t *builder, const char *outer_tag, const imaging_mode_level_t *config)
+{
+    if (!builder || !outer_tag || !config || !config->present)
+        return;
+
+    xml_builder_append(builder, "<tt:%s>\n", outer_tag);
+    append_string_element(builder, "Mode", config->mode);
+    append_float_element(builder, "Level", &config->level);
+    xml_builder_append(builder, "</tt:%s>\n", outer_tag);
+}
+
+static void append_mode_level_options(xml_builder_t *builder, const char *options_tag, const imaging_mode_level_t *config)
+{
+    if (!builder || !options_tag || !config)
+        return;
+
+    int has_content = (config->modes.count > 0 && config->modes.items != NULL) || config->level.has_min || config->level.has_max;
+    if (!has_content)
+        return;
+
+    xml_builder_append(builder, "<tt:%s>\n", options_tag);
+    append_string_list(builder, "Mode", &config->modes);
+    append_float_range(builder, "Level", &config->level);
+    xml_builder_append(builder, "</tt:%s>\n", options_tag);
+}
+
+static void append_exposure_settings(xml_builder_t *builder, const imaging_exposure_config_t *config)
+{
+    if (!builder || !config || !config->present)
+        return;
+
+    xml_builder_append(builder, "<tt:Exposure>\n");
+    append_string_element(builder, "Mode", config->mode);
+    append_string_element(builder, "Priority", config->priority);
+    append_float_element(builder, "MinExposureTime", &config->min_exposure_time);
+    append_float_element(builder, "MaxExposureTime", &config->max_exposure_time);
+    append_float_element(builder, "ExposureTime", &config->exposure_time);
+    append_float_element(builder, "MinGain", &config->min_gain);
+    append_float_element(builder, "MaxGain", &config->max_gain);
+    append_float_element(builder, "Gain", &config->gain);
+    append_float_element(builder, "MinIris", &config->min_iris);
+    append_float_element(builder, "MaxIris", &config->max_iris);
+    append_float_element(builder, "Iris", &config->iris);
+    xml_builder_append(builder, "</tt:Exposure>\n");
+}
+
+static void append_exposure_options(xml_builder_t *builder, const imaging_exposure_config_t *config)
+{
+    if (!builder || !config)
+        return;
+
+    int has_range = config->min_exposure_time.has_min || config->min_exposure_time.has_max || config->max_exposure_time.has_min
+                    || config->max_exposure_time.has_max || config->exposure_time.has_min || config->exposure_time.has_max || config->min_gain.has_min
+                    || config->min_gain.has_max || config->max_gain.has_min || config->max_gain.has_max || config->gain.has_min
+                    || config->gain.has_max || config->min_iris.has_min || config->min_iris.has_max || config->max_iris.has_min
+                    || config->max_iris.has_max || config->iris.has_min || config->iris.has_max;
+
+    if (!has_range && config->modes.count == 0 && config->priorities.count == 0)
+        return;
+
+    xml_builder_append(builder, "<tt:ExposureOptions20>\n");
+    append_string_list(builder, "Mode", &config->modes);
+    append_string_list(builder, "Priority", &config->priorities);
+    append_float_range(builder, "MinExposureTime", &config->min_exposure_time);
+    append_float_range(builder, "MaxExposureTime", &config->max_exposure_time);
+    append_float_range(builder, "ExposureTime", &config->exposure_time);
+    append_float_range(builder, "MinGain", &config->min_gain);
+    append_float_range(builder, "MaxGain", &config->max_gain);
+    append_float_range(builder, "Gain", &config->gain);
+    append_float_range(builder, "MinIris", &config->min_iris);
+    append_float_range(builder, "MaxIris", &config->max_iris);
+    append_float_range(builder, "Iris", &config->iris);
+    xml_builder_append(builder, "</tt:ExposureOptions20>\n");
+}
+
+static void append_focus_settings(xml_builder_t *builder, const imaging_focus_config_t *config)
+{
+    if (!builder || !config || !config->present)
+        return;
+
+    xml_builder_append(builder, "<tt:Focus>\n");
+    append_string_element(builder, "AutoFocusMode", config->mode);
+    append_float_element(builder, "DefaultSpeed", &config->default_speed);
+    append_float_element(builder, "NearLimit", &config->near_limit);
+    append_float_element(builder, "FarLimit", &config->far_limit);
+    xml_builder_append(builder, "</tt:Focus>\n");
+}
+
+static void append_focus_options(xml_builder_t *builder, const imaging_focus_config_t *config)
+{
+    if (!builder || !config)
+        return;
+
+    int has_range = config->default_speed.has_min || config->default_speed.has_max || config->near_limit.has_min || config->near_limit.has_max
+                    || config->far_limit.has_min || config->far_limit.has_max;
+
+    if (!has_range && config->modes.count == 0)
+        return;
+
+    xml_builder_append(builder, "<tt:FocusOptions20>\n");
+    append_string_list(builder, "AutoFocusModes", &config->modes);
+    append_float_range(builder, "DefaultSpeed", &config->default_speed);
+    append_float_range(builder, "NearLimit", &config->near_limit);
+    append_float_range(builder, "FarLimit", &config->far_limit);
+    xml_builder_append(builder, "</tt:FocusOptions20>\n");
+}
+
+static void append_white_balance_settings(xml_builder_t *builder, const imaging_white_balance_config_t *config)
+{
+    if (!builder || !config || !config->present)
+        return;
+
+    xml_builder_append(builder, "<tt:WhiteBalance>\n");
+    append_string_element(builder, "Mode", config->mode);
+    append_float_element(builder, "CrGain", &config->cr_gain);
+    append_float_element(builder, "CbGain", &config->cb_gain);
+    xml_builder_append(builder, "</tt:WhiteBalance>\n");
+}
+
+static void append_white_balance_options(xml_builder_t *builder, const imaging_white_balance_config_t *config)
+{
+    if (!builder || !config)
+        return;
+
+    int has_range = config->cr_gain.has_min || config->cr_gain.has_max || config->cb_gain.has_min || config->cb_gain.has_max;
+
+    if (!has_range && config->modes.count == 0)
+        return;
+
+    xml_builder_append(builder, "<tt:WhiteBalanceOptions20>\n");
+    append_string_list(builder, "Mode", &config->modes);
+    append_float_range(builder, "CrGain", &config->cr_gain);
+    append_float_range(builder, "CbGain", &config->cb_gain);
+    xml_builder_append(builder, "</tt:WhiteBalanceOptions20>\n");
+}
+
+static void append_ircut_auto_adjustment_settings(xml_builder_t *builder, const imaging_ircut_auto_adjustment_t *config)
+{
+    if (!builder || !config || !config->present)
+        return;
+
+    xml_builder_append(builder, "<tt:IrCutFilterAutoAdjustment>\n");
+    append_string_element(builder, "BoundaryType", config->boundary_type);
+    append_float_element(builder, "BoundaryOffset", &config->boundary_offset);
+    append_float_element(builder, "ResponseTime", &config->response_time);
+    xml_builder_append(builder, "</tt:IrCutFilterAutoAdjustment>\n");
+}
+
+static void append_ircut_auto_adjustment_options(xml_builder_t *builder, const imaging_ircut_auto_adjustment_t *config)
+{
+    if (!builder || !config)
+        return;
+
+    int has_range = config->boundary_offset.has_min || config->boundary_offset.has_max || config->response_time.has_min
+                    || config->response_time.has_max;
+
+    if (!has_range && config->boundary_types.count == 0)
+        return;
+
+    xml_builder_append(builder, "<tt:IrCutFilterAutoAdjustmentOptions>\n");
+    append_string_list(builder, "BoundaryType", &config->boundary_types);
+    append_float_range(builder, "BoundaryOffset", &config->boundary_offset);
+    append_float_range(builder, "ResponseTime", &config->response_time);
+    xml_builder_append(builder, "</tt:IrCutFilterAutoAdjustmentOptions>\n");
+}
+
+static void append_ircut_modes(xml_builder_t *builder, const imaging_entry_t *entry)
+{
+    if (!builder || !entry)
+        return;
+
+    int appended = 0;
+    if (entry->supports_ircut_on) {
+        xml_builder_append(builder, "<tt:IrCutFilterModes>On</tt:IrCutFilterModes>\n");
+        appended = 1;
+    }
+    if (entry->supports_ircut_off) {
+        xml_builder_append(builder, "<tt:IrCutFilterModes>Off</tt:IrCutFilterModes>\n");
+        appended = 1;
+    }
+    if (entry->supports_ircut_auto) {
+        xml_builder_append(builder, "<tt:IrCutFilterModes>Auto</tt:IrCutFilterModes>\n");
+        appended = 1;
+    }
+
+    if (!appended) {
+        xml_builder_append(builder, "<tt:IrCutFilterModes>On</tt:IrCutFilterModes>\n<tt:IrCutFilterModes>Off</tt:IrCutFilterModes>\n");
+    }
+}
+
+static void build_imaging_settings_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
+{
+    if (!buffer || buffer_len == 0)
+        return;
+
+    xml_builder_t builder;
+    xml_builder_init(&builder, buffer, buffer_len);
+
+    if (!entry)
+        return;
+
+    const char *token = entry->video_source_token ? entry->video_source_token : "VideoSourceToken";
+    xml_builder_append(&builder, "<tt:VideoSourceToken>%s</tt:VideoSourceToken>\n", token);
+
+    append_mode_level_setting(&builder, "BacklightCompensation", &entry->backlight);
+    append_float_element(&builder, "Brightness", &entry->brightness);
+    append_float_element(&builder, "ColorSaturation", &entry->color_saturation);
+    append_float_element(&builder, "Contrast", &entry->contrast);
+    append_exposure_settings(&builder, &entry->exposure);
+    append_focus_settings(&builder, &entry->focus);
+    xml_builder_append(&builder, "<tt:IrCutFilter>%s</tt:IrCutFilter>\n", ircut_mode_to_string(entry->ircut_mode));
+    append_float_element(&builder, "Sharpness", &entry->sharpness);
+    append_mode_level_setting(&builder, "WideDynamicRange", &entry->wide_dynamic_range);
+    append_white_balance_settings(&builder, &entry->white_balance);
+    append_ircut_auto_adjustment_settings(&builder, &entry->ircut_auto_adjustment);
+    append_mode_level_setting(&builder, "ImageStabilization", &entry->image_stabilization);
+    append_mode_level_setting(&builder, "ToneCompensation", &entry->tone_compensation);
+    append_mode_level_setting(&builder, "Defogging", &entry->defogging);
+    append_float_element(&builder, "NoiseReduction", &entry->noise_reduction);
+}
+
+static void build_imaging_options_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
+{
+    if (!buffer || buffer_len == 0)
+        return;
+
+    xml_builder_t builder;
+    xml_builder_init(&builder, buffer, buffer_len);
+
+    if (!entry)
+        return;
+
+    const char *token = entry->video_source_token ? entry->video_source_token : "VideoSourceToken";
+    xml_builder_append(&builder, "<tt:VideoSourceToken>%s</tt:VideoSourceToken>\n", token);
+
+    append_mode_level_options(&builder, "BacklightCompensationOptions", &entry->backlight);
+    append_float_range(&builder, "Brightness", &entry->brightness);
+    append_float_range(&builder, "ColorSaturation", &entry->color_saturation);
+    append_float_range(&builder, "Contrast", &entry->contrast);
+    append_exposure_options(&builder, &entry->exposure);
+    append_focus_options(&builder, &entry->focus);
+    append_ircut_modes(&builder, entry);
+    append_float_range(&builder, "Sharpness", &entry->sharpness);
+    append_mode_level_options(&builder, "WideDynamicRangeOptions", &entry->wide_dynamic_range);
+    append_white_balance_options(&builder, &entry->white_balance);
+    append_ircut_auto_adjustment_options(&builder, &entry->ircut_auto_adjustment);
+    append_mode_level_options(&builder, "ImageStabilizationOptions", &entry->image_stabilization);
+    append_mode_level_options(&builder, "ToneCompensationOptions", &entry->tone_compensation);
+    append_mode_level_options(&builder, "DefoggingOptions", &entry->defogging);
+    append_float_range(&builder, "NoiseReduction", &entry->noise_reduction);
+}
+
 static void execute_backend_command(const char *command)
 {
     if (command == NULL || command[0] == '\0')
@@ -87,6 +586,23 @@ static void execute_backend_command(const char *command)
     } else {
         log_debug("Imaging command '%s' executed (rc=%d)", command, ret);
     }
+}
+
+static const char *find_ircut_value(mxml_node_t *node)
+{
+    return find_child_value(node, "IrCutFilter");
+}
+
+static const char *find_mode_level_value(mxml_node_t *settings, const char *container_tag)
+{
+    if (!settings || !container_tag)
+        return NULL;
+
+    mxml_node_t *container = get_element_in_element_ptr(container_tag, settings);
+    if (!container)
+        return NULL;
+
+    return get_element_in_element("Level", container);
 }
 
 static int ensure_imaging_available(const char *method)
@@ -131,44 +647,20 @@ int imaging_get_imaging_settings()
         return -1;
     }
 
-    char ircut_value[8];
-    snprintf(ircut_value, sizeof(ircut_value), "%s", ircut_mode_to_string(entry->ircut_mode));
-    const char *effective_token = entry->video_source_token ? entry->video_source_token : "VideoSourceToken";
+    imaging_entry_t runtime_entry = *entry;
+    prudynt_imaging_state_t runtime_state;
+    if (prudynt_load_imaging_state(&runtime_state) == 0) {
+        merge_prudynt_state(&runtime_entry, &runtime_state);
+        entry = &runtime_entry;
+    }
 
-    long size = cat(NULL, "imaging_service_files/GetImagingSettings.xml", 4, "%VIDEO_SOURCE_TOKEN%", effective_token, "%IRCUT_FILTER%", ircut_value);
+    char settings_xml[IMAGING_XML_BUFFER];
+    build_imaging_settings_xml(entry, settings_xml, sizeof(settings_xml));
+
+    long size = cat(NULL, "imaging_service_files/GetImagingSettings.xml", 2, "%IMAGING_SETTINGS%", settings_xml);
 
     output_http_headers(size);
-    return cat("stdout", "imaging_service_files/GetImagingSettings.xml", 4, "%VIDEO_SOURCE_TOKEN%", effective_token, "%IRCUT_FILTER%", ircut_value);
-}
-
-static void build_ircut_modes_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
-{
-    buffer[0] = '\0';
-    char *cursor = buffer;
-    size_t remaining = buffer_len;
-
-    const struct {
-        int supported;
-        const char *label;
-    } modes[] = {{entry->supports_ircut_on, "On"}, {entry->supports_ircut_off, "Off"}, {entry->supports_ircut_auto, "Auto"}};
-
-    for (size_t i = 0; i < sizeof(modes) / sizeof(modes[0]); i++) {
-        if (!modes[i].supported)
-            continue;
-        int written = snprintf(cursor, remaining, "        <tt:IrCutFilterModes>%s</tt:IrCutFilterModes>\n", modes[i].label);
-        if (written < 0 || (size_t) written >= remaining) {
-            cursor[0] = '\0';
-            break;
-        }
-        cursor += written;
-        remaining -= (size_t) written;
-    }
-
-    if (buffer[0] == '\0') {
-        snprintf(buffer,
-                 buffer_len,
-                 "        <tt:IrCutFilterModes>On</tt:IrCutFilterModes>\n        <tt:IrCutFilterModes>Off</tt:IrCutFilterModes>\n");
-    }
+    return cat("stdout", "imaging_service_files/GetImagingSettings.xml", 2, "%IMAGING_SETTINGS%", settings_xml);
 }
 
 int imaging_get_options()
@@ -188,14 +680,20 @@ int imaging_get_options()
         return -1;
     }
 
-    char modes_xml[256];
-    build_ircut_modes_xml(entry, modes_xml, sizeof(modes_xml));
-    const char *effective_token = entry->video_source_token ? entry->video_source_token : "VideoSourceToken";
+    imaging_entry_t runtime_entry = *entry;
+    prudynt_imaging_state_t runtime_state;
+    if (prudynt_load_imaging_state(&runtime_state) == 0) {
+        merge_prudynt_state(&runtime_entry, &runtime_state);
+        entry = &runtime_entry;
+    }
 
-    long size = cat(NULL, "imaging_service_files/GetOptions.xml", 4, "%VIDEO_SOURCE_TOKEN%", effective_token, "%IRCUT_MODES%", modes_xml);
+    char options_xml[IMAGING_XML_BUFFER];
+    build_imaging_options_xml(entry, options_xml, sizeof(options_xml));
+
+    long size = cat(NULL, "imaging_service_files/GetOptions.xml", 2, "%IMAGING_OPTIONS%", options_xml);
 
     output_http_headers(size);
-    return cat("stdout", "imaging_service_files/GetOptions.xml", 4, "%VIDEO_SOURCE_TOKEN%", effective_token, "%IRCUT_MODES%", modes_xml);
+    return cat("stdout", "imaging_service_files/GetOptions.xml", 2, "%IMAGING_OPTIONS%", options_xml);
 }
 
 int imaging_set_imaging_settings()
@@ -215,13 +713,18 @@ int imaging_set_imaging_settings()
         return -1;
     }
 
+    prudynt_imaging_state_t runtime_state;
+    prudynt_imaging_state_t *state_ptr = NULL;
+    if (prudynt_load_imaging_state(&runtime_state) == 0)
+        state_ptr = &runtime_state;
+
     mxml_node_t *settings_node = get_element_ptr(NULL, "ImagingSettings", "Body");
     if (settings_node == NULL) {
         send_fault("imaging_service", "Sender", "ter:InvalidArgVal", "ter:NoSource", "Missing imaging settings", "ImagingSettings element is required");
         return -1;
     }
 
-    const char *ircut = get_element_in_element("IrCutFilter", settings_node);
+    const char *ircut = find_ircut_value(settings_node);
     if (ircut != NULL) {
         ircut_mode_t requested = ircut_mode_from_string(ircut);
         if (requested == IRCUT_MODE_UNSPECIFIED) {
@@ -260,6 +763,67 @@ int imaging_set_imaging_settings()
                 break;
             }
             entry->ircut_mode = requested;
+        }
+    }
+
+    static const struct {
+        const char *tag;
+        const char *key;
+    } prudynt_map[] = {
+        {"Brightness", "brightness"},
+        {"ColorSaturation", "saturation"},
+        {"Contrast", "contrast"},
+        {"Sharpness", "sharpness"},
+        {"NoiseReduction", "noise_reduction"},
+    };
+
+    prudynt_command_t commands[sizeof(prudynt_map) / sizeof(prudynt_map[0])];
+    size_t command_count = 0;
+    for (size_t i = 0; i < sizeof(prudynt_map) / sizeof(prudynt_map[0]); ++i) {
+        const char *value = find_child_value(settings_node, prudynt_map[i].tag);
+        if (!value)
+            continue;
+        float parsed_value;
+        int is_normalized = 0;
+        if (!parse_imaging_value(value, &parsed_value, &is_normalized))
+            continue;
+        commands[command_count].key = prudynt_map[i].key;
+        commands[command_count].value = normalize_with_state(prudynt_map[i].key, parsed_value, is_normalized, state_ptr);
+        command_count++;
+    }
+
+    static const struct {
+        const char *container_tag;
+        const char *key;
+    } prudynt_mode_level_map[] = {
+        {"BacklightCompensation", "backlight"},
+        {"WideDynamicRange", "wide_dynamic_range"},
+        {"ToneCompensation", "tone"},
+        {"Defogging", "defog"},
+    };
+
+    for (size_t i = 0; i < sizeof(prudynt_mode_level_map) / sizeof(prudynt_mode_level_map[0]); ++i) {
+        const char *level = find_mode_level_value(settings_node, prudynt_mode_level_map[i].container_tag);
+        if (!level)
+            continue;
+        float parsed_value;
+        int is_normalized = 0;
+        if (!parse_imaging_value(level, &parsed_value, &is_normalized))
+            continue;
+        commands[command_count].key = prudynt_mode_level_map[i].key;
+        commands[command_count].value = normalize_with_state(prudynt_mode_level_map[i].key, parsed_value, is_normalized, state_ptr);
+        command_count++;
+    }
+
+    if (command_count > 0) {
+        if (prudynt_apply_imaging_changes(commands, command_count, 1500) != 0) {
+            send_fault("imaging_service",
+                       "Receiver",
+                       "ter:Action",
+                       "ter:ConfigModify",
+                       "Failed to apply imaging parameters",
+                       "Streamer rejected one or more imaging values");
+            return -1;
         }
     }
 

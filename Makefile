@@ -17,7 +17,9 @@ OBJECTS_O	 = $(SRC_DIR)/onvif_simple_server.o \
 		   $(SRC_DIR)/utils.o \
 		   $(SRC_DIR)/log.o \
 		   $(SRC_DIR)/mxml_wrapper.o \
-		   $(SRC_DIR)/xml_logger.o
+		   $(SRC_DIR)/xml_logger.o \
+		   $(SRC_DIR)/audio_output_enabled.o \
+		   $(SRC_DIR)/prudynt_bridge.o
 
 OBJECTS_N	 = $(SRC_DIR)/onvif_notify_server.o \
 		   $(SRC_DIR)/conf.o \
