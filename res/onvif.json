@@ -4,7 +4,7 @@
     "firmware_ver": "0.0.1",
     "serial_num": "SN1234567890",
     "hardware_id": "HWID",
-    "ifs": "enp174s0",
+    "ifs": "wlan0",
     "port": 80,
     "username": "thingino",
     "password": "thingino",
@@ -122,7 +122,7 @@
     "adv_fault_if_set": false,
     "adv_fault_if_unknown": false,
     "adv_synology_nvr": false,
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/var/www/onvif/raw_logs",
+    "loglevel": "INFO",
+    "raw_log_directory": "",
     "raw_log_on_error_only": false
 }
