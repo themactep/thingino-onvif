@@ -20,7 +20,7 @@ This feature is designed to help developers and system administrators:
 To enable XML logging, you need to:
 
 1. **Set the log level to DEBUG (5)** - XML logging only works when debug logging is enabled
-2. **Configure the raw_log_directory** - Specify a path to external storage
+2. **Configure the log_directory** - Specify a path to external storage
 
 ### Configuration Parameter
 
@@ -28,13 +28,15 @@ Add the following parameter to your `onvif.json` configuration file:
 
 ```json
 {
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/mnt/nfs/onvif_logs"
+    "server": {
+        "log_level": "DEBUG",
+        "log_directory": "/mnt/nfs/onvif_logs"
+    }
 }
 ```
 
 **Parameter Details:**
-- **`raw_log_directory`**: Path to a directory on external storage (NFS mount, USB drive, etc.)
+- **`log_directory`**: Path to a directory on external storage (NFS mount, USB drive, etc.)
   - Must be an absolute path
   - Directory must exist and be writable
   - Leave empty (`""`) or omit to disable XML logging
@@ -48,7 +50,7 @@ Add the following parameter to your `onvif.json` configuration file:
 For XML logging to be enabled, ALL of the following conditions must be met:
 
 1. ✅ Log level must be DEBUG (5) or higher
-2. ✅ `raw_log_directory` must be configured (non-empty string)
+2. ✅ `log_directory` must be configured (non-empty string)
 3. ✅ Directory must exist
 4. ✅ Directory must be writable by the ONVIF server process
 
@@ -76,7 +78,7 @@ XML logs are organized by client IP address for easy analysis:
 
 ### Directory Organization
 
-- **Base Directory**: The path specified in `raw_log_directory`
+- **Base Directory**: The path specified in `log_directory`
 - **IP Subdirectories**: Automatically created for each unique client IP address
   - Named after the client's IP address (e.g., `192.168.1.100`)
   - Invalid characters in IP addresses are replaced with underscores
@@ -153,7 +155,7 @@ Response files contain the complete raw XML SOAP response sent to the client:
 XML logging will be automatically disabled (without affecting server operation) if:
 
 - Log level is not DEBUG or higher
-- `raw_log_directory` is not configured or is empty
+- `log_directory` is not configured or is empty
 - Directory does not exist
 - Directory is not writable
 - Disk is full (warning logged, request continues)
@@ -184,8 +186,10 @@ When XML logging is **enabled**:
 
 ```json
 {
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/mnt/nfs/onvif_logs"
+    "server": {
+        "log_level": "DEBUG",
+        "log_directory": "/mnt/nfs/onvif_logs"
+    }
 }
 ```
 
@@ -193,8 +197,10 @@ When XML logging is **enabled**:
 
 ```json
 {
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/mnt/usb/onvif_debug"
+    "server": {
+        "log_level": "DEBUG",
+        "log_directory": "/mnt/usb/onvif_debug"
+    }
 }
 ```
 
@@ -202,12 +208,14 @@ When XML logging is **enabled**:
 
 ```json
 {
-    "loglevel": "INFO",
-    "raw_log_directory": ""
+    "server": {
+        "log_level": "INFO",
+        "log_directory": ""
+    }
 }
 ```
 
-Or simply omit the `raw_log_directory` parameter.
+Or simply omit the `server.log_directory` parameter.
 
 ## Analyzing Logs
 
@@ -282,13 +290,13 @@ Check the following:
 
 1. **Verify log level**:
    ```bash
-   grep loglevel /etc/onvif.json
-   # Should show: "loglevel": "DEBUG" or "loglevel": 5
+   grep log_level /etc/onvif.json
+   # Should show: "log_level": "DEBUG" or "log_level": 5
    ```
 
 2. **Verify directory configuration**:
    ```bash
-   grep raw_log_directory /etc/onvif.json
+   grep log_directory /etc/onvif.json
    # Should show a valid path
    ```
 
@@ -306,13 +314,13 @@ Check the following:
 
 ### Common Issues
 
-**Issue**: "XML logging disabled: raw_log_directory not configured"
-- **Solution**: Add `raw_log_directory` parameter to `onvif.json`
+**Issue**: "XML logging disabled: log_directory not configured"
+- **Solution**: Add `log_directory` parameter to `onvif.json`
 
-**Issue**: "XML logging disabled: raw_log_directory '/path' does not exist"
+**Issue**: "XML logging disabled: log_directory '/path' does not exist"
 - **Solution**: Create the directory: `mkdir -p /path`
 
-**Issue**: "XML logging disabled: raw_log_directory '/path' is not writable"
+**Issue**: "XML logging disabled: log_directory '/path' is not writable"
 - **Solution**: Fix permissions: `chmod 755 /path`
 
 **Issue**: "Response buffer overflow, XML response logging may be incomplete"
@@ -348,9 +356,9 @@ chown onvif:onvif /mnt/nfs/onvif_logs
 
 ### Files Modified
 
-- `src/onvif_simple_server.h` - Added `raw_log_directory` to service context
+- `src/onvif_simple_server.h` - Added `log_directory` to service context
 - `src/onvif_simple_server.c` - Integrated XML logging calls
-- `src/conf.c` - Added configuration loading for `raw_log_directory`
+- `src/conf.c` - Added configuration loading for `log_directory`
 - `src/xml_logger.h` - XML logging interface
 - `src/xml_logger.c` - XML logging implementation
 - `src/utils.h` - Response buffer interface

@@ -51,8 +51,7 @@ int deviceio_get_service_capabilities()
     } else {
         sprintf(audio_sources, "%d", 0);
     }
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+    if (service_ctx.audio.output_enabled) {
         sprintf(audio_outputs, "%d", 1);
     } else {
         sprintf(audio_outputs, "%d", 0);
@@ -83,20 +82,42 @@ int deviceio_get_service_capabilities()
 
 int deviceio_get_audio_outputs()
 {
-    char audio_output_token[MAX_LEN];
-
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
-        sprintf(audio_output_token, "%s", "<tmd:Token>AudioOutputToken</tmd:Token>");
-    } else {
-        sprintf(audio_output_token, "%s", "");
+    if (!service_ctx.audio.output_enabled) {
+        send_fault("deviceio_service",
+                   "Receiver",
+                   "ter:ActionNotSupported",
+                   "ter:AudioOutputNotSupported",
+                   "AudioOutputNotSupported",
+                   "Audio or Audio Outputs are not supported by the device");
+        return -1;
     }
 
-    long size = cat(NULL, "deviceio_service_files/GetAudioOutputs.xml", 2, "%AUDIO_OUTPUT_TOKEN%", audio_output_token);
+    const char *token = service_ctx.audio.backchannel.token ? service_ctx.audio.backchannel.token : "";
+    const char *name = service_ctx.audio.backchannel.name ? service_ctx.audio.backchannel.name : "";
+    char output_level[8];
+    snprintf(output_level, sizeof(output_level), "%d", service_ctx.audio.backchannel.output_level);
+
+    long size = cat(NULL,
+                    "deviceio_service_files/GetAudioOutputs.xml",
+                    6,
+                    "%AUDIO_OUTPUT_TOKEN%",
+                    token,
+                    "%AUDIO_OUTPUT_NAME%",
+                    name,
+                    "%AUDIO_OUTPUT_LEVEL%",
+                    output_level);
 
     output_http_headers(size);
 
-    return cat("stdout", "deviceio_service_files/GetAudioOutputs.xml", 2, "%AUDIO_OUTPUT_TOKEN%", audio_output_token);
+    return cat("stdout",
+               "deviceio_service_files/GetAudioOutputs.xml",
+               6,
+               "%AUDIO_OUTPUT_TOKEN%",
+               token,
+               "%AUDIO_OUTPUT_NAME%",
+               name,
+               "%AUDIO_OUTPUT_LEVEL%",
+               output_level);
 }
 
 int deviceio_get_audio_sources()
@@ -107,7 +128,7 @@ int deviceio_get_audio_sources()
         || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
         sprintf(audio_source_token, "%s", "<tmd:Token>AudioSourceToken</tmd:Token>");
     } else {
-        sprintf(audio_source_token, "%s", "");
+        audio_source_token[0] = '\0';
     }
 
     long size = cat(NULL, "deviceio_service_files/GetAudioSources.xml", 2, "%AUDIO_SOURCE_TOKEN%", audio_source_token);

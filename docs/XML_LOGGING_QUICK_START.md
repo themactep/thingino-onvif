@@ -15,8 +15,10 @@ Edit `/etc/onvif.json`:
 
 ```json
 {
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/mnt/nfs/onvif_logs"
+   "server": {
+      "log_level": "DEBUG",
+      "log_directory": "/mnt/nfs/onvif_logs"
+   }
 }
 ```
 
@@ -34,7 +36,7 @@ killall onvif_simple_server
 logread | grep "XML logging"
 
 # Should see:
-# XML logging enabled: raw_log_directory='/mnt/nfs/onvif_logs'
+# XML logging enabled: log_directory='/mnt/nfs/onvif_logs'
 
 # Wait for a request, then check for log files
 ls -lh /mnt/nfs/onvif_logs/*/
@@ -59,12 +61,14 @@ Edit `/etc/onvif.json`:
 
 ```json
 {
-    "loglevel": "INFO",
-    "raw_log_directory": ""
+   "server": {
+      "log_level": "INFO",
+      "log_directory": ""
+   }
 }
 ```
 
-Or simply set `loglevel` to anything below DEBUG.
+Or simply set `log_level` to anything below DEBUG.
 
 ## Clean Up Old Logs
 
@@ -82,7 +86,7 @@ rm -rf /mnt/nfs/onvif_logs/*
 
 1. **Check log level**:
    ```bash
-   grep loglevel /etc/onvif.json
+   grep log_level /etc/onvif.json
    # Must be "DEBUG" or 5
    ```
 
@@ -102,8 +106,8 @@ rm -rf /mnt/nfs/onvif_logs/*
 
 | Error Message | Solution |
 |--------------|----------|
-| "XML logging disabled: debug level not enabled" | Set `loglevel` to "DEBUG" |
-| "XML logging disabled: raw_log_directory not configured" | Add `raw_log_directory` to config |
+| "XML logging disabled: debug level not enabled" | Set `log_level` to "DEBUG" |
+| "XML logging disabled: log_directory not configured" | Add `log_directory` to config |
 | "XML logging disabled: directory does not exist" | Create the directory |
 | "XML logging disabled: directory is not writable" | Fix permissions: `chmod 755 /path` |
 

@@ -34,13 +34,13 @@ All components built successfully:
 ### Test 4: Logging Disabled (Log Level)
 **Status**: ✅ PASSED
 
-- No logs created when `loglevel` is INFO
-- Logging only active when `loglevel` is DEBUG
+- No logs created when `log_level` is INFO
+- Logging only active when `log_level` is DEBUG
 
 ### Test 5: Logging Disabled (Empty Directory)
 **Status**: ✅ PASSED
 
-- No logs created when `raw_log_directory` is empty
+- No logs created when `log_directory` is empty
 - Graceful handling of disabled configuration
 
 ## Test Output Summary
@@ -173,8 +173,10 @@ All documentation files created and verified:
 ### Example Configuration
 ```json
 {
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/mnt/nfs/onvif_logs"
+    "server": {
+        "log_level": "DEBUG",
+        "log_directory": "/mnt/nfs/onvif_logs"
+    }
 }
 ```
 

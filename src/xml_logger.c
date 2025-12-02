@@ -67,7 +67,7 @@ int xml_logger_is_enabled(void)
 
     // Check if raw_log_directory is configured
     if (service_ctx.raw_log_directory == NULL || service_ctx.raw_log_directory[0] == '\0') {
-        log_debug("XML logging disabled: raw_log_directory not configured");
+        log_debug("XML logging disabled: log_directory not configured");
         xml_logging_enabled = 0;
         return 0;
     }
@@ -75,25 +75,25 @@ int xml_logger_is_enabled(void)
     // Check if directory exists and is writable
     struct stat st;
     if (stat(service_ctx.raw_log_directory, &st) != 0) {
-        log_warn("XML logging disabled: raw_log_directory '%s' does not exist: %s", service_ctx.raw_log_directory, strerror(errno));
+        log_warn("XML logging disabled: log_directory '%s' does not exist: %s", service_ctx.raw_log_directory, strerror(errno));
         xml_logging_enabled = 0;
         return 0;
     }
 
     if (!S_ISDIR(st.st_mode)) {
-        log_warn("XML logging disabled: raw_log_directory '%s' is not a directory", service_ctx.raw_log_directory);
+        log_warn("XML logging disabled: log_directory '%s' is not a directory", service_ctx.raw_log_directory);
         xml_logging_enabled = 0;
         return 0;
     }
 
     // Check if directory is writable
     if (access(service_ctx.raw_log_directory, W_OK) != 0) {
-        log_warn("XML logging disabled: raw_log_directory '%s' is not writable: %s", service_ctx.raw_log_directory, strerror(errno));
+        log_warn("XML logging disabled: log_directory '%s' is not writable: %s", service_ctx.raw_log_directory, strerror(errno));
         xml_logging_enabled = 0;
         return 0;
     }
 
-    log_debug("XML logging enabled: raw_log_directory='%s'", service_ctx.raw_log_directory);
+    log_debug("XML logging enabled: log_directory='%s'", service_ctx.raw_log_directory);
     xml_logging_enabled = 1;
     return 1;
 }
@@ -167,7 +167,7 @@ int xml_error_log_destination_ready(int emit_warn)
         time_t now = time(NULL);
         if (last_warn == 0 || (now - last_warn) >= 300) {
             last_warn = now;
-            log_warn("XML error capture disabled: raw_log_directory not ready or not external (dir='%s')",
+            log_warn("XML error capture disabled: log_directory not ready or not external (dir='%s')",
                      service_ctx.raw_log_directory ? service_ctx.raw_log_directory : "");
         }
     }
@@ -372,7 +372,7 @@ int log_xml_response(const char *xml_content, int xml_size, const char *remote_a
     return write_xml_file(filepath, xml_content, xml_size);
 }
 
-// --- Error-only logging with redaction and fallbacks ---
+// --- Error-only logging with fallbacks ---
 
 #define MAX_ERROR_XML_SIZE (2 * 1024 * 1024)
 
@@ -390,48 +390,6 @@ static void utc_iso8601(char *buf, size_t n)
         memset(&tm_utc, 0, sizeof(tm_utc));
 #endif
     strftime(buf, n, "%Y%m%dT%H%M%SZ", &tm_utc);
-}
-
-static char *redact_between_tags(const char *xml, const char *open_tag, const char *close_tag)
-{
-    if (!xml)
-        return NULL;
-    size_t len = strlen(xml);
-    char *out = (char *) malloc(len + 1);
-    if (!out)
-        return NULL;
-    memcpy(out, xml, len + 1);
-
-    const char *tags[][2] = {{"<wsse:Password", "</wsse:Password>"}, {"<wsu:Created", "</wsu:Created>"}, {"<wsse:Nonce", "</wsse:Nonce>"}};
-
-    for (size_t t = 0; t < sizeof(tags) / sizeof(tags[0]); ++t) {
-        const char *open = tags[t][0];
-        const char *close = tags[t][1];
-        char *p = out;
-        while ((p = strstr(p, open)) != NULL) {
-            char *gt = strchr(p, '>');
-            if (!gt)
-                break;
-            char *q = strstr(gt + 1, close);
-            if (!q)
-                break;
-            // replace inner text with REDACTED
-            size_t inner_len = (size_t) (q - (gt + 1));
-            const char *replacement = "REDACTED";
-            size_t repl_len = strlen(replacement);
-            if (repl_len <= inner_len) {
-                memcpy(gt + 1, replacement, repl_len);
-                // fill remaining with spaces to keep positions stable
-                memset(gt + 1 + repl_len, ' ', inner_len - repl_len);
-            } else {
-                // replacement longer: keep it simple, truncate
-                memcpy(gt + 1, replacement, inner_len);
-            }
-            p = q + strlen(close);
-        }
-    }
-
-    return out;
 }
 
 static int ensure_dir_exists(const char *dir)
@@ -492,10 +450,6 @@ int log_xml_error_request(const char *xml_content,
         return 0;
     }
 
-    // Redact sensitive fields
-    char *xml_copy = NULL;
-    char *redacted = NULL;
-    xml_copy = (char *) malloc((size_t) xml_size + 1);
     // Ensure uniqueness under concurrency: append pid and counter on collision
     pid_t pid = getpid();
     int attempt = 0;
@@ -522,19 +476,6 @@ int log_xml_error_request(const char *xml_content,
         attempt++;
     }
 
-    if (!xml_copy) {
-        log_warn("XML error logging: OOM copying buffer");
-        return 0;
-    }
-    memcpy(xml_copy, xml_content, (size_t) xml_size);
-    xml_copy[xml_size] = '\0';
-
-    redacted = redact_between_tags(xml_copy, NULL, NULL);
-    free(xml_copy);
-    if (!redacted) {
-        return 0;
-    }
-
     // Truncate if needed
     int write_size = (xml_size > MAX_ERROR_XML_SIZE) ? MAX_ERROR_XML_SIZE : xml_size;
 
@@ -550,11 +491,10 @@ int log_xml_error_request(const char *xml_content,
             ip,
             request_uri ? request_uri : "",
             query_string ? query_string : "");
-        free(redacted);
         return 0;
     }
 
-    size_t w = fwrite(redacted, 1, (size_t) write_size, fp);
+    size_t w = fwrite(xml_content, 1, (size_t) write_size, fp);
     if (w != (size_t) write_size) {
         // continue anyway
     }
@@ -575,10 +515,11 @@ int log_xml_error_request(const char *xml_content,
               unique_path);
 
     // Optional debug with first 120 chars
-    redacted[120] = '\0';
-    log_debug("XML error preview: %s", redacted);
-
-    free(redacted);
+    char preview[121];
+    size_t preview_len = (size_t) ((write_size < 120) ? write_size : 120);
+    memcpy(preview, xml_content, preview_len);
+    preview[preview_len] = '\0';
+    log_debug("XML error preview: %s", preview);
     rc = 0;
     return rc;
 }

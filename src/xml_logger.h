@@ -45,7 +45,7 @@ int log_xml_response(const char *xml_content, int xml_size, const char *remote_a
 
 /**
  * Error-time raw XML capture (parameter validation failure or SOAP Fault)
- * Independent of loglevel; will only write when raw_log_directory is a mounted,
+ * Independent of log_level; writes only when log_directory is a mounted,
  * writable external filesystem per policy. On failure, emits throttled WARN.
  * All string parameters may be NULL.
  */
@@ -60,7 +60,7 @@ int log_xml_error_request(const char *xml_content,
 
 /**
  * Destination readiness check for error-time logging.
- * Returns 1 if raw_log_directory is configured, exists, writable, and mounted
+ * Returns 1 if log_directory is configured, exists, writable, and mounted
  * on an external filesystem; 0 otherwise. If emit_warn is non-zero, emits a
  * throttled WARN when not ready.
  */

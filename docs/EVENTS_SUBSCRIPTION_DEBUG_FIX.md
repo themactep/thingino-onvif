@@ -59,8 +59,8 @@ for (i = 0; i < qs_size; i++) {
 if (!valid) {
     log_error("Invalid sub parameter (non-numeric) for Unsubscribe method: '%s'", sub_id_s);
     free(sub_id_s);
-    send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault", 
-               "wsrf-rw:ResourceUnknownFault", "Resource unknown", 
+    send_fault("events_service", "Receiver", "wsrf-rw:ResourceUnknownFault",
+               "wsrf-rw:ResourceUnknownFault", "Resource unknown",
                "Invalid subscription ID format");
     return -2;
 }
@@ -156,7 +156,9 @@ When you see the "sub index out of range" error in production:
 ### 1. Enable DEBUG Logging
 ```json
 {
-    "loglevel": "DEBUG"
+  "server": {
+    "log_level": "DEBUG"
+  }
 }
 ```
 

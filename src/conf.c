@@ -33,6 +33,8 @@
 
 extern service_context_t service_ctx;
 
+static void get_string_from_json(char **var, JsonValue *j, const char *name);
+
 static char *dup_cstring(const char *src)
 {
     if (!src)
@@ -169,6 +171,52 @@ static void parse_focus_config(JsonValue *node, imaging_focus_config_t *target)
     parse_float_value(get_object_item(node, "far_limit"), &target->far_limit);
 }
 
+static void parse_focus_absolute(JsonValue *node, imaging_focus_absolute_move_t *target)
+{
+    if (!node || !target || node->type != JSON_OBJECT)
+        return;
+
+    get_string_from_json(&target->command, node, "command");
+    parse_float_value(get_object_item(node, "position"), &target->position);
+    parse_float_value(get_object_item(node, "speed"), &target->speed);
+    if (target->command)
+        target->supported = 1;
+}
+
+static void parse_focus_relative(JsonValue *node, imaging_focus_relative_move_t *target)
+{
+    if (!node || !target || node->type != JSON_OBJECT)
+        return;
+
+    get_string_from_json(&target->command, node, "command");
+    parse_float_value(get_object_item(node, "distance"), &target->distance);
+    parse_float_value(get_object_item(node, "speed"), &target->speed);
+    if (target->command)
+        target->supported = 1;
+}
+
+static void parse_focus_continuous(JsonValue *node, imaging_focus_continuous_move_t *target)
+{
+    if (!node || !target || node->type != JSON_OBJECT)
+        return;
+
+    get_string_from_json(&target->command, node, "command");
+    parse_float_value(get_object_item(node, "speed"), &target->speed);
+    if (target->command)
+        target->supported = 1;
+}
+
+static void parse_focus_move(JsonValue *node, imaging_focus_move_config_t *target)
+{
+    if (!node || !target || node->type != JSON_OBJECT)
+        return;
+
+    parse_focus_absolute(get_object_item(node, "absolute"), &target->absolute);
+    parse_focus_relative(get_object_item(node, "relative"), &target->relative);
+    parse_focus_continuous(get_object_item(node, "continuous"), &target->continuous);
+    get_string_from_json(&target->cmd_stop, node, "stop_command");
+}
+
 static void parse_white_balance(JsonValue *node, imaging_white_balance_config_t *target)
 {
     if (!node || !target || node->type != JSON_OBJECT)
@@ -277,7 +325,7 @@ static void free_ircut_auto_adjust(imaging_ircut_auto_adjustment_t *target)
 }
 
 // Remember to free the string
-void get_string_from_json(char **var, JsonValue *j, char *name)
+static void get_string_from_json(char **var, JsonValue *j, const char *name)
 {
     JsonValue *s = get_object_item(j, name);
 
@@ -308,30 +356,51 @@ void get_double_from_json(double *var, JsonValue *j, char *name)
     }
 }
 
-void get_loglevel_from_json(int *var, JsonValue *j, char *name)
+static int apply_loglevel_from_json(int *var, JsonValue *j, const char *name)
 {
     JsonValue *l = get_object_item(j, name);
 
-    if (l) {
-        if (l->type == JSON_NUMBER) {
-            // Handle numeric log level (backward compatibility)
-            int level = (int) l->value.number;
-            if (level >= LOG_LVL_FATAL && level <= LOG_LVL_TRACE) {
-                *var = level;
-            } else {
-                log_warn("Invalid numeric log level %d in config, using default", level);
-            }
-        } else if (l->type == JSON_STRING) {
-            // Handle textual log level
-            const char *level_str = l->value.string;
-            int level = log_level_from_string(level_str);
-            if (level >= 0) {
-                *var = level;
-            } else {
-                log_warn("Invalid textual log level '%s' in config, using default", level_str);
-            }
+    if (!l)
+        return 0;
+
+    if (l->type == JSON_NUMBER) {
+        // Handle numeric log level (backward compatibility)
+        int level = (int) l->value.number;
+        if (level >= LOG_LVL_FATAL && level <= LOG_LVL_TRACE) {
+            *var = level;
+        } else {
+            log_warn("Invalid numeric log level %d in config key '%s', using default", level, name ? name : "log_level");
         }
+    } else if (l->type == JSON_STRING) {
+        // Handle textual log level
+        const char *level_str = l->value.string;
+        int level = log_level_from_string(level_str);
+        if (level >= 0) {
+            *var = level;
+        } else {
+            log_warn("Invalid textual log level '%s' in config key '%s', using default", level_str, name ? name : "log_level");
+        }
+    } else {
+        log_warn("Invalid log level type for config key '%s', expected string or number", name ? name : "log_level");
     }
+
+    return 1;
+}
+
+static int apply_bool_from_json(int *var, JsonValue *j, const char *name)
+{
+    JsonValue *b = get_object_item(j, name);
+
+    if (!b)
+        return 0;
+
+    if (b->type == JSON_BOOL) {
+        *var = b->value.boolean ? 1 : 0;
+    } else {
+        log_warn("Invalid boolean value for config key '%s', using default", name ? name : "unnamed");
+    }
+
+    return 1;
 }
 
 void get_bool_from_json(int *var, JsonValue *j, char *name)
@@ -376,6 +445,17 @@ int process_json_conf_file(char *file)
         return -1;
     }
 
+    JsonValue *camera_section = NULL;
+    JsonValue *server_section = NULL;
+
+    JsonValue *tmp_section = get_object_item(json_file, "camera");
+    if (tmp_section && tmp_section->type == JSON_OBJECT)
+        camera_section = tmp_section;
+
+    tmp_section = get_object_item(json_file, "server");
+    if (tmp_section && tmp_section->type == JSON_OBJECT)
+        server_section = tmp_section;
+
     // Init variables before reading
     service_ctx.port = 80;
     service_ctx.username = NULL;
@@ -406,6 +486,10 @@ int process_json_conf_file(char *file)
     service_ctx.raw_log_on_error_only = 0;
     service_ctx.imaging = NULL;
     service_ctx.imaging_num = 0;
+    memset(&service_ctx.audio, 0, sizeof(service_ctx.audio));
+    service_ctx.audio.backchannel.output_level = 1;
+    service_ctx.audio.backchannel.output_level_min = 1;
+    service_ctx.audio.backchannel.output_level_max = 1;
 
     service_ctx.ptz_node.min_step_x = 0;
     service_ctx.ptz_node.max_step_x = 360.0;
@@ -439,16 +523,80 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.jump_to_rel_speed = NULL;
     service_ctx.ptz_node.continuous_move = NULL;
 
-    get_string_from_json(&(service_ctx.model), json_file, "model");
-    get_string_from_json(&(service_ctx.manufacturer), json_file, "manufacturer");
-    get_string_from_json(&(service_ctx.firmware_ver), json_file, "firmware_ver");
-    get_string_from_json(&(service_ctx.hardware_id), json_file, "hardware_id");
-    get_string_from_json(&(service_ctx.serial_num), json_file, "serial_num");
-    get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
-    get_int_from_json(&(service_ctx.port), json_file, "port");
-    get_loglevel_from_json(&(service_ctx.loglevel), json_file, "loglevel");
-    get_string_from_json(&(service_ctx.raw_log_directory), json_file, "raw_log_directory");
-    get_bool_from_json(&(service_ctx.raw_log_on_error_only), json_file, "raw_log_on_error_only");
+    if (camera_section && get_object_item(camera_section, "model"))
+        get_string_from_json(&(service_ctx.model), camera_section, "model");
+    else
+        get_string_from_json(&(service_ctx.model), json_file, "model");
+
+    if (camera_section && get_object_item(camera_section, "manufacturer"))
+        get_string_from_json(&(service_ctx.manufacturer), camera_section, "manufacturer");
+    else
+        get_string_from_json(&(service_ctx.manufacturer), json_file, "manufacturer");
+
+    if (camera_section && get_object_item(camera_section, "firmware_ver"))
+        get_string_from_json(&(service_ctx.firmware_ver), camera_section, "firmware_ver");
+    else
+        get_string_from_json(&(service_ctx.firmware_ver), json_file, "firmware_ver");
+
+    if (camera_section && get_object_item(camera_section, "hardware_id"))
+        get_string_from_json(&(service_ctx.hardware_id), camera_section, "hardware_id");
+    else
+        get_string_from_json(&(service_ctx.hardware_id), json_file, "hardware_id");
+
+    if (camera_section && get_object_item(camera_section, "serial_num"))
+        get_string_from_json(&(service_ctx.serial_num), camera_section, "serial_num");
+    else
+        get_string_from_json(&(service_ctx.serial_num), json_file, "serial_num");
+
+    if (server_section && get_object_item(server_section, "ifs"))
+        get_string_from_json(&(service_ctx.ifs), server_section, "ifs");
+    else
+        get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
+
+    if (server_section && get_object_item(server_section, "port"))
+        get_int_from_json(&(service_ctx.port), server_section, "port");
+    else
+        get_int_from_json(&(service_ctx.port), json_file, "port");
+
+    int loglevel_set = 0;
+    if (server_section) {
+        if (apply_loglevel_from_json(&(service_ctx.loglevel), server_section, "log_level")) {
+            loglevel_set = 1;
+        } else if (apply_loglevel_from_json(&(service_ctx.loglevel), server_section, "loglevel")) {
+            loglevel_set = 1;
+        }
+    }
+    if (!loglevel_set) {
+        if (!apply_loglevel_from_json(&(service_ctx.loglevel), json_file, "log_level")) {
+            apply_loglevel_from_json(&(service_ctx.loglevel), json_file, "loglevel");
+        }
+    }
+
+    if (server_section && get_object_item(server_section, "log_directory")) {
+        get_string_from_json(&(service_ctx.raw_log_directory), server_section, "log_directory");
+    } else if (server_section && get_object_item(server_section, "raw_log_directory")) {
+        get_string_from_json(&(service_ctx.raw_log_directory), server_section, "raw_log_directory");
+    } else if (get_object_item(json_file, "log_directory")) {
+        get_string_from_json(&(service_ctx.raw_log_directory), json_file, "log_directory");
+    } else {
+        get_string_from_json(&(service_ctx.raw_log_directory), json_file, "raw_log_directory");
+    }
+
+    int log_error_only_set = 0;
+    if (server_section) {
+        if (apply_bool_from_json(&(service_ctx.raw_log_on_error_only), server_section, "log_on_error_only")) {
+            log_error_only_set = 1;
+        } else if (apply_bool_from_json(&(service_ctx.raw_log_on_error_only), server_section, "raw_log_on_error_only")) {
+            log_error_only_set = 1;
+        }
+    }
+    if (!log_error_only_set) {
+        if (!apply_bool_from_json(&(service_ctx.raw_log_on_error_only), json_file, "log_on_error_only")) {
+            if (!apply_bool_from_json(&(service_ctx.raw_log_on_error_only), json_file, "raw_log_on_error_only")) {
+                service_ctx.raw_log_on_error_only = 0;
+            }
+        }
+    }
 
     value = get_object_item(json_file, "scopes");
     if (value && value->type == JSON_ARRAY) {
@@ -464,8 +612,15 @@ int process_json_conf_file(char *file)
             }
         }
     }
-    get_string_from_json(&(service_ctx.username), json_file, "username");
-    get_string_from_json(&(service_ctx.password), json_file, "password");
+    if (server_section && get_object_item(server_section, "username"))
+        get_string_from_json(&(service_ctx.username), server_section, "username");
+    else
+        get_string_from_json(&(service_ctx.username), json_file, "username");
+
+    if (server_section && get_object_item(server_section, "password"))
+        get_string_from_json(&(service_ctx.password), server_section, "password");
+    else
+        get_string_from_json(&(service_ctx.password), json_file, "password");
     get_bool_from_json(&(service_ctx.adv_enable_media2), json_file, "adv_enable_media2");
     get_bool_from_json(&(service_ctx.adv_fault_if_unknown), json_file, "adv_fault_if_unknown");
     get_bool_from_json(&(service_ctx.adv_fault_if_set), json_file, "adv_fault_if_set");
@@ -511,8 +666,8 @@ int process_json_conf_file(char *file)
     log_debug("serial_num: %s", service_ctx.serial_num);
     log_debug("ifs: %s", service_ctx.ifs);
     log_debug("port: %d", service_ctx.port);
-    log_debug("raw_log_directory: %s", service_ctx.raw_log_directory ? service_ctx.raw_log_directory : "(disabled)");
-    log_debug("raw_log_on_error_only: %d", service_ctx.raw_log_on_error_only);
+    log_debug("log_directory: %s", service_ctx.raw_log_directory ? service_ctx.raw_log_directory : "(disabled)");
+    log_debug("log_on_error_only: %d", service_ctx.raw_log_on_error_only);
     log_debug("scopes:");
     for (i = 0; i < service_ctx.scopes_num; i++) {
         log_debug("\t%s", service_ctx.scopes[i]);
@@ -594,6 +749,55 @@ int process_json_conf_file(char *file)
             kv = kv->next;
         }
     }
+
+    value = get_object_item(json_file, "audio");
+    if (value && value->type == JSON_OBJECT) {
+        get_bool_from_json(&(service_ctx.audio.output_enabled), value, "output_enabled");
+
+        JsonValue *backchannel = get_object_item(value, "backchannel");
+        JsonValue *audio_cfg = (backchannel && backchannel->type == JSON_OBJECT) ? backchannel : value;
+
+        get_string_from_json(&(service_ctx.audio.backchannel.name), audio_cfg, "name");
+        get_string_from_json(&(service_ctx.audio.backchannel.token), audio_cfg, "token");
+        get_string_from_json(&(service_ctx.audio.backchannel.configuration_token), audio_cfg, "configuration_token");
+        get_string_from_json(&(service_ctx.audio.backchannel.receive_token), audio_cfg, "receive_token");
+        get_string_from_json(&(service_ctx.audio.backchannel.uri), audio_cfg, "uri");
+        get_string_from_json(&(service_ctx.audio.backchannel.transport), audio_cfg, "transport");
+        get_int_from_json(&(service_ctx.audio.backchannel.output_level), audio_cfg, "output_level");
+
+        JsonValue *level_range = get_object_item(audio_cfg, "output_level_range");
+        if (level_range && level_range->type == JSON_OBJECT) {
+            get_int_from_json(&(service_ctx.audio.backchannel.output_level_min), level_range, "min");
+            get_int_from_json(&(service_ctx.audio.backchannel.output_level_max), level_range, "max");
+        }
+    }
+
+    if (service_ctx.audio.backchannel.name == NULL)
+        service_ctx.audio.backchannel.name = dup_cstring(DEFAULT_AUDIO_OUTPUT_NAME);
+    if (service_ctx.audio.backchannel.token == NULL)
+        service_ctx.audio.backchannel.token = dup_cstring(DEFAULT_AUDIO_OUTPUT_TOKEN);
+    if (service_ctx.audio.backchannel.configuration_token == NULL)
+        service_ctx.audio.backchannel.configuration_token = dup_cstring(DEFAULT_AUDIO_OUTPUT_CONFIGURATION_TOKEN);
+    if (service_ctx.audio.backchannel.receive_token == NULL)
+        service_ctx.audio.backchannel.receive_token = dup_cstring(DEFAULT_AUDIO_OUTPUT_RECEIVE_TOKEN);
+    if (service_ctx.audio.backchannel.transport == NULL)
+        service_ctx.audio.backchannel.transport = dup_cstring(DEFAULT_AUDIO_BACKCHANNEL_TRANSPORT);
+    if (service_ctx.audio.backchannel.uri == NULL && service_ctx.profiles_num > 0 && service_ctx.profiles[0].url != NULL) {
+        service_ctx.audio.backchannel.uri = dup_cstring(service_ctx.profiles[0].url);
+    }
+    if (service_ctx.audio.backchannel.uri == NULL)
+        service_ctx.audio.backchannel.uri = dup_cstring("rtsp://%s/ch0");
+
+    if (service_ctx.audio.backchannel.output_level_min == 0)
+        service_ctx.audio.backchannel.output_level_min = 1;
+    if (service_ctx.audio.backchannel.output_level_max == 0)
+        service_ctx.audio.backchannel.output_level_max = service_ctx.audio.backchannel.output_level_min;
+    if (service_ctx.audio.backchannel.output_level == 0)
+        service_ctx.audio.backchannel.output_level = service_ctx.audio.backchannel.output_level_min;
+
+    log_debug("audio.output_enabled: %d", service_ctx.audio.output_enabled);
+    log_debug("audio.backchannel token: %s", service_ctx.audio.backchannel.token);
+    log_debug("audio.backchannel uri: %s", service_ctx.audio.backchannel.uri);
 
     // Load PTZ configuration from main configuration file
     value = get_object_item(json_file, "ptz");
@@ -726,6 +930,7 @@ int process_json_conf_file(char *file)
             imaging_entry_t *entry = &service_ctx.imaging[service_ctx.imaging_num - 1];
             memset(entry, 0, sizeof(*entry));
             entry->ircut_mode = IRCUT_MODE_AUTO;
+            entry->focus_state = IMAGING_FOCUS_STATE_IDLE;
 
             get_string_from_json(&(entry->video_source_token), item, "video_source_token");
             if (entry->video_source_token == NULL) {
@@ -796,6 +1001,41 @@ int process_json_conf_file(char *file)
             parse_mode_level(get_object_item(item, "tone_compensation"), &entry->tone_compensation);
             parse_mode_level(get_object_item(item, "defogging"), &entry->defogging);
             parse_float_value(get_object_item(item, "noise_reduction"), &entry->noise_reduction);
+            parse_focus_move(get_object_item(item, "focus_move"), &entry->focus_move);
+            get_string_from_json(&(entry->cmd_apply_preset), item, "cmd_apply_preset");
+            get_string_from_json(&(entry->default_preset_token), item, "default_preset_token");
+
+            JsonValue *presets = get_object_item(item, "presets");
+            if (presets && presets->type == JSON_ARRAY) {
+                int preset_len = get_array_size(presets);
+                if (preset_len > 0) {
+                    entry->presets = (imaging_preset_entry_t *) calloc((size_t) preset_len, sizeof(imaging_preset_entry_t));
+                    if (entry->presets) {
+                        for (int j = 0; j < preset_len; j++) {
+                            JsonValue *preset_node = get_array_item(presets, j);
+                            if (!preset_node || preset_node->type != JSON_OBJECT)
+                                continue;
+
+                            imaging_preset_entry_t *preset = &entry->presets[entry->preset_count];
+                            get_string_from_json(&preset->token, preset_node, "token");
+                            if (!preset->token)
+                                continue;
+                            get_string_from_json(&preset->name, preset_node, "name");
+                            get_string_from_json(&preset->type, preset_node, "type");
+                            get_string_from_json(&preset->command, preset_node, "command");
+                            entry->preset_count++;
+                            if (entry->preset_count >= preset_len)
+                                break;
+                        }
+                    }
+                }
+            }
+
+            if (entry->default_preset_token != NULL) {
+                entry->current_preset_token = dup_cstring(entry->default_preset_token);
+            } else if (entry->preset_count > 0 && entry->presets && entry->presets[0].token != NULL) {
+                entry->current_preset_token = dup_cstring(entry->presets[0].token);
+            }
 
             log_debug("Imaging[%d] token=%s ircut=%d modes on:%d off:%d auto:%d",
                       service_ctx.imaging_num - 1,
@@ -870,6 +1110,19 @@ void free_conf_file()
                 free(service_ctx.events[i].topic);
         }
     }
+
+    if (service_ctx.audio.backchannel.name != NULL)
+        free(service_ctx.audio.backchannel.name);
+    if (service_ctx.audio.backchannel.token != NULL)
+        free(service_ctx.audio.backchannel.token);
+    if (service_ctx.audio.backchannel.configuration_token != NULL)
+        free(service_ctx.audio.backchannel.configuration_token);
+    if (service_ctx.audio.backchannel.receive_token != NULL)
+        free(service_ctx.audio.backchannel.receive_token);
+    if (service_ctx.audio.backchannel.uri != NULL)
+        free(service_ctx.audio.backchannel.uri);
+    if (service_ctx.audio.backchannel.transport != NULL)
+        free(service_ctx.audio.backchannel.transport);
 
     if (service_ctx.ptz_node.enable == 1) {
         if (service_ctx.ptz_node.jump_to_rel != NULL)
@@ -949,6 +1202,33 @@ void free_conf_file()
         free_focus_config(&service_ctx.imaging[i].focus);
         free_white_balance_config(&service_ctx.imaging[i].white_balance);
         free_ircut_auto_adjust(&service_ctx.imaging[i].ircut_auto_adjustment);
+        if (service_ctx.imaging[i].focus_move.absolute.command)
+            free(service_ctx.imaging[i].focus_move.absolute.command);
+        if (service_ctx.imaging[i].focus_move.relative.command)
+            free(service_ctx.imaging[i].focus_move.relative.command);
+        if (service_ctx.imaging[i].focus_move.continuous.command)
+            free(service_ctx.imaging[i].focus_move.continuous.command);
+        if (service_ctx.imaging[i].focus_move.cmd_stop)
+            free(service_ctx.imaging[i].focus_move.cmd_stop);
+        if (service_ctx.imaging[i].cmd_apply_preset)
+            free(service_ctx.imaging[i].cmd_apply_preset);
+        if (service_ctx.imaging[i].default_preset_token)
+            free(service_ctx.imaging[i].default_preset_token);
+        if (service_ctx.imaging[i].current_preset_token)
+            free(service_ctx.imaging[i].current_preset_token);
+        if (service_ctx.imaging[i].presets) {
+            for (int j = 0; j < service_ctx.imaging[i].preset_count; j++) {
+                if (service_ctx.imaging[i].presets[j].token)
+                    free(service_ctx.imaging[i].presets[j].token);
+                if (service_ctx.imaging[i].presets[j].name)
+                    free(service_ctx.imaging[i].presets[j].name);
+                if (service_ctx.imaging[i].presets[j].type)
+                    free(service_ctx.imaging[i].presets[j].type);
+                if (service_ctx.imaging[i].presets[j].command)
+                    free(service_ctx.imaging[i].presets[j].command);
+            }
+            free(service_ctx.imaging[i].presets);
+        }
     }
     if (service_ctx.imaging != NULL)
         free(service_ctx.imaging);

@@ -4,12 +4,12 @@
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <tr2:GetAudioOutputConfigurationsResponse>
-            <tr2:Configurations token="AudioOutputConfigToken">
-                <tt:Name>AudioOutputConfig</tt:Name>
+            <tr2:Configurations token="%AUDIO_OUTPUT_CONFIG_TOKEN%">
+                <tt:Name>%AUDIO_OUTPUT_NAME%</tt:Name>
                 <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
-                <tt:OutputToken>AudioOutputToken</tt:OutputToken>
+                <tt:OutputToken>%AUDIO_OUTPUT_TOKEN%</tt:OutputToken>
                 <tt:SendPrimacy>www.onvif.org/ver20/HalfDuplex/Client</tt:SendPrimacy>
-                <tt:OutputLevel>1</tt:OutputLevel>
+                <tt:OutputLevel>%AUDIO_OUTPUT_LEVEL%</tt:OutputLevel>
             </tr2:Configurations>
         </tr2:GetAudioOutputConfigurationsResponse>
     </SOAP-ENV:Body>

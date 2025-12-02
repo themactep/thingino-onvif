@@ -21,6 +21,13 @@ int imaging_get_service_capabilities(void);
 int imaging_get_imaging_settings(void);
 int imaging_get_options(void);
 int imaging_set_imaging_settings(void);
+int imaging_move(void);
+int imaging_get_move_options(void);
+int imaging_stop(void);
+int imaging_get_status(void);
+int imaging_get_presets(void);
+int imaging_get_current_preset(void);
+int imaging_set_current_preset(void);
 int imaging_unsupported(const char *method);
 
 #endif // IMAGING_SERVICE_H

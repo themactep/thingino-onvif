@@ -1,7 +1,7 @@
-                    <tr2:AudioOutput token="AudioOutputConfigToken">
-                        <tt:Name>AudioOutputConfig</tt:Name>
+                    <tr2:AudioOutput token="%AUDIO_OUTPUT_CONFIG_TOKEN%">
+                        <tt:Name>%AUDIO_OUTPUT_NAME%</tt:Name>
                         <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
-                        <tt:OutputToken>AudioOutputToken</tt:OutputToken>
+                        <tt:OutputToken>%AUDIO_OUTPUT_TOKEN%</tt:OutputToken>
                         <tt:SendPrimacy>www.onvif.org/ver20/HalfDuplex/Client</tt:SendPrimacy>
-                        <tt:OutputLevel>1</tt:OutputLevel>
+                        <tt:OutputLevel>%AUDIO_OUTPUT_LEVEL%</tt:OutputLevel>
                     </tr2:AudioOutput>

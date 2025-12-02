@@ -15,6 +15,14 @@ test_audio_output_endpoints() {
     test_onvif_service "media_service" "GetCompatibleAudioOutputConfigurations" "Get Compatible Audio Output Configurations (Backchannel)" true "<trt:GetCompatibleAudioOutputConfigurationsResponse"
 }
 
+# Test DeviceIO audio endpoints so GetAudioOutputs/GetAudioSources stay in sync with media service.
+test_deviceio_audio_endpoints() {
+    echo -e "\n${YELLOW}Testing: DeviceIO Audio endpoint parity${NC}"
+
+    test_onvif_service "deviceio_service" "GetAudioOutputs" "DeviceIO GetAudioOutputs" true "<tmd:GetAudioOutputsResponse"
+    test_onvif_service "deviceio_service" "GetAudioSources" "DeviceIO GetAudioSources" true "<tmd:GetAudioSourcesResponse"
+}
+
 # Helper to inject WSSE header and tokens into imaging SOAP templates
 render_imaging_template() {
     local template_path=$1
@@ -60,6 +68,8 @@ test_imaging_service() {
     if [ "$response_code" != "200" ]; then
         echo -e "${RED}✗ Imaging GetServiceCapabilities - FAILED (HTTP $response_code)${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_caps"
+    elif ! assert_valid_xml "$resp_caps" "imaging/GetServiceCapabilities"; then
+        return 1
     elif [[ $resp_caps == *"<timg:GetServiceCapabilitiesResponse"* ]]; then
         echo -e "${GREEN}✓ Imaging GetServiceCapabilities - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_caps"
@@ -78,6 +88,8 @@ test_imaging_service() {
     if [ "$response_code" != "200" ]; then
         echo -e "${RED}✗ Imaging GetImagingSettings - FAILED (HTTP $response_code)${NC}"
         if [ "$VERBOSE" = true ]; then echo "$resp_settings"; fi
+    elif ! assert_valid_xml "$resp_settings" "imaging/GetImagingSettings"; then
+        return 1
     elif [[ $resp_settings == *"<tt:VideoSourceToken>$token</tt:VideoSourceToken>"* && $resp_settings == *"<tt:IrCutFilter>"* ]]; then
         echo -e "${GREEN}✓ Imaging GetImagingSettings - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_settings"
@@ -101,6 +113,8 @@ test_imaging_service() {
     if [ "$response_code" != "200" ]; then
         echo -e "${RED}✗ Imaging GetOptions - FAILED (HTTP $response_code)${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_options"
+    elif ! assert_valid_xml "$resp_options" "imaging/GetOptions"; then
+        return 1
     elif [[ $resp_options == *"<tt:VideoSourceToken>$token</tt:VideoSourceToken>"* && $resp_options == *"<tt:IrCutFilterModes>"* ]]; then
         echo -e "${GREEN}✓ Imaging GetOptions - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_options"
@@ -137,6 +151,9 @@ test_imaging_service() {
         echo -e "${RED}✗ Imaging SetImagingSettings (to $target_ir) - FAILED (HTTP $response_code)${NC}"
         if [ "$VERBOSE" = true ]; then echo "$resp"; fi
     else
+        if ! assert_valid_xml "$resp" "imaging/SetImagingSettings"; then
+            return 1
+        fi
         if [[ $resp == *"<timg:SetImagingSettingsResponse"* || $resp == *"<s:Body/>"* ]]; then
             echo -e "${GREEN}✓ Imaging SetImagingSettings (to $target_ir) - SUCCESS${NC}"
             if [ "$VERBOSE" = true ]; then echo "$resp"; fi
@@ -147,6 +164,10 @@ test_imaging_service() {
             new_settings=$(cat "$tmp_resp" 2>/dev/null || true)
             rm -f "$tmp_resp" || true
             new_ir=$(echo "$new_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
+            if ! assert_valid_xml "$new_settings" "imaging/GetImagingSettings (verify)"; then
+                return 1
+            fi
+
             if [[ "$new_ir" == "$target_ir" ]]; then
                 echo -e "${GREEN}✓ Imaging verified IrCutFilter changed to $new_ir${NC}"
             else
@@ -166,6 +187,9 @@ test_imaging_service() {
         resp=$(cat "$tmp_resp" 2>/dev/null || true)
         rm -f "$tmp_resp" || true
         if [[ $response_code == "200" && ( $resp == *"<timg:SetImagingSettingsResponse"* || $resp == *"<s:Body/>"* ) ]]; then
+            if ! assert_valid_xml "$resp" "imaging/SetImagingSettings (restore)"; then
+                return 1
+            fi
             echo -e "${GREEN}✓ Imaging restored original IrCutFilter to $original_ir${NC}"
         else
             echo -e "${YELLOW}⚠ Imaging failed to restore original IrCutFilter to $original_ir (response code $response_code)${NC}"
@@ -176,8 +200,14 @@ test_imaging_service() {
 
 # Default runtime/config values
 CONTAINER_NAME="oss"
-SERVER_URL="http://localhost:8000"
+DEFAULT_SERVER_URL="http://localhost:8000"
+SERVER_URL="${SERVER_URL:-$DEFAULT_SERVER_URL}"
 VERBOSE=false
+HAS_LOCAL_CONTAINER=false
+XML_VALIDATION_AVAILABLE=false
+if command -v xmllint >/dev/null 2>&1; then
+    XML_VALIDATION_AVAILABLE=true
+fi
 
 # Default credentials used by tests
 DEFAULT_USERNAME="thingino"
@@ -209,6 +239,29 @@ send_soap_raw() {
     return $rc
 }
 
+assert_valid_xml() {
+    local xml_content="$1"
+    local label="$2"
+
+    if [ "$XML_VALIDATION_AVAILABLE" != true ]; then
+        return 0
+    fi
+
+    local tmp_xml
+    tmp_xml=$(mktemp /tmp/xmlcheck.XXXXXX)
+    printf '%s' "$xml_content" > "$tmp_xml"
+    if ! xmllint --noout "$tmp_xml" >/dev/null 2>&1; then
+        echo -e "${RED}✗ $label - FAILED XML validation${NC}"
+        if [ "$VERBOSE" = true ]; then
+            xmllint --noout "$tmp_xml" 2>&1
+        fi
+        rm -f "$tmp_xml"
+        return 1
+    fi
+    rm -f "$tmp_xml"
+    return 0
+}
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -223,12 +276,21 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=true
             shift
             ;;
+        -s|--server-url)
+            if [[ -z "$2" ]]; then
+                echo "Error: --server-url requires a value"
+                exit 1
+            fi
+            SERVER_URL="$2"
+            shift 2
+            ;;
         -h|--help)
-            echo "Usage: $0 [-v|--verbose] [-h|--help]"
+            echo "Usage: $0 [-v|--verbose] [-s|--server-url URL] [-h|--help]"
             echo ""
             echo "Options:"
             echo "  -v, --verbose    Show raw XML responses for all tests"
             echo "  -h, --help       Show this help message"
+            echo "  -s, --server-url URL  Override target server (default: $DEFAULT_SERVER_URL)"
             exit 0
             ;;
         *)
@@ -240,34 +302,56 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${BLUE}=== ONVIF Simple Server Container Test Suite ===${NC}"
+echo -e "Target server: ${YELLOW}$SERVER_URL${NC}"
 if [ "$VERBOSE" = true ]; then
     echo -e "${YELLOW}Verbose mode enabled - showing raw XML responses${NC}"
 fi
 
-# Check if container is running
-if ! podman ps | grep -q $CONTAINER_NAME; then
-    echo -e "${RED}Error: Container '$CONTAINER_NAME' is not running${NC}"
-    echo "Start it with: ./container_run.sh"
-    exit 1
-fi
+# Check if container is running (only for local server targets)
+RUN_CONTAINER_CHECK=true
+case "$SERVER_URL" in
+    http://localhost*|https://localhost*|http://127.0.0.1*|https://127.0.0.1*)
+        ;;
+    *)
+        RUN_CONTAINER_CHECK=false
+        ;;
+esac
 
-echo -e "${GREEN}✓ Container '$CONTAINER_NAME' is running${NC}"
+if [ "$RUN_CONTAINER_CHECK" = true ]; then
+    if ! podman ps | grep -q $CONTAINER_NAME; then
+        echo -e "${RED}Error: Container '$CONTAINER_NAME' is not running${NC}"
+        echo "Start it with: ./container_run.sh"
+        exit 1
+    fi
+    HAS_LOCAL_CONTAINER=true
+    echo -e "${GREEN}✓ Container '$CONTAINER_NAME' is running${NC}"
+else
+    echo -e "${YELLOW}Skipping container health check (SERVER_URL not localhost)${NC}"
+fi
 
 # Function to generate authenticated SOAP request
 generate_auth_soap() {
     local method=$1
+    local ns_prefix=${2:-tds}
+    local ns_url=${3:-"http://www.onvif.org/ver10/device/wsdl"}
+    local include_category=${4:-true}
+
     # Use Python script if available, otherwise skip auth
     if [ -f "tests/generate_onvif_auth.py" ]; then
-        python3 -c "
+        local include_flag="True"
+        if [ "$include_category" != true ]; then
+            include_flag="False"
+        fi
+        python3 - "$DEFAULT_USERNAME" "$DEFAULT_PASSWORD" "$method" "$ns_prefix" "$ns_url" "$include_flag" <<'PY'
 import sys
 sys.path.insert(0, 'tests')
 from generate_onvif_auth import generate_soap_request
-soap = generate_soap_request('$DEFAULT_USERNAME', '$DEFAULT_PASSWORD', '$method')
-# Remove Category element if not needed
-if '$method' == 'GetVideoSources':
-    soap = soap.replace('<tds:Category>All</tds:Category>', '')
+
+username, password, method, prefix, ns_url, include_flag = sys.argv[1:7]
+include_category = include_flag.lower() == "true"
+soap = generate_soap_request(username, password, method, prefix, ns_url, include_category)
 print(soap)
-"
+PY
     else
         echo ""
     fi
@@ -283,25 +367,55 @@ test_onvif_service() {
 
     echo -e "\n${YELLOW}Testing: $description${NC}"
 
+    local wsdl_prefix="tds"
+    local wsdl_namespace="http://www.onvif.org/ver10/device/wsdl"
+    case "$service_name" in
+        media_service)
+            wsdl_prefix="trt"
+            wsdl_namespace="http://www.onvif.org/ver10/media/wsdl"
+            ;;
+        deviceio_service)
+            wsdl_prefix="tmd"
+            wsdl_namespace="http://www.onvif.org/ver10/deviceIO/wsdl"
+            ;;
+        events_service)
+            wsdl_prefix="tev"
+            wsdl_namespace="http://www.onvif.org/ver10/events/wsdl"
+            ;;
+        imaging_service)
+            wsdl_prefix="timg"
+            wsdl_namespace="http://www.onvif.org/ver20/imaging/wsdl"
+            ;;
+    esac
+
+    local include_category=true
+    case "$method" in
+        GetVideoSources|GetAudioOutputs|GetAudioSources)
+            include_category=false
+            ;;
+    esac
+
     # Create SOAP request
+    local soap_request=""
     if [ "$require_auth" = true ]; then
         # Generate authenticated request
-        local soap_request=$(generate_auth_soap "$method")
+        soap_request=$(generate_auth_soap "$method" "$wsdl_prefix" "$wsdl_namespace" "$include_category")
         if [ -z "$soap_request" ]; then
             echo -e "${YELLOW}⚠ Skipping $method - authentication script not available${NC}"
             return 0
         fi
     else
         # Create simple SOAP request (using SOAP 1.2 format that ONVIF expects)
-        local soap_request="<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:tds=\"http://www.onvif.org/ver10/device/wsdl\"><s:Header/><s:Body><tds:$method/></s:Body></s:Envelope>"
+        printf -v soap_request '%s' "<?xml version=\"1.0\" encoding=\"utf-8\"?><s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:${wsdl_prefix}=\"${wsdl_namespace}\"><s:Header/><s:Body><${wsdl_prefix}:${method}/></s:Body></s:Envelope>"
     fi
 
     local response_code
     local response
+    local soap_action="${wsdl_namespace}/${method}"
 
     # Send request (use raw file send to preserve bytes)
     tmp_resp=$(mktemp)
-    response_code=$(send_soap_raw "$SERVER_URL/onvif/$service_name" "http://www.onvif.org/ver10/device/wsdl/$method" "$soap_request" "$tmp_resp")
+    response_code=$(send_soap_raw "$SERVER_URL/onvif/$service_name" "$soap_action" "$soap_request" "$tmp_resp")
     curl_rc=$?
     response=$(cat "$tmp_resp" 2>/dev/null || true)
     rm -f "$tmp_resp" || true
@@ -315,6 +429,10 @@ test_onvif_service() {
     # Basic sanity: expect an XML envelope in the response body
     if [[ -z "$response" ]]; then
         echo -e "${RED}✗ $service_name/$method - FAILED (no response body, HTTP $response_code)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "$service_name/$method"; then
         return 1
     fi
 
@@ -403,6 +521,15 @@ print(soap)
         if [ "$VERBOSE" = true ]; then
             echo "Response: $response"
         fi
+        return 1
+    fi
+
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ $method - FAILED (no response body)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "ptz_service/$method"; then
         return 1
     fi
 
@@ -596,6 +723,7 @@ test_onvif_service "media_service" "GetVideoSources" "Get Video Sources" true
 
 # Audio Backchannel (AudioOutput) tests
 test_audio_output_endpoints
+test_deviceio_audio_endpoints
 
 # PTZ Tests
 echo -e "\n${BLUE}=== PTZ Functionality Tests ===${NC}"
@@ -615,6 +743,15 @@ test_ptz_get_configurations() {
     local response
     response=$(cat "$tmp_resp" 2>/dev/null || true)
     rm -f "$tmp_resp" || true
+
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ PTZ GetConfigurations - FAILED (no response)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "ptz/GetConfigurations"; then
+        return 1
+    fi
 
     if [[ $response == *"PTZConfiguration"* ]] && [[ $response == *"UseCount"* ]]; then
         # Extract UseCount value
@@ -654,6 +791,15 @@ test_ptz_get_nodes() {
     local response
     response=$(cat "$tmp_resp" 2>/dev/null || true)
     rm -f "$tmp_resp" || true
+
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ PTZ GetNodes - FAILED (no response)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "ptz/GetNodes"; then
+        return 1
+    fi
 
     if [[ $response == *"PTZNode"* ]] && [[ $response == *"AbsolutePanTiltPositionSpace"* ]]; then
         echo -e "${GREEN}✓ PTZ GetNodes - SUCCESS (AbsoluteMove supported)${NC}"
@@ -702,6 +848,15 @@ PY
     local response
     response=$(cat "$tmp_ptz_resp" 2>/dev/null || true)
     rm -f "$tmp_ptz_resp" || true
+
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ PTZ AbsoluteMove (valid) - FAILED (no response body)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "ptz/AbsoluteMove"; then
+        return 1
+    fi
 
     if [ "$http_code" = "200" ] && [[ $response == *"AbsoluteMoveResponse"* ]]; then
         echo -e "${GREEN}✓ PTZ AbsoluteMove (valid) - SUCCESS (HTTP $http_code)${NC}"
@@ -754,6 +909,15 @@ PY
     response=$(cat "$tmp_ptz_fault" 2>/dev/null || true)
     rm -f "$tmp_ptz_fault" || true
 
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ PTZ AbsoluteMove (invalid) - FAILED (no response body)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "ptz/AbsoluteMoveInvalid"; then
+        return 1
+    fi
+
     if [ "$http_code" = "500" ] && [[ $response == *"Fault"* ]] && [[ $response == *"InvalidPosition"* ]]; then
         echo -e "${GREEN}✓ PTZ AbsoluteMove (invalid) - SUCCESS (HTTP $http_code with ter:InvalidPosition fault)${NC}"
         if [ "$VERBOSE" = true ]; then
@@ -801,6 +965,15 @@ PY
     local response
     response=$(cat "$tmp_resp" 2>/dev/null || true)
     rm -f "$tmp_resp" || true
+
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ PTZ GetStatus - FAILED (no response body)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "ptz/GetStatus"; then
+        return 1
+    fi
 
     if [[ $response == *"GetStatusResponse"* ]] && [[ $response == *"Position"* ]] && [[ $response == *"PanTilt"* ]]; then
         echo -e "${GREEN}✓ PTZ GetStatus - SUCCESS${NC}"
@@ -850,15 +1023,24 @@ print(soap)
     rm -f "$tmp_ptz_cont" || true
 
     # Check container logs for diagonal movement command
-    sleep 0.5  # Give server time to process
-    local logs=$(podman logs --tail 30 $CONTAINER_NAME 2>&1)
+    local has_diagonal=true
+    local logs=""
+    if [ "$HAS_LOCAL_CONTAINER" = true ]; then
+        sleep 0.5  # Give server time to process
+        logs=$(podman logs --tail 30 $CONTAINER_NAME 2>&1)
+        has_diagonal=false
+        if [[ $logs == *"-d h -x 0.000000 -y 0.000000"* ]]; then
+            has_diagonal=true
+        fi
+    fi
 
-    # Look for single diagonal movement command with both X and Y
-    local has_diagonal=false
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ PTZ ContinuousMove (diagonal) - FAILED (no response body)${NC}"
+        return 1
+    fi
 
-    # Check for diagonal movement: -d h -x <value> -y <value> (single command with both axes)
-    if [[ $logs == *"-d h -x 0.000000 -y 0.000000"* ]]; then
-        has_diagonal=true
+    if ! assert_valid_xml "$response" "ptz/ContinuousMove"; then
+        return 1
     fi
 
     if [ "$http_code" = "200" ] && [[ $response == *"ContinuousMoveResponse"* ]]; then
@@ -866,18 +1048,25 @@ print(soap)
             echo -e "${GREEN}✓ PTZ ContinuousMove (diagonal) - SUCCESS (single command with both axes)${NC}"
             if [ "$VERBOSE" = true ]; then
                 echo "Response: $response"
-                echo "Recent logs showing diagonal command:"
-                echo "$logs" | grep -E "(-d h -x .* -y )" | tail -3
+                if [ "$HAS_LOCAL_CONTAINER" = true ]; then
+                    echo "Recent logs showing diagonal command:"
+                    echo "$logs" | grep -E "(-d h -x .* -y )" | tail -3
+                fi
             fi
             return 0
         else
-            echo -e "${YELLOW}⚠ PTZ ContinuousMove (diagonal) - HTTP 200 but diagonal command not found${NC}"
-            echo "  Looking for: -d h -x 0.000000 -y 0.000000"
-            if [ "$VERBOSE" = true ]; then
-                echo "Recent logs:"
-                echo "$logs" | grep MOTORS | tail -10
+            if [ "$HAS_LOCAL_CONTAINER" = true ]; then
+                echo -e "${YELLOW}⚠ PTZ ContinuousMove (diagonal) - HTTP 200 but diagonal command not found${NC}"
+                echo "  Looking for: -d h -x 0.000000 -y 0.000000"
+                if [ "$VERBOSE" = true ]; then
+                    echo "Recent logs:"
+                    echo "$logs" | grep MOTORS | tail -10
+                fi
+                return 2
+            else
+                echo -e "${YELLOW}⚠ PTZ ContinuousMove (diagonal) - Skipping log validation (no local container)${NC}"
             fi
-            return 2
+            return 0
         fi
     else
         echo -e "${RED}✗ PTZ ContinuousMove (diagonal) - FAILED (HTTP $http_code)${NC}"

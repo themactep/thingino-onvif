@@ -19,16 +19,20 @@ All configuration is now consolidated into a single `onvif.json` file with the f
 
 ```json
 {
-    "model": "Test Camera",
-    "manufacturer": "Test Manufacturer",
-    "firmware_ver": "1.0.0",
-    "serial_num": "TEST123",
-    "hardware_id": "TEST_HW",
-    "ifs": "lo",
-    "port": 8080,
-    "username": "admin",
-    "password": "admin",
-    "loglevel": 4,
+   "camera": {
+      "firmware_ver": "1.0.0",
+      "hardware_id": "TEST_HW",
+      "manufacturer": "Test Manufacturer",
+      "model": "Test Camera",
+      "serial_num": "TEST123"
+   },
+   "server": {
+      "ifs": "lo",
+      "log_level": 4,
+      "password": "admin",
+      "port": 8080,
+      "username": "admin"
+   },
     "profiles": {
         "stream0": {
             "name": "Profile_0",

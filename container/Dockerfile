@@ -67,7 +67,7 @@ RUN echo '#!/bin/bash\nexec /app/cgi-bin/onvif_simple_server -c /etc/onvif.json 
 COPY lighttpd.conf /etc/lighttpd/lighttpd.conf
 
 # Expose the port for the web server
-# Create a directory for raw XML logs (used when `raw_log_directory` is set in config)
+# Create a directory for raw XML logs (used when `log_directory` is set in config)
 RUN mkdir -p /var/www/onvif/raw_logs && \
     chown -R www-data:www-data /var/www/onvif && \
     chmod -R 0755 /var/www/onvif

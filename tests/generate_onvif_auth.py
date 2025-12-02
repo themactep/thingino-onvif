@@ -34,7 +34,12 @@ def generate_ws_security_digest(username, password, nonce_b64=None, created=None
         'created': created
     }
 
-def generate_soap_request(username, password, method='GetCapabilities'):
+def generate_soap_request(username,
+                          password,
+                          method='GetCapabilities',
+                          namespace_prefix='tds',
+                          namespace_url='http://www.onvif.org/ver10/device/wsdl',
+                          include_category=True):
     """Generate SOAP request with proper WS-Security authentication"""
 
     # Generate fresh nonce and timestamp for valid WS-Security headers
@@ -43,8 +48,12 @@ def generate_soap_request(username, password, method='GetCapabilities'):
 
     auth = generate_ws_security_digest(username, password, nonce_b64, created)
 
+    category_fragment = ""
+    if include_category:
+        category_fragment = "<{ns_prefix}:Category>All</{ns_prefix}:Category>\n".format(ns_prefix=namespace_prefix)
+
     soap_template = '''<?xml version="1.0" encoding="UTF-8"?>
-<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:tds="http://www.onvif.org/ver10/device/wsdl" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope" xmlns:{ns_prefix}="{ns_url}" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
     <SOAP-ENV:Header>
         <wsse:Security SOAP-ENV:mustUnderstand="true">
             <wsse:UsernameToken wsu:Id="UsernameToken-1">
@@ -56,18 +65,21 @@ def generate_soap_request(username, password, method='GetCapabilities'):
         </wsse:Security>
     </SOAP-ENV:Header>
     <SOAP-ENV:Body>
-        <tds:{method}>
-            <tds:Category>All</tds:Category>
-        </tds:{method}>
+        <{ns_prefix}:{method}>
+{category_fragment}
+        </{ns_prefix}:{method}>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>'''
 
     return soap_template.format(
+        ns_prefix=namespace_prefix,
+        ns_url=namespace_url,
         username=auth['username'],
         password_digest=auth['password_digest'],
         nonce=auth['nonce'],
         created=auth['created'],
-        method=method
+        method=method,
+        category_fragment=category_fragment
     )
 
 if __name__ == "__main__":

@@ -5,10 +5,10 @@
     <SOAP-ENV:Body>
         <tr2:GetAudioOutputConfigurationOptionsResponse>
             <tr2:Options>
-                <tt:OutputTokensAvailable>AudioOutputToken</tt:OutputTokensAvailable>
+                <tt:OutputTokensAvailable>%AUDIO_OUTPUT_TOKEN%</tt:OutputTokensAvailable>
                 <tt:OutputLevelRange>
-                    <tt:Min>1</tt:Min>
-                    <tt:Max>1</tt:Max>
+                    <tt:Min>%AUDIO_OUTPUT_LEVEL_MIN%</tt:Min>
+                    <tt:Max>%AUDIO_OUTPUT_LEVEL_MAX%</tt:Max>
                 </tt:OutputLevelRange>
             </tr2:Options>
         </tr2:GetAudioOutputConfigurationOptionsResponse>

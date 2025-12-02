@@ -28,6 +28,30 @@
 
 extern service_context_t service_ctx;
 
+static int media2_audio_decoder_profile_count()
+{
+    int count = 0;
+    for (int i = 0; i < service_ctx.profiles_num; i++) {
+        if (service_ctx.profiles[i].audio_decoder != AUDIO_NONE)
+            count++;
+    }
+    return count;
+}
+
+static int media2_audio_output_supported()
+{
+    if (!service_ctx.audio.output_enabled || media2_audio_decoder_profile_count() == 0) {
+        send_fault("media2_service",
+                   "Receiver",
+                   "ter:ActionNotSupported",
+                   "ter:AudioOutputNotSupported",
+                   "AudioOutputNotSupported",
+                   "Audio or Audio Outputs are not supported by the device");
+        return 0;
+    }
+    return 1;
+}
+
 int media2_get_service_capabilities()
 {
     char cap[256];
@@ -38,9 +62,12 @@ int media2_get_service_capabilities()
         || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_encoder != AUDIO_NONE))) {
         strcat(cap, " AudioSource AudioEncoder");
     }
+    if (service_ctx.audio.output_enabled) {
+        strcat(cap, " AudioOutput");
+    }
     if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
         || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
-        strcat(cap, " AudioOutput AudioDecoder");
+        strcat(cap, " AudioDecoder");
     }
     if (service_ctx.ptz_node.enable == 1) {
         strcat(cap, " PTZ");
@@ -55,7 +82,8 @@ int media2_get_service_capabilities()
 
 int media2_get_profiles()
 {
-    char profiles_num[2];
+    char profiles_num[8];
+    char audio_profiles_num[8];
     char stmp_w_h[16], stmp_h_h[16];
     char stmp_w_l[16], stmp_h_l[16];
     char audio_enc_h[16], audio_enc_l[16];
@@ -78,7 +106,14 @@ int media2_get_profiles()
     audio_enc_l[0] = '\0';
     video_enc_h[0] = '\0';
     video_enc_l[0] = '\0';
-    sprintf(profiles_num, "%d", service_ctx.profiles_num);
+    snprintf(profiles_num, sizeof(profiles_num), "%d", service_ctx.profiles_num);
+    snprintf(audio_profiles_num, sizeof(audio_profiles_num), "%d", media2_audio_decoder_profile_count());
+    const char *audio_output_name = service_ctx.audio.backchannel.name ? service_ctx.audio.backchannel.name : "";
+    const char *audio_output_token = service_ctx.audio.backchannel.token ? service_ctx.audio.backchannel.token : "";
+    const char *audio_output_config_token = service_ctx.audio.backchannel.configuration_token ? service_ctx.audio.backchannel.configuration_token
+                                                                                              : "";
+    char audio_output_level[8];
+    snprintf(audio_output_level, sizeof(audio_output_level), "%d", service_ctx.audio.backchannel.output_level);
     sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
     sprintf(min_y, "%.1f", service_ctx.ptz_node.min_step_y);
@@ -233,8 +268,20 @@ int media2_get_profiles()
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2, "%PROFILES_NUM%", profiles_num);
+                    if (typeAOC && service_ctx.audio.output_enabled) {
+                        size += cat(dest,
+                                    "media2_service_files/GetProfiles_AOC.xml",
+                                    10,
+                                    "%PROFILES_NUM%",
+                                    audio_profiles_num,
+                                    "%AUDIO_OUTPUT_CONFIG_TOKEN%",
+                                    audio_output_config_token,
+                                    "%AUDIO_OUTPUT_NAME%",
+                                    audio_output_name,
+                                    "%AUDIO_OUTPUT_TOKEN%",
+                                    audio_output_token,
+                                    "%AUDIO_OUTPUT_LEVEL%",
+                                    audio_output_level);
                     }
                     if (typeADC) {
                         size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2, "%PROFILE%", profile[h]);
@@ -325,8 +372,20 @@ int media2_get_profiles()
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2, "%PROFILES_NUM%", profiles_num);
+                    if (typeAOC && service_ctx.audio.output_enabled) {
+                        size += cat(dest,
+                                    "media2_service_files/GetProfiles_AOC.xml",
+                                    10,
+                                    "%PROFILES_NUM%",
+                                    audio_profiles_num,
+                                    "%AUDIO_OUTPUT_CONFIG_TOKEN%",
+                                    audio_output_config_token,
+                                    "%AUDIO_OUTPUT_NAME%",
+                                    audio_output_name,
+                                    "%AUDIO_OUTPUT_TOKEN%",
+                                    audio_output_token,
+                                    "%AUDIO_OUTPUT_LEVEL%",
+                                    audio_output_level);
                     }
                     if (typeADC) {
                         size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2, "%PROFILE%", profile[h]);
@@ -406,8 +465,20 @@ int media2_get_profiles()
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
-                    if (typeAOC) {
-                        size += cat(dest, "media2_service_files/GetProfiles_AOC.xml", 2, "%PROFILES_NUM%", profiles_num);
+                    if (typeAOC && service_ctx.audio.output_enabled) {
+                        size += cat(dest,
+                                    "media2_service_files/GetProfiles_AOC.xml",
+                                    10,
+                                    "%PROFILES_NUM%",
+                                    audio_profiles_num,
+                                    "%AUDIO_OUTPUT_CONFIG_TOKEN%",
+                                    audio_output_config_token,
+                                    "%AUDIO_OUTPUT_NAME%",
+                                    audio_output_name,
+                                    "%AUDIO_OUTPUT_TOKEN%",
+                                    audio_output_token,
+                                    "%AUDIO_OUTPUT_LEVEL%",
+                                    audio_output_level);
                     }
                     if (typeADC) {
                         size += cat(dest, "media2_service_files/GetProfiles_ADC.xml", 2, "%PROFILE%", profile[h]);
@@ -1212,7 +1283,7 @@ int media2_get_audio_output_configurations()
     const char *profile_token = get_element("ProfileToken", "Body");
     char token[23];
     char stmp_w[16], stmp_h[16];
-    char s_profiles_num[2];
+    char s_profiles_num[8];
     int profiles_num;
 
     memset(token, '\0', sizeof(token));
@@ -1227,30 +1298,11 @@ int media2_get_audio_output_configurations()
 
     if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) || (strcasecmp(service_ctx.profiles[1].name, token) == 0)
         || (strcasecmp("AudioOutputConfigToken", token) == 0)) {
-        profiles_num = service_ctx.profiles_num;
+        if (!media2_audio_output_supported())
+            return -1;
 
-        if (profiles_num == 1) {
-            if (service_ctx.profiles[0].audio_decoder == AUDIO_NONE) {
-                profiles_num--;
-            }
-        } else if (profiles_num == 2) {
-            if (service_ctx.profiles[0].audio_decoder == AUDIO_NONE) {
-                profiles_num--;
-            }
-            if (service_ctx.profiles[1].audio_decoder == AUDIO_NONE) {
-                profiles_num--;
-            }
-        }
-
-        sprintf(s_profiles_num, "%d", profiles_num);
-
-        if (profiles_num > 0) {
-            long size = cat(NULL, "media2_service_files/GetAudioOutputConfigurations.xml", 2, "%PROFILES_NUM%", s_profiles_num);
-
-            output_http_headers(size);
-
-            return cat("stdout", "media2_service_files/GetAudioOutputConfigurations.xml", 2, "%PROFILES_NUM%", s_profiles_num);
-        } else {
+        profiles_num = media2_audio_decoder_profile_count();
+        if (profiles_num <= 0) {
             send_fault("media2_service",
                        "Receiver",
                        "ter:ActionNotSupported",
@@ -1259,6 +1311,43 @@ int media2_get_audio_output_configurations()
                        "Audio or Audio Outputs are not supported by the device");
             return -1;
         }
+
+        snprintf(s_profiles_num, sizeof(s_profiles_num), "%d", profiles_num);
+        const char *config_token = service_ctx.audio.backchannel.configuration_token ? service_ctx.audio.backchannel.configuration_token : "";
+        const char *name = service_ctx.audio.backchannel.name ? service_ctx.audio.backchannel.name : "";
+        const char *output_token = service_ctx.audio.backchannel.token ? service_ctx.audio.backchannel.token : "";
+        char output_level[8];
+        snprintf(output_level, sizeof(output_level), "%d", service_ctx.audio.backchannel.output_level);
+
+        long size = cat(NULL,
+                        "media2_service_files/GetAudioOutputConfigurations.xml",
+                        10,
+                        "%PROFILES_NUM%",
+                        s_profiles_num,
+                        "%AUDIO_OUTPUT_CONFIG_TOKEN%",
+                        config_token,
+                        "%AUDIO_OUTPUT_NAME%",
+                        name,
+                        "%AUDIO_OUTPUT_TOKEN%",
+                        output_token,
+                        "%AUDIO_OUTPUT_LEVEL%",
+                        output_level);
+
+        output_http_headers(size);
+
+        return cat("stdout",
+                   "media2_service_files/GetAudioOutputConfigurations.xml",
+                   10,
+                   "%PROFILES_NUM%",
+                   s_profiles_num,
+                   "%AUDIO_OUTPUT_CONFIG_TOKEN%",
+                   config_token,
+                   "%AUDIO_OUTPUT_NAME%",
+                   name,
+                   "%AUDIO_OUTPUT_TOKEN%",
+                   output_token,
+                   "%AUDIO_OUTPUT_LEVEL%",
+                   output_level);
     } else {
         send_fault("media2_service",
                    "Sender",
@@ -1298,33 +1387,47 @@ int media2_get_audio_output_configuration_options()
         }
     }
 
-    if (((service_ctx.profiles_num > 0) && (service_ctx.profiles[0].audio_decoder != AUDIO_NONE))
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
-        if (((service_ctx.profiles_num > 0) && (strcasecmp(service_ctx.profiles[0].name, token) == 0))
-            || ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0))
-            || (strcasecmp("AudioOutputConfigToken", token) == 0)) {
-            long size = cat(NULL, "media2_service_files/GetAudioOutputConfigurationOptions.xml", 0);
+    if (!media2_audio_output_supported())
+        return -3;
 
-            output_http_headers(size);
+    if (((service_ctx.profiles_num > 0) && (strcasecmp(service_ctx.profiles[0].name, token) == 0))
+        || ((service_ctx.profiles_num == 2) && (strcasecmp(service_ctx.profiles[1].name, token) == 0))
+        || (strcasecmp("AudioOutputConfigToken", token) == 0)) {
+        const char *output_token = service_ctx.audio.backchannel.token ? service_ctx.audio.backchannel.token : "";
+        char min_level[8];
+        char max_level[8];
+        snprintf(min_level, sizeof(min_level), "%d", service_ctx.audio.backchannel.output_level_min);
+        snprintf(max_level, sizeof(max_level), "%d", service_ctx.audio.backchannel.output_level_max);
 
-            return cat("stdout", "media2_service_files/GetAudioOutputConfigurationOptions.xml", 0);
-        } else {
-            send_fault("media2_service",
-                       "Sender",
-                       "ter:InvalidArgVal",
-                       "ter:NoConfig",
-                       "No config",
-                       "The requested configuration indicated does not exist");
-            return -2;
-        }
+        long size = cat(NULL,
+                        "media2_service_files/GetAudioOutputConfigurationOptions.xml",
+                        6,
+                        "%AUDIO_OUTPUT_TOKEN%",
+                        output_token,
+                        "%AUDIO_OUTPUT_LEVEL_MIN%",
+                        min_level,
+                        "%AUDIO_OUTPUT_LEVEL_MAX%",
+                        max_level);
+
+        output_http_headers(size);
+
+        return cat("stdout",
+                   "media2_service_files/GetAudioOutputConfigurationOptions.xml",
+                   6,
+                   "%AUDIO_OUTPUT_TOKEN%",
+                   output_token,
+                   "%AUDIO_OUTPUT_LEVEL_MIN%",
+                   min_level,
+                   "%AUDIO_OUTPUT_LEVEL_MAX%",
+                   max_level);
     } else {
         send_fault("media2_service",
-                   "Receiver",
-                   "ter:ActionNotSupported",
-                   "ter:AudioOutputNotSupported",
-                   "AudioOutputNotSupported",
-                   "Audio or Audio Outputs are not supported by the device");
-        return -3;
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:NoConfig",
+                   "No config",
+                   "The requested configuration indicated does not exist");
+        return -2;
     }
 }
 

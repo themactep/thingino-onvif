@@ -1,22 +1,58 @@
 {
-    "model": "Model",
-    "manufacturer": "Manufacturer",
-    "firmware_ver": "0.0.1",
-    "serial_num": "SN1234567890",
-    "hardware_id": "HWID",
-    "ifs": "wlan0",
-    "port": 80,
-    "username": "thingino",
-    "password": "thingino",
-    "scopes": [
-        "onvif://www.onvif.org/Profile/Streaming",
-        "onvif://www.onvif.org/Profile/T",
-        "onvif://www.onvif.org/hardware",
-        "onvif://www.onvif.org/name"
-    ],
     "audio": {
         "output_enabled": true
     },
+    "adv_enable_media2": false,
+    "adv_fault_if_set": false,
+    "adv_fault_if_unknown": false,
+    "adv_synology_nvr": false,
+    "aux": [
+        { "name": "IRLED ON",  "exec": "irled on"  },
+        { "name": "IRLED OFF", "exec": "irled off" },
+        { "name": "COLOR ON",  "exec": "color on"  },
+        { "name": "COLOR OFF", "exec": "color off" }
+    ],
+    "camera": {
+        "firmware_ver": "0.0.1",
+        "hardware_id": "HWID",
+        "manufacturer": "Manufacturer",
+        "model": "Model",
+        "serial_num": "SN1234567890"
+    },
+    "events_enable": 1,
+    "events": [
+        {
+            "topic": "tns1:VideoSource/MotionAlarm",
+            "source_name": "VideoSourceConfigurationToken",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "VideoSourceConfigToken",
+            "input_file": "/run/motion/motion_alarm"
+        },
+        {
+            "topic": "tns1:RuleEngine/CellMotionDetector/Motion",
+            "source_name": "VideoSourceConfigurationToken",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "VideoSourceConfigToken",
+            "input_file": "/run/motion/motion_alarm"
+        },
+        {
+            "topic": "tns1:Device/HardwareFailure",
+            "source_name": "Source",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "HardwareId",
+            "input_file": "/tmp/hardware_failure"
+        }
+    ],
+    "imaging": [
+        {
+            "video_source_token": "VideoSourceToken",
+            "ircut_state": "Auto",
+            "ircut_modes": ["On", "Off", "Auto"],
+            "cmd_ircut_on": "ircut on",
+            "cmd_ircut_off": "ircut off",
+            "cmd_ircut_auto": ""
+        }
+    ],
     "profiles": {
         "stream0": {
             "name": "Profile_0",
@@ -78,51 +114,19 @@
             "open": "irled on"
         }
     ],
-    "imaging": [
-        {
-            "video_source_token": "VideoSourceToken",
-            "ircut_state": "Auto",
-            "ircut_modes": ["On", "Off", "Auto"],
-            "cmd_ircut_on": "ircut on",
-            "cmd_ircut_off": "ircut off",
-            "cmd_ircut_auto": ""
-        }
+    "scopes": [
+        "onvif://www.onvif.org/Profile/Streaming",
+        "onvif://www.onvif.org/Profile/T",
+        "onvif://www.onvif.org/hardware",
+        "onvif://www.onvif.org/name"
     ],
-    "events_enable": 1,
-    "events": [
-        {
-            "topic": "tns1:VideoSource/MotionAlarm",
-            "source_name": "VideoSourceConfigurationToken",
-            "source_type": "tt:ReferenceToken",
-            "source_value": "VideoSourceConfigToken",
-            "input_file": "/run/motion/motion_alarm"
-        },
-        {
-            "topic": "tns1:RuleEngine/CellMotionDetector/Motion",
-            "source_name": "VideoSourceConfigurationToken",
-            "source_type": "tt:ReferenceToken",
-            "source_value": "VideoSourceConfigToken",
-            "input_file": "/run/motion/motion_alarm"
-        },
-        {
-            "topic": "tns1:Device/HardwareFailure",
-            "source_name": "Source",
-            "source_type": "tt:ReferenceToken",
-            "source_value": "HardwareId",
-            "input_file": "/tmp/hardware_failure"
-        }
-    ],
-    "aux": [
-        { "name": "IRLED ON",  "exec": "irled on"  },
-        { "name": "IRLED OFF", "exec": "irled off" },
-        { "name": "COLOR ON",  "exec": "color on"  },
-        { "name": "COLOR OFF", "exec": "color off" }
-    ],
-    "adv_enable_media2": false,
-    "adv_fault_if_set": false,
-    "adv_fault_if_unknown": false,
-    "adv_synology_nvr": false,
-    "loglevel": "INFO",
-    "raw_log_directory": "",
-    "raw_log_on_error_only": false
+    "server": {
+        "ifs": "wlan0",
+        "log_directory": "",
+        "log_level": "INFO",
+        "log_on_error_only": false,
+        "password": "thingino",
+        "port": 80,
+        "username": "thingino"
+    }
 }

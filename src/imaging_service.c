@@ -28,8 +28,101 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #define IMAGING_XML_BUFFER 16384
+#define IMAGING_COMMAND_BUFFER 1024
+
+static imaging_entry_t *find_imaging_entry(const char *token);
+static void execute_backend_command(const char *command);
+
+static const char *focus_move_status_to_string(imaging_focus_state_t state)
+{
+    switch (state) {
+    case IMAGING_FOCUS_STATE_MOVING:
+        return "MOVING";
+    case IMAGING_FOCUS_STATE_IDLE:
+        return "IDLE";
+    case IMAGING_FOCUS_STATE_UNKNOWN:
+    default:
+        return "UNKNOWN";
+    }
+}
+
+static char *dup_string(const char *src)
+{
+    if (!src)
+        return NULL;
+    size_t len = strlen(src) + 1;
+    char *copy = (char *) malloc(len);
+    if (!copy)
+        return NULL;
+    memcpy(copy, src, len);
+    return copy;
+}
+
+static int parse_float_text(const char *text, float *out_value)
+{
+    if (!text || !out_value)
+        return 0;
+
+    char *end = NULL;
+    float value = strtof(text, &end);
+    if (text == end)
+        return 0;
+
+    *out_value = value;
+    return 1;
+}
+
+static int value_within_range(const imaging_float_value_t *range, float value)
+{
+    if (!range)
+        return 1;
+    if (range->has_min && value < range->min)
+        return 0;
+    if (range->has_max && value > range->max)
+        return 0;
+    return 1;
+}
+
+static imaging_entry_t *require_imaging_entry(const char *token)
+{
+    imaging_entry_t *entry = find_imaging_entry(token);
+    if (entry)
+        return entry;
+
+    send_fault("imaging_service",
+               "Sender",
+               "ter:InvalidArgVal",
+               "ter:NoSource",
+               "Unknown video source",
+               "The requested VideoSourceToken does not exist");
+    return NULL;
+}
+
+static int focus_move_capable(const imaging_focus_move_config_t *focus_move)
+{
+    if (!focus_move)
+        return 0;
+    return focus_move->absolute.supported || focus_move->relative.supported || focus_move->continuous.supported;
+}
+
+static int execute_formatted_command(const char *template, float arg1, float arg2)
+{
+    if (!template || template[0] == '\0')
+        return -1;
+
+    char command[IMAGING_COMMAND_BUFFER];
+    int written = snprintf(command, sizeof(command), template, arg1, arg2);
+    if (written < 0 || (size_t) written >= sizeof(command)) {
+        log_error("Imaging command template '%s' overflow", template);
+        return -1;
+    }
+
+    execute_backend_command(command);
+    return 0;
+}
 
 extern service_context_t service_ctx;
 
@@ -513,6 +606,350 @@ static void append_ircut_modes(xml_builder_t *builder, const imaging_entry_t *en
     }
 }
 
+static void append_focus_move_absolute_options(xml_builder_t *builder, const imaging_focus_absolute_move_t *config)
+{
+    if (!builder || !config || !config->supported)
+        return;
+
+    xml_builder_append(builder, "<tt:Absolute>\n");
+    append_float_range(builder, "Position", &config->position);
+    append_float_range(builder, "Speed", &config->speed);
+    xml_builder_append(builder, "</tt:Absolute>\n");
+}
+
+static void append_focus_move_relative_options(xml_builder_t *builder, const imaging_focus_relative_move_t *config)
+{
+    if (!builder || !config || !config->supported)
+        return;
+
+    xml_builder_append(builder, "<tt:Relative>\n");
+    append_float_range(builder, "Distance", &config->distance);
+    append_float_range(builder, "Speed", &config->speed);
+    xml_builder_append(builder, "</tt:Relative>\n");
+}
+
+static void append_focus_move_continuous_options(xml_builder_t *builder, const imaging_focus_continuous_move_t *config)
+{
+    if (!builder || !config || !config->supported)
+        return;
+
+    xml_builder_append(builder, "<tt:Continuous>\n");
+    append_float_range(builder, "Speed", &config->speed);
+    xml_builder_append(builder, "</tt:Continuous>\n");
+}
+
+static void build_focus_move_options_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
+{
+    if (!entry || !buffer || buffer_len == 0)
+        return;
+
+    xml_builder_t builder;
+    xml_builder_init(&builder, buffer, buffer_len);
+
+    append_focus_move_absolute_options(&builder, &entry->focus_move.absolute);
+    append_focus_move_relative_options(&builder, &entry->focus_move.relative);
+    append_focus_move_continuous_options(&builder, &entry->focus_move.continuous);
+}
+
+static void build_focus_status_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
+{
+    if (!entry || !buffer || buffer_len == 0)
+        return;
+
+    xml_builder_t builder;
+    xml_builder_init(&builder, buffer, buffer_len);
+
+    imaging_focus_state_t state = entry->focus_state;
+    if (state == IMAGING_FOCUS_STATE_UNKNOWN)
+        state = IMAGING_FOCUS_STATE_IDLE;
+
+    float position = 0.0f;
+    if (entry->focus_has_last_position)
+        position = entry->focus_last_position;
+
+    xml_builder_append(&builder, "<tt:FocusStatus20>\n");
+    xml_builder_append(&builder, "<tt:Position>%.6f</tt:Position>\n", position);
+    xml_builder_append(&builder, "<tt:MoveStatus>%s</tt:MoveStatus>\n", focus_move_status_to_string(state));
+    xml_builder_append(&builder, "</tt:FocusStatus20>\n");
+}
+
+static int read_child_float(mxml_node_t *parent, const char *tag, float *out_value)
+{
+    if (!parent || !tag || !out_value)
+        return 0;
+
+    const char *text = get_element_in_element(tag, parent);
+    if (!text)
+        return 0;
+
+    return parse_float_text(text, out_value);
+}
+
+static float resolve_focus_speed(const imaging_entry_t *entry, const imaging_float_value_t *move_speed, int has_requested, float requested_value)
+{
+    if (has_requested)
+        return requested_value;
+    if (move_speed && move_speed->has_value)
+        return move_speed->value;
+    if (entry && entry->focus.default_speed.has_value)
+        return entry->focus.default_speed.value;
+    return 1.0f;
+}
+
+static void set_focus_position(imaging_entry_t *entry, float position)
+{
+    if (!entry)
+        return;
+    entry->focus_last_position = position;
+    entry->focus_has_last_position = 1;
+}
+
+static void apply_focus_delta(imaging_entry_t *entry, float delta)
+{
+    if (!entry)
+        return;
+
+    if (entry->focus_has_last_position)
+        entry->focus_last_position += delta;
+    else
+        entry->focus_last_position = delta;
+
+    entry->focus_has_last_position = 1;
+}
+
+static void send_focus_invalid_value_fault(const char *reason, const char *detail)
+{
+    send_fault("imaging_service", "Sender", "ter:InvalidArgVal", "ter:ConfigModify", (char *) reason, (char *) detail);
+}
+
+static void send_focus_not_supported_fault(const char *detail)
+{
+    send_fault("imaging_service", "Receiver", "ter:ActionNotSupported", "ter:ActionNotSupported", "Focus move unsupported", (char *) detail);
+}
+
+static void send_preset_not_supported_fault(const char *detail)
+{
+    send_fault("imaging_service", "Receiver", "ter:ActionNotSupported", "ter:ActionNotSupported", "Imaging presets unsupported", (char *) detail);
+}
+
+static void send_preset_invalid_fault(const char *detail)
+{
+    send_fault("imaging_service", "Sender", "ter:InvalidArgVal", "ter:NoSource", "Invalid imaging preset token", (char *) detail);
+}
+
+static imaging_preset_entry_t *find_preset(imaging_entry_t *entry, const char *token)
+{
+    if (!entry || !token || !entry->presets)
+        return NULL;
+
+    for (int i = 0; i < entry->preset_count; ++i) {
+        imaging_preset_entry_t *preset = &entry->presets[i];
+        if (preset->token && strcasecmp(preset->token, token) == 0)
+            return preset;
+    }
+
+    return NULL;
+}
+
+static void append_preset_element(xml_builder_t *builder, const imaging_preset_entry_t *preset)
+{
+    if (!builder || !preset || !preset->token)
+        return;
+
+    const char *name = (preset->name && preset->name[0] != '\0') ? preset->name : preset->token;
+    const char *type = (preset->type && preset->type[0] != '\0') ? preset->type : "Custom";
+
+    xml_builder_append(builder, "<timg:Preset token=\"%s\" type=\"%s\">\n<tt:Name>%s</tt:Name>\n</timg:Preset>\n", preset->token, type, name);
+}
+
+static void build_imaging_presets_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
+{
+    if (!entry || !buffer || buffer_len == 0)
+        return;
+
+    xml_builder_t builder;
+    xml_builder_init(&builder, buffer, buffer_len);
+
+    if (!entry->presets)
+        return;
+
+    for (int i = 0; i < entry->preset_count; ++i)
+        append_preset_element(&builder, &entry->presets[i]);
+}
+
+static void build_current_preset_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
+{
+    if (!entry || !buffer || buffer_len == 0)
+        return;
+
+    xml_builder_t builder;
+    xml_builder_init(&builder, buffer, buffer_len);
+
+    if (!entry->current_preset_token)
+        return;
+
+    imaging_preset_entry_t *preset = find_preset((imaging_entry_t *) entry, entry->current_preset_token);
+    if (!preset)
+        return;
+
+    append_preset_element(&builder, preset);
+}
+
+static int execute_preset_command(const imaging_entry_t *entry, const imaging_preset_entry_t *preset)
+{
+    if (!entry || !preset)
+        return -1;
+
+    const char *template = NULL;
+    if (preset->command && preset->command[0] != '\0')
+        template = preset->command;
+    else if (entry->cmd_apply_preset && entry->cmd_apply_preset[0] != '\0')
+        template = entry->cmd_apply_preset;
+
+    if (!template)
+        return -1;
+
+    const char *token = preset->token ? preset->token : "";
+    const char *name = (preset->name && preset->name[0] != '\0') ? preset->name : token;
+    const char *type = (preset->type && preset->type[0] != '\0') ? preset->type : "Custom";
+
+    char command[IMAGING_COMMAND_BUFFER];
+    int written = snprintf(command, sizeof(command), template, token, name, type);
+    if (written < 0 || (size_t) written >= sizeof(command)) {
+        log_error("Imaging preset command template overflow for token %s", token);
+        return -1;
+    }
+
+    execute_backend_command(command);
+    return 0;
+}
+
+static void set_current_preset(imaging_entry_t *entry, const char *token)
+{
+    if (!entry)
+        return;
+
+    if (entry->current_preset_token)
+        free(entry->current_preset_token);
+
+    entry->current_preset_token = token ? dup_string(token) : NULL;
+}
+
+static int perform_absolute_focus_move(imaging_entry_t *entry, mxml_node_t *absolute_node)
+{
+    if (!entry->focus_move.absolute.supported) {
+        send_focus_not_supported_fault("Absolute focus moves are not configured for this source");
+        return -1;
+    }
+
+    float position = 0.0f;
+    if (!read_child_float(absolute_node, "Position", &position)) {
+        send_focus_invalid_value_fault("Missing focus position", "Absolute focus moves require the Position element");
+        return -1;
+    }
+
+    if (!value_within_range(&entry->focus_move.absolute.position, position)) {
+        send_focus_invalid_value_fault("Position out of range", "Requested focus position is outside the configured range");
+        return -1;
+    }
+
+    float requested_speed = 0.0f;
+    int has_speed = read_child_float(absolute_node, "Speed", &requested_speed);
+    if (has_speed && !value_within_range(&entry->focus_move.absolute.speed, requested_speed)) {
+        send_focus_invalid_value_fault("Speed out of range", "Requested focus speed is outside the configured range");
+        return -1;
+    }
+
+    float speed = resolve_focus_speed(entry, &entry->focus_move.absolute.speed, has_speed, requested_speed);
+    if (!value_within_range(&entry->focus_move.absolute.speed, speed)) {
+        send_focus_invalid_value_fault("Speed unavailable", "No valid focus speed could be resolved for the absolute move");
+        return -1;
+    }
+
+    entry->focus_state = IMAGING_FOCUS_STATE_MOVING;
+    if (execute_formatted_command(entry->focus_move.absolute.command, position, speed) != 0) {
+        entry->focus_state = IMAGING_FOCUS_STATE_IDLE;
+        send_focus_invalid_value_fault("Focus command failed", "Failed to build absolute focus command");
+        return -1;
+    }
+
+    entry->focus_state = IMAGING_FOCUS_STATE_IDLE;
+    set_focus_position(entry, position);
+    return 0;
+}
+
+static int perform_relative_focus_move(imaging_entry_t *entry, mxml_node_t *relative_node)
+{
+    if (!entry->focus_move.relative.supported) {
+        send_focus_not_supported_fault("Relative focus moves are not configured for this source");
+        return -1;
+    }
+
+    float distance = 0.0f;
+    if (!read_child_float(relative_node, "Distance", &distance)) {
+        send_focus_invalid_value_fault("Missing focus distance", "Relative focus moves require the Distance element");
+        return -1;
+    }
+
+    if (!value_within_range(&entry->focus_move.relative.distance, distance)) {
+        send_focus_invalid_value_fault("Distance out of range", "Requested focus distance is outside the configured range");
+        return -1;
+    }
+
+    float requested_speed = 0.0f;
+    int has_speed = read_child_float(relative_node, "Speed", &requested_speed);
+    if (has_speed && !value_within_range(&entry->focus_move.relative.speed, requested_speed)) {
+        send_focus_invalid_value_fault("Speed out of range", "Requested focus speed is outside the configured range");
+        return -1;
+    }
+
+    float speed = resolve_focus_speed(entry, &entry->focus_move.relative.speed, has_speed, requested_speed);
+    if (!value_within_range(&entry->focus_move.relative.speed, speed)) {
+        send_focus_invalid_value_fault("Speed unavailable", "No valid focus speed could be resolved for the relative move");
+        return -1;
+    }
+
+    entry->focus_state = IMAGING_FOCUS_STATE_MOVING;
+    if (execute_formatted_command(entry->focus_move.relative.command, distance, speed) != 0) {
+        entry->focus_state = IMAGING_FOCUS_STATE_IDLE;
+        send_focus_invalid_value_fault("Focus command failed", "Failed to build relative focus command");
+        return -1;
+    }
+
+    entry->focus_state = IMAGING_FOCUS_STATE_IDLE;
+    apply_focus_delta(entry, distance);
+    return 0;
+}
+
+static int perform_continuous_focus_move(imaging_entry_t *entry, mxml_node_t *continuous_node)
+{
+    if (!entry->focus_move.continuous.supported) {
+        send_focus_not_supported_fault("Continuous focus moves are not configured for this source");
+        return -1;
+    }
+
+    float speed = 0.0f;
+    if (!read_child_float(continuous_node, "Speed", &speed)) {
+        send_focus_invalid_value_fault("Missing focus speed", "Continuous focus moves require the Speed element");
+        return -1;
+    }
+
+    if (!value_within_range(&entry->focus_move.continuous.speed, speed)) {
+        send_focus_invalid_value_fault("Speed out of range", "Requested focus speed is outside the configured range");
+        return -1;
+    }
+
+    entry->focus_state = IMAGING_FOCUS_STATE_MOVING;
+    if (execute_formatted_command(entry->focus_move.continuous.command, speed, 0.0f) != 0) {
+        entry->focus_state = IMAGING_FOCUS_STATE_IDLE;
+        send_focus_invalid_value_fault("Focus command failed", "Failed to build continuous focus command");
+        return -1;
+    }
+
+    entry->focus_state = IMAGING_FOCUS_STATE_IDLE;
+    return 0;
+}
+
 static void build_imaging_settings_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
 {
     if (!buffer || buffer_len == 0)
@@ -625,9 +1062,52 @@ int imaging_get_service_capabilities()
     if (ensure_imaging_available("GetServiceCapabilities") < 0)
         return -1;
 
-    long size = cat(NULL, "imaging_service_files/GetServiceCapabilities.xml", 0);
+    int has_stabilization = 0;
+    int has_presets = 0;
+    int has_adaptable = 0;
+
+    for (int i = 0; i < service_ctx.imaging_num; ++i) {
+        imaging_entry_t *entry = &service_ctx.imaging[i];
+        if (entry->image_stabilization.present)
+            has_stabilization = 1;
+        if (entry->preset_count > 0 && entry->presets)
+            has_presets = 1;
+        if (entry->cmd_apply_preset && entry->cmd_apply_preset[0] != '\0')
+            has_adaptable = 1;
+        else if (entry->presets) {
+            for (int j = 0; j < entry->preset_count; ++j) {
+                if (entry->presets[j].command && entry->presets[j].command[0] != '\0') {
+                    has_adaptable = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    const char *stab_str = has_stabilization ? "true" : "false";
+    const char *presets_str = has_presets ? "true" : "false";
+    const char *adaptable_str = has_adaptable ? "true" : "false";
+
+    long size = cat(NULL,
+                    "imaging_service_files/GetServiceCapabilities.xml",
+                    6,
+                    "%IMAGE_STABILIZATION%",
+                    stab_str,
+                    "%IMAGING_PRESETS%",
+                    presets_str,
+                    "%ADAPTABLE_PRESET%",
+                    adaptable_str);
+
     output_http_headers(size);
-    return cat("stdout", "imaging_service_files/GetServiceCapabilities.xml", 0);
+    return cat("stdout",
+               "imaging_service_files/GetServiceCapabilities.xml",
+               6,
+               "%IMAGE_STABILIZATION%",
+               stab_str,
+               "%IMAGING_PRESETS%",
+               presets_str,
+               "%ADAPTABLE_PRESET%",
+               adaptable_str);
 }
 
 int imaging_get_imaging_settings()
@@ -830,6 +1310,205 @@ int imaging_set_imaging_settings()
     long size = cat(NULL, "imaging_service_files/SetImagingSettings.xml", 0);
     output_http_headers(size);
     return cat("stdout", "imaging_service_files/SetImagingSettings.xml", 0);
+}
+
+int imaging_move()
+{
+    if (ensure_imaging_available("Move") < 0)
+        return -1;
+
+    const char *token = get_element("VideoSourceToken", "Body");
+    imaging_entry_t *entry = require_imaging_entry(token);
+    if (!entry)
+        return -1;
+
+    if (!focus_move_capable(&entry->focus_move)) {
+        send_focus_not_supported_fault("This video source does not expose any focus move commands");
+        return -1;
+    }
+
+    mxml_node_t *focus_node = get_element_ptr(NULL, "Focus", "Body");
+    if (!focus_node) {
+        send_focus_invalid_value_fault("Missing Focus element", "Move requests must include the Focus container");
+        return -1;
+    }
+
+    mxml_node_t *absolute_node = get_element_in_element_ptr("Absolute", focus_node);
+    mxml_node_t *relative_node = get_element_in_element_ptr("Relative", focus_node);
+    mxml_node_t *continuous_node = get_element_in_element_ptr("Continuous", focus_node);
+
+    int present = (absolute_node != NULL) + (relative_node != NULL) + (continuous_node != NULL);
+    if (present != 1) {
+        send_focus_invalid_value_fault("Invalid focus move", "Exactly one of Absolute, Relative or Continuous must be provided");
+        return -1;
+    }
+
+    int ret = -1;
+    if (absolute_node)
+        ret = perform_absolute_focus_move(entry, absolute_node);
+    else if (relative_node)
+        ret = perform_relative_focus_move(entry, relative_node);
+    else if (continuous_node)
+        ret = perform_continuous_focus_move(entry, continuous_node);
+
+    if (ret != 0)
+        return ret;
+
+    long size = cat(NULL, "imaging_service_files/Move.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "imaging_service_files/Move.xml", 0);
+}
+
+int imaging_get_move_options()
+{
+    if (ensure_imaging_available("GetMoveOptions") < 0)
+        return -1;
+
+    const char *token = get_element("VideoSourceToken", "Body");
+    imaging_entry_t *entry = require_imaging_entry(token);
+    if (!entry)
+        return -1;
+
+    if (!focus_move_capable(&entry->focus_move)) {
+        send_focus_not_supported_fault("No focus move options are configured for this source");
+        return -1;
+    }
+
+    char options_xml[IMAGING_XML_BUFFER];
+    build_focus_move_options_xml(entry, options_xml, sizeof(options_xml));
+    if (options_xml[0] == '\0') {
+        send_focus_not_supported_fault("Unable to build focus move options for this source");
+        return -1;
+    }
+
+    long size = cat(NULL, "imaging_service_files/GetMoveOptions.xml", 2, "%MOVE_OPTIONS%", options_xml);
+    output_http_headers(size);
+    return cat("stdout", "imaging_service_files/GetMoveOptions.xml", 2, "%MOVE_OPTIONS%", options_xml);
+}
+
+int imaging_stop()
+{
+    if (ensure_imaging_available("Stop") < 0)
+        return -1;
+
+    const char *token = get_element("VideoSourceToken", "Body");
+    imaging_entry_t *entry = require_imaging_entry(token);
+    if (!entry)
+        return -1;
+
+    if (!entry->focus_move.cmd_stop || entry->focus_move.cmd_stop[0] == '\0') {
+        send_focus_not_supported_fault("No focus stop command configured for this source");
+        return -1;
+    }
+
+    execute_backend_command(entry->focus_move.cmd_stop);
+    entry->focus_state = IMAGING_FOCUS_STATE_IDLE;
+
+    long size = cat(NULL, "imaging_service_files/Stop.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "imaging_service_files/Stop.xml", 0);
+}
+
+int imaging_get_status()
+{
+    if (ensure_imaging_available("GetStatus") < 0)
+        return -1;
+
+    const char *token = get_element("VideoSourceToken", "Body");
+    imaging_entry_t *entry = require_imaging_entry(token);
+    if (!entry)
+        return -1;
+
+    char status_xml[IMAGING_XML_BUFFER];
+    build_focus_status_xml(entry, status_xml, sizeof(status_xml));
+
+    long size = cat(NULL, "imaging_service_files/GetStatus.xml", 2, "%IMAGING_STATUS%", status_xml);
+    output_http_headers(size);
+    return cat("stdout", "imaging_service_files/GetStatus.xml", 2, "%IMAGING_STATUS%", status_xml);
+}
+
+int imaging_get_presets()
+{
+    if (ensure_imaging_available("GetPresets") < 0)
+        return -1;
+
+    const char *token = get_element("VideoSourceToken", "Body");
+    imaging_entry_t *entry = require_imaging_entry(token);
+    if (!entry)
+        return -1;
+
+    if (entry->preset_count <= 0 || entry->presets == NULL) {
+        send_preset_not_supported_fault("This video source does not define imaging presets");
+        return -1;
+    }
+
+    char presets_xml[IMAGING_XML_BUFFER];
+    build_imaging_presets_xml(entry, presets_xml, sizeof(presets_xml));
+    if (presets_xml[0] == '\0') {
+        send_preset_not_supported_fault("Failed to build imaging preset list for this source");
+        return -1;
+    }
+
+    long size = cat(NULL, "imaging_service_files/GetPresets.xml", 2, "%IMAGING_PRESETS%", presets_xml);
+    output_http_headers(size);
+    return cat("stdout", "imaging_service_files/GetPresets.xml", 2, "%IMAGING_PRESETS%", presets_xml);
+}
+
+int imaging_get_current_preset()
+{
+    if (ensure_imaging_available("GetCurrentPreset") < 0)
+        return -1;
+
+    const char *token = get_element("VideoSourceToken", "Body");
+    imaging_entry_t *entry = require_imaging_entry(token);
+    if (!entry)
+        return -1;
+
+    char preset_xml[IMAGING_XML_BUFFER];
+    build_current_preset_xml(entry, preset_xml, sizeof(preset_xml));
+
+    long size = cat(NULL, "imaging_service_files/GetCurrentPreset.xml", 2, "%CURRENT_PRESET%", preset_xml);
+    output_http_headers(size);
+    return cat("stdout", "imaging_service_files/GetCurrentPreset.xml", 2, "%CURRENT_PRESET%", preset_xml);
+}
+
+int imaging_set_current_preset()
+{
+    if (ensure_imaging_available("SetCurrentPreset") < 0)
+        return -1;
+
+    const char *token = get_element("VideoSourceToken", "Body");
+    imaging_entry_t *entry = require_imaging_entry(token);
+    if (!entry)
+        return -1;
+
+    if (entry->preset_count <= 0 || entry->presets == NULL) {
+        send_preset_not_supported_fault("This video source does not define imaging presets");
+        return -1;
+    }
+
+    const char *preset_token = get_element("PresetToken", "Body");
+    if (!preset_token || preset_token[0] == '\0') {
+        send_preset_invalid_fault("PresetToken element is required");
+        return -1;
+    }
+
+    imaging_preset_entry_t *preset = find_preset(entry, preset_token);
+    if (!preset) {
+        send_preset_invalid_fault("Requested Imaging Preset token is not available for this source");
+        return -1;
+    }
+
+    if (execute_preset_command(entry, preset) != 0) {
+        send_preset_not_supported_fault("Failed to execute backend command for the requested preset");
+        return -1;
+    }
+
+    set_current_preset(entry, preset->token);
+
+    long size = cat(NULL, "imaging_service_files/SetCurrentPreset.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "imaging_service_files/SetCurrentPreset.xml", 0);
 }
 
 int imaging_unsupported(const char *method)

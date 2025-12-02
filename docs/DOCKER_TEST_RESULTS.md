@@ -62,8 +62,10 @@ From container logs, the enhanced XML parsing is working perfectly:
 
 ```json
 {
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/tmp/onvif_logs"
+    "server": {
+        "log_level": "DEBUG",
+        "log_directory": "/tmp/onvif_logs"
+    }
 }
 ```
 
@@ -90,14 +92,14 @@ From container logs, the enhanced XML parsing is working perfectly:
 
 #### 1. Configuration Loading ✅
 ```
-[DEBUG:conf.c:241]: raw_log_directory: /tmp/onvif_logs
+[DEBUG:conf.c:241]: log_directory: /tmp/onvif_logs
 ```
 - Configuration parameter loaded correctly
 - Value properly parsed from JSON
 
 #### 2. XML Logging Initialization ✅
 ```
-[DEBUG:xml_logger.c:98]: XML logging enabled: raw_log_directory='/tmp/onvif_logs'
+[DEBUG:xml_logger.c:98]: XML logging enabled: log_directory='/tmp/onvif_logs'
 ```
 - XML logger initialized successfully
 - Directory validation passed
@@ -210,7 +212,7 @@ Tested various scenarios:
 
 1. **Logging disabled** (no config):
    ```
-   [DEBUG:xml_logger.c:69]: XML logging disabled: raw_log_directory not configured
+   [DEBUG:xml_logger.c:69]: XML logging disabled: log_directory not configured
    ```
    ✅ Graceful handling, no errors
 
@@ -230,12 +232,12 @@ Tested various scenarios:
 
 ### Overhead Measurement
 
-**Without XML Logging** (raw_log_directory not configured):
+**Without XML Logging** (log_directory not configured):
 - Request processing: Normal
 - No file I/O operations
 - Zero overhead ✅
 
-**With XML Logging** (raw_log_directory configured):
+**With XML Logging** (log_directory configured):
 - Request processing: Normal
 - File I/O: 2 writes (request + response)
 - Total overhead: < 1ms (imperceptible) ✅

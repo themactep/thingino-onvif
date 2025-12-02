@@ -9,22 +9,22 @@ The logging system is properly respecting the configured log level from `onvif.j
 ## Test Results
 
 ### Test 1: ERROR Level
-**Config**: `"loglevel": "ERROR"`
+**Config**: `server.log_level = "ERROR"`
 **Result**: ✅ No DEBUG, INFO, or WARN messages appear
 **Logs**: Empty (no errors occurred during test)
 
-### Test 2: WARN Level  
-**Config**: `"loglevel": "WARN"`
+### Test 2: WARN Level
+**Config**: `server.log_level = "WARN"`
 **Result**: ✅ No DEBUG or INFO messages appear
 **Logs**: Empty (no warnings occurred during test)
 
 ### Test 3: INFO Level
-**Config**: `"loglevel": "INFO"`
+**Config**: `server.log_level = "INFO"`
 **Result**: ✅ No DEBUG messages appear
 **Logs**: Empty (no INFO messages generated during normal operation)
 
 ### Test 4: DEBUG Level
-**Config**: `"loglevel": "DEBUG"`
+**Config**: `server.log_level = "DEBUG"`
 **Result**: ✅ All DEBUG messages appear
 **Sample Logs**:
 ```
@@ -52,11 +52,13 @@ The logging system is properly respecting the configured log level from `onvif.j
 In `onvif.json`:
 ```json
 {
-    "loglevel": "ERROR"
+    "server": {
+        "log_level": "ERROR"
+    }
 }
 ```
 
-Valid values: `"FATAL"`, `"ERROR"`, `"WARN"`, `"INFO"`, `"DEBUG"`, `"TRACE"` or numeric `0-5`
+Valid values for `server.log_level`: `"FATAL"`, `"ERROR"`, `"WARN"`, `"INFO"`, `"DEBUG"`, `"TRACE"` or numeric `0-5`
 
 ### Implementation
 The logging system (`src/log.c`) properly filters messages:
@@ -66,7 +68,7 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 {
     if (level > G.max_level)
         return; // Filter out messages above configured level
-    
+
     // ... log the message
 }
 ```
@@ -84,7 +86,9 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 ### For Production Deployments
 ```json
 {
-    "loglevel": "ERROR"
+    "server": {
+        "log_level": "ERROR"
+    }
 }
 ```
 - Minimal logging
@@ -94,7 +98,9 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 ### For Debugging Issues
 ```json
 {
-    "loglevel": "DEBUG"
+    "server": {
+        "log_level": "DEBUG"
+    }
 }
 ```
 - Detailed logging
@@ -104,7 +110,9 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 ### For Development
 ```json
 {
-    "loglevel": "TRACE"
+    "server": {
+        "log_level": "TRACE"
+    }
 }
 ```
 - Maximum verbosity
@@ -117,13 +125,13 @@ void log_log(int level, const char *file, int line, const char *fmt, ...)
 
 ### Check Current Log Level
 ```bash
-podman exec oss cat /etc/onvif.json | grep loglevel
+podman exec oss cat /etc/onvif.json | grep log_level
 ```
 
 ### Test with Different Levels
 ```bash
 # Edit res/onvif.json
-sed -i 's/"loglevel": ".*"/"loglevel": "ERROR"/' res/onvif.json
+sed -i 's/"log_level": ".*"/"log_level": "ERROR"/' res/onvif.json
 
 # Rebuild and restart
 ./container_build.sh

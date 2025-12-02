@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://www.w3.org/2003/05/soap-envelope"
-                   xmlns:tmd="http://www.onvif.org/ver10/deviceIO/wsdl">
+                   xmlns:timg="http://www.onvif.org/ver20/imaging/wsdl">
     <SOAP-ENV:Body>
-        <tmd:SetRelayOutputStateResponse/>
+        <timg:MoveResponse/>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

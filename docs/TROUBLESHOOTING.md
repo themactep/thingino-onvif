@@ -31,7 +31,7 @@
 - Verify the path exists in the image and files are present
 
 ## Increasing Verbosity
-- Set `loglevel` to higher values (max 5) in `/etc/onvif.json`
+- Set `log_level` to higher values (max 5) in `/etc/onvif.json`
 - For foreground runs of `wsd_simple_server`, use `-d <level>`
 
 ## Common Build/Runtime Pitfalls

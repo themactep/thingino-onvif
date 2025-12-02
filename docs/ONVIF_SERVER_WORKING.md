@@ -33,7 +33,7 @@ The ONVIF server is working correctly with all features implemented and tested.
 ### 5. XML Logging ✅
 - Request/response logging implemented
 - IP-based organization
-- Configurable via `raw_log_directory`
+- Configurable via `log_directory`
 - Zero overhead when disabled
 
 ---
@@ -93,10 +93,12 @@ curl -X POST -H "Content-Type: application/soap+xml" \
 ### Current Config (`/etc/onvif.json` in container)
 ```json
 {
+  "server": {
     "ifs": "lo",
-    "username": "thingino",
+    "log_level": "DEBUG",
     "password": "thingino",
-    "loglevel": "DEBUG"
+    "username": "thingino"
+  }
 }
 ```
 

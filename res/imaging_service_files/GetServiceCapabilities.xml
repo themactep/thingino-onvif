@@ -4,9 +4,9 @@
     <SOAP-ENV:Body>
         <timg:GetServiceCapabilitiesResponse>
             <timg:Capabilities>
-                <timg:ImageStabilization>false</timg:ImageStabilization>
-                <timg:ImagingPresets>false</timg:ImagingPresets>
-                <timg:AdaptablePreset>false</timg:AdaptablePreset>
+                <timg:ImageStabilization>%IMAGE_STABILIZATION%</timg:ImageStabilization>
+                <timg:ImagingPresets>%IMAGING_PRESETS%</timg:ImagingPresets>
+                <timg:AdaptablePreset>%ADAPTABLE_PRESET%</timg:AdaptablePreset>
             </timg:Capabilities>
         </timg:GetServiceCapabilitiesResponse>
     </SOAP-ENV:Body>

@@ -100,6 +100,23 @@ typedef struct {
     char *input_file;
 } event_t;
 
+typedef struct {
+    int output_level;
+    int output_level_min;
+    int output_level_max;
+    char *name;
+    char *token;
+    char *configuration_token;
+    char *receive_token;
+    char *uri;
+    char *transport;
+} audio_output_config_t;
+
+typedef struct {
+    int output_enabled;
+    audio_output_config_t backchannel;
+} audio_settings_t;
+
 typedef enum { IRCUT_MODE_UNSPECIFIED = 0, IRCUT_MODE_ON, IRCUT_MODE_OFF, IRCUT_MODE_AUTO } ircut_mode_t;
 
 typedef struct {
@@ -150,6 +167,46 @@ typedef struct {
     imaging_float_value_t far_limit;
 } imaging_focus_config_t;
 
+typedef enum {
+    IMAGING_FOCUS_STATE_UNKNOWN = 0,
+    IMAGING_FOCUS_STATE_IDLE,
+    IMAGING_FOCUS_STATE_MOVING,
+} imaging_focus_state_t;
+
+typedef struct {
+    int supported;
+    char *command;
+    imaging_float_value_t position;
+    imaging_float_value_t speed;
+} imaging_focus_absolute_move_t;
+
+typedef struct {
+    int supported;
+    char *command;
+    imaging_float_value_t distance;
+    imaging_float_value_t speed;
+} imaging_focus_relative_move_t;
+
+typedef struct {
+    int supported;
+    char *command;
+    imaging_float_value_t speed;
+} imaging_focus_continuous_move_t;
+
+typedef struct {
+    imaging_focus_absolute_move_t absolute;
+    imaging_focus_relative_move_t relative;
+    imaging_focus_continuous_move_t continuous;
+    char *cmd_stop;
+} imaging_focus_move_config_t;
+
+typedef struct {
+    char *token;
+    char *name;
+    char *type;
+    char *command;
+} imaging_preset_entry_t;
+
 typedef struct {
     int present;
     char *mode;
@@ -190,6 +247,15 @@ typedef struct {
     imaging_mode_level_t tone_compensation;
     imaging_mode_level_t defogging;
     imaging_float_value_t noise_reduction;
+    imaging_focus_move_config_t focus_move;
+    imaging_focus_state_t focus_state;
+    int focus_has_last_position;
+    float focus_last_position;
+    imaging_preset_entry_t *presets;
+    int preset_count;
+    char *cmd_apply_preset;
+    char *default_preset_token;
+    char *current_preset_token;
 } imaging_entry_t;
 
 typedef struct {
@@ -214,6 +280,8 @@ typedef struct {
     stream_profile_t *profiles;
     int profiles_num;
 
+    audio_settings_t audio;
+
     char **scopes;
     int scopes_num;
 
@@ -224,11 +292,11 @@ typedef struct {
     int events_enable;
     int events_num;
     int events_min_interval_ms; // Global debounce for events; 0 disables
-    int loglevel;               // 0=FATAL..5=TRACE, default 0
+    int loglevel;               // Controlled by 'log_level' config; 0=FATAL..5=TRACE, default 0
 
     // Raw XML logging configuration
-    char *raw_log_directory;   // Path to external storage for raw XML logs (optional)
-    int raw_log_on_error_only; // When true, log raw XML on error even if general XML logging is disabled
+    char *raw_log_directory;   // Path to external storage for raw XML logs via 'log_directory'
+    int raw_log_on_error_only; // 'log_on_error_only' toggles error-only captures when general logging is disabled
 
     imaging_entry_t *imaging;
     int imaging_num;

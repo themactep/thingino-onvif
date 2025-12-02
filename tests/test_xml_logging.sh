@@ -38,17 +38,22 @@ mkdir -p "$TEST_LOG_DIR"
 echo -e "${YELLOW}Creating test configuration file: $CONFIG_FILE${NC}"
 cat > "$CONFIG_FILE" << 'EOF'
 {
-    "model": "TestModel",
-    "manufacturer": "TestManufacturer",
-    "firmware_ver": "1.0.0",
-    "serial_num": "TEST123456",
-    "hardware_id": "TESTHW",
-    "ifs": "eth0",
-    "port": 80,
-    "username": "testuser",
-    "password": "testpass",
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/tmp/onvif_xml_logs_test",
+    "camera": {
+        "firmware_ver": "1.0.0",
+        "hardware_id": "TESTHW",
+        "manufacturer": "TestManufacturer",
+        "model": "TestModel",
+        "serial_num": "TEST123456"
+    },
+    "server": {
+        "ifs": "eth0",
+        "log_directory": "/tmp/onvif_xml_logs_test",
+        "log_level": "DEBUG",
+        "log_on_error_only": false,
+        "password": "testpass",
+        "port": 80,
+        "username": "testuser"
+    },
     "profiles": {
         "stream0": {
             "name": "TestProfile",
@@ -171,23 +176,29 @@ else
     echo -e "${RED}✗ Test 3 FAILED: IP directory not created${NC}"
 fi
 
-# Test 4: Verify XML logging disabled when loglevel is not DEBUG
+# Test 4: Verify XML logging disabled when log_level is not DEBUG
 echo ""
-echo -e "${BLUE}Test 4: Verify logging disabled when loglevel < DEBUG${NC}"
+echo -e "${BLUE}Test 4: Verify logging disabled when log_level < DEBUG${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # Create config with INFO log level
 cat > "$CONFIG_FILE" << 'EOF'
 {
-    "model": "TestModel",
-    "manufacturer": "TestManufacturer",
-    "firmware_ver": "1.0.0",
-    "serial_num": "TEST123456",
-    "hardware_id": "TESTHW",
-    "ifs": "eth0",
-    "port": 80,
-    "loglevel": "INFO",
-    "raw_log_directory": "/tmp/onvif_xml_logs_test",
+    "camera": {
+        "firmware_ver": "1.0.0",
+        "hardware_id": "TESTHW",
+        "manufacturer": "TestManufacturer",
+        "model": "TestModel",
+        "serial_num": "TEST123456"
+    },
+    "server": {
+        "ifs": "eth0",
+        "log_directory": "/tmp/onvif_xml_logs_test",
+        "log_level": "INFO",
+        "password": "testpass",
+        "port": 80,
+        "username": "testuser"
+    },
     "profiles": {
         "stream0": {
             "name": "TestProfile",
@@ -212,22 +223,28 @@ else
     echo -e "${RED}✗ Test 4 FAILED: Logs were created despite INFO level${NC}"
 fi
 
-# Test 5: Verify logging disabled when raw_log_directory is empty
+# Test 5: Verify logging disabled when log_directory is empty
 echo ""
-echo -e "${BLUE}Test 5: Verify logging disabled when raw_log_directory is empty${NC}"
+echo -e "${BLUE}Test 5: Verify logging disabled when log_directory is empty${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 cat > "$CONFIG_FILE" << 'EOF'
 {
-    "model": "TestModel",
-    "manufacturer": "TestManufacturer",
-    "firmware_ver": "1.0.0",
-    "serial_num": "TEST123456",
-    "hardware_id": "TESTHW",
-    "ifs": "eth0",
-    "port": 80,
-    "loglevel": "DEBUG",
-    "raw_log_directory": "",
+    "camera": {
+        "firmware_ver": "1.0.0",
+        "hardware_id": "TESTHW",
+        "manufacturer": "TestManufacturer",
+        "model": "TestModel",
+        "serial_num": "TEST123456"
+    },
+    "server": {
+        "ifs": "eth0",
+        "log_directory": "",
+        "log_level": "DEBUG",
+        "password": "testpass",
+        "port": 80,
+        "username": "testuser"
+    },
     "profiles": {
         "stream0": {
             "name": "TestProfile",
@@ -247,9 +264,9 @@ sleep 1
 AFTER_COUNT=$(find "$TEST_LOG_DIR" -name "*.xml" | wc -l)
 
 if [ $BEFORE_COUNT -eq $AFTER_COUNT ]; then
-    echo -e "${GREEN}✓ Test 5 PASSED: No new logs created with empty raw_log_directory${NC}"
+    echo -e "${GREEN}✓ Test 5 PASSED: No new logs created with empty log_directory${NC}"
 else
-    echo -e "${RED}✗ Test 5 FAILED: Logs were created despite empty raw_log_directory${NC}"
+    echo -e "${RED}✗ Test 5 FAILED: Logs were created despite empty log_directory${NC}"
 fi
 
 # Summary

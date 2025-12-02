@@ -101,8 +101,7 @@ int device_get_services()
         sprintf(audio_sources, "%d", 0);
     }
 
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+    if (service_ctx.audio.output_enabled) {
         sprintf(audio_outputs, "%d", 1);
     } else {
         sprintf(audio_outputs, "%d", 0);
@@ -784,8 +783,7 @@ int device_get_capabilities()
     } else {
         sprintf(audio_sources, "%d", 0);
     }
-    if ((service_ctx.profiles[0].audio_decoder != AUDIO_NONE)
-        || ((service_ctx.profiles_num == 2) && (service_ctx.profiles[1].audio_decoder != AUDIO_NONE))) {
+    if (service_ctx.audio.output_enabled) {
         sprintf(audio_outputs, "%d", 1);
     } else {
         sprintf(audio_outputs, "%d", 0);

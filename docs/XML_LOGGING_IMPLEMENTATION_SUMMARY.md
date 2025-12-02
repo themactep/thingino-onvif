@@ -7,7 +7,7 @@ Implemented comprehensive raw XML logging for debugging ONVIF SOAP requests and 
 ## Features Implemented
 
 ### 1. Configuration Parameter
-- ✅ Added `raw_log_directory` parameter to `onvif.json`
+- ✅ Added `log_directory` parameter to `onvif.json`
 - ✅ Optional parameter - empty or omitted disables logging
 - ✅ Supports any mountpoint path (NFS, USB, etc.)
 
@@ -45,8 +45,8 @@ Implemented comprehensive raw XML logging for debugging ONVIF SOAP requests and 
 ## Files Modified
 
 ### Configuration Files
-- **`src/onvif_simple_server.h`** - Added `raw_log_directory` to `service_context_t`
-- **`src/conf.c`** - Added configuration loading and cleanup for `raw_log_directory`
+- **`src/onvif_simple_server.h`** - Added `log_directory` to `service_context_t`
+- **`src/conf.c`** - Added configuration loading and cleanup for `log_directory`
 - **`res/onvif.json`** - Added example configuration parameter
 
 ### New Files Created
@@ -65,12 +65,14 @@ Implemented comprehensive raw XML logging for debugging ONVIF SOAP requests and 
 
 ```json
 {
-    "loglevel": "DEBUG",
-    "raw_log_directory": "/mnt/nfs/onvif_logs"
+   "server": {
+      "log_level": "DEBUG",
+      "log_directory": "/mnt/nfs/onvif_logs"
+   }
 }
 ```
 
-**To disable**: Set `raw_log_directory` to `""` or omit it, or set `loglevel` below DEBUG.
+**To disable**: Set `log_directory` to `""` or omit it, or set `log_level` below DEBUG.
 
 ## Directory Structure Example
 
@@ -95,8 +97,10 @@ Implemented comprehensive raw XML logging for debugging ONVIF SOAP requests and 
 1. Edit `/etc/onvif.json`:
    ```json
    {
-       "loglevel": "DEBUG",
-       "raw_log_directory": "/mnt/nfs/onvif_logs"
+      "server": {
+          "log_level": "DEBUG",
+          "log_directory": "/mnt/nfs/onvif_logs"
+      }
    }
    ```
 
@@ -141,8 +145,8 @@ The test script verifies:
 1. ✅ Request and response files are created
 2. ✅ IP-based subdirectories are created
 3. ✅ Timestamps match for request/response pairs
-4. ✅ Logging is disabled when loglevel < DEBUG
-5. ✅ Logging is disabled when raw_log_directory is empty
+4. ✅ Logging is disabled when log_level < DEBUG
+5. ✅ Logging is disabled when log_directory is empty
 
 ## Performance Impact
 
@@ -203,7 +207,7 @@ XML logs may contain:
 1. Read SOAP request from stdin
 2. Check if XML logging is enabled
 3. Get REMOTE_ADDR from environment
-4. Log request to: {raw_log_directory}/{IP}/{timestamp}_request.xml
+4. Log request to: {log_directory}/{IP}/{timestamp}_request.xml
 5. Continue with normal request processing
 ```
 
@@ -213,7 +217,7 @@ XML logs may contain:
 1. Initialize response buffer at request start
 2. Capture all output to stdout via response_buffer_append()
 3. Process request normally
-4. At request end, flush buffer to: {raw_log_directory}/{IP}/{timestamp}_response.xml
+4. At request end, flush buffer to: {log_directory}/{IP}/{timestamp}_response.xml
 5. Clear buffer
 ```
 

@@ -4,11 +4,11 @@
                    xmlns:tt="http://www.onvif.org/ver10/schema">
     <SOAP-ENV:Body>
         <trt:GetAudioOutputConfigurationsResponse>
-            <trt:Configurations token="AudioOutputConfigToken">
-                <tt:Name>AudioOutputConfig</tt:Name>
+            <trt:Configurations token="%AUDIO_OUTPUT_CONFIG_TOKEN%">
+                <tt:Name>%AUDIO_OUTPUT_NAME%</tt:Name>
                 <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
-                <tt:OutputToken>AudioOutputToken</tt:OutputToken>
-                <tt:OutputLevel>1</tt:OutputLevel>
+                <tt:OutputToken>%AUDIO_OUTPUT_TOKEN%</tt:OutputToken>
+                <tt:OutputLevel>%AUDIO_OUTPUT_LEVEL%</tt:OutputLevel>
             </trt:Configurations>
         </trt:GetAudioOutputConfigurationsResponse>
     </SOAP-ENV:Body>

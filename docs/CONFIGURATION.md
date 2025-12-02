@@ -14,22 +14,30 @@ The main config can reference an alternate directory via `conf_dir` (defaults to
 ## /etc/onvif.json (main)
 ```
 {
-  "model": "Model",
-  "manufacturer": "Manufacturer",
-  "firmware_ver": "0.0.1",
-  "hardware_id": "HWID",
-  "serial_num": "SN1234567890",
-  "ifs": "wlan0",
-  "port": 80,
-  "user": "",
-  "password": "",
-  "loglevel": "INFO",            // FATAL, ERROR, WARN, INFO, DEBUG, TRACE (or 0-5 for backward compatibility)
-  "conf_dir": "/etc/onvif.d"     // where to load modular JSON files from
+  "camera": {
+    "firmware_ver": "0.0.1",
+    "hardware_id": "HWID",
+    "manufacturer": "Manufacturer",
+    "model": "Model",
+    "serial_num": "SN1234567890"
+  },
+  "server": {
+    "ifs": "wlan0",
+    "log_directory": "/var/www/onvif/raw",
+    "log_level": "INFO",            // FATAL..TRACE or 0-5 for backward compatibility
+    "log_on_error_only": false,
+    "port": 80,
+    "username": "",
+    "password": ""
+  },
+  "conf_dir": "/etc/onvif.d"       // where to load modular JSON files from
 }
 ```
 Notes:
-- `user`/`password` are optional. If set, server will expect digest auth in SOAP headers. RTSP URLs returned in Media services also embed credentials when present.
-- `ifs` selects the network interface used for discovery and address resolution.
+- `camera` groups immutable device identity reported through Device service calls.
+- `server` contains runtime/service parameters such as network interface, credentials, and XML logging tweaks.
+- `server.username`/`server.password` are optional. If set, the server expects digest auth in SOAP headers and embeds them in RTSP URLs.
+- `server.ifs` selects the network interface used for discovery and address resolution.
 
 ## /etc/onvif.d/profiles.json
 An array of media profiles. The URL templates use `%s` placeholder for device IP/host.

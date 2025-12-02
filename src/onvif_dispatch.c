@@ -121,6 +121,13 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"imaging_service", "GetImagingSettings", imaging_get_imaging_settings, NULL},
     {"imaging_service", "GetOptions", imaging_get_options, NULL},
     {"imaging_service", "SetImagingSettings", imaging_set_imaging_settings, NULL},
+    {"imaging_service", "Move", imaging_move, NULL},
+    {"imaging_service", "GetMoveOptions", imaging_get_move_options, NULL},
+    {"imaging_service", "Stop", imaging_stop, NULL},
+    {"imaging_service", "GetStatus", imaging_get_status, NULL},
+    {"imaging_service", "GetPresets", imaging_get_presets, NULL},
+    {"imaging_service", "GetCurrentPreset", imaging_get_current_preset, NULL},
+    {"imaging_service", "SetCurrentPreset", imaging_set_current_preset, NULL},
 
     // PTZ service methods (no conditions)
     {"ptz_service", "GetServiceCapabilities", ptz_get_service_capabilities, NULL},

@@ -31,5 +31,11 @@
 #define DEFAULT_CONF_DIR "/etc/onvif.d"
 #endif
 
+#define DEFAULT_AUDIO_OUTPUT_TOKEN "AudioOutputToken"
+#define DEFAULT_AUDIO_OUTPUT_CONFIGURATION_TOKEN "AudioOutputConfigToken"
+#define DEFAULT_AUDIO_OUTPUT_NAME "AudioOutput"
+#define DEFAULT_AUDIO_OUTPUT_RECEIVE_TOKEN "AudioDecoderToken"
+#define DEFAULT_AUDIO_BACKCHANNEL_TRANSPORT "RTP_RTSP_TCP"
+
 int process_json_conf_file(char *file);
 void free_conf_file();
