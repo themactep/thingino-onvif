@@ -62,8 +62,8 @@
                 <tds:XAddr>%EVENTS_SERVICE_ADDRESS%</tds:XAddr>
                 <tds:Capabilities>
                     <tev:Capabilities WSSubscriptionPolicySupport="%EVENTS_BASESUBSCRIPTION%"
-                                       WSPullPointSupport="%EVENTS_PULLPOINT%"
-                                       WSPausableSubscriptionManagerInterfaceSupport="false">
+                                      WSPullPointSupport="%EVENTS_PULLPOINT%"
+                                      WSPausableSubscriptionManagerInterfaceSupport="false">
                     </tev:Capabilities>
                 </tds:Capabilities>
                 <tds:Version>
