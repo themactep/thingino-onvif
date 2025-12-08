@@ -69,6 +69,7 @@ char msg_uuid[UUID_LEN + 1];
 
 char model[64];
 char hardware[64];
+char mac_address[18];
 
 int daemonize(int flags)
 {
@@ -186,7 +187,7 @@ void signal_handler(int signal)
     sprintf(template_file, "%s/Bye.xml", TEMPLATE_DIR);
     size = cat(NULL,
                template_file,
-               12,
+               14,
                "%MSG_UUID%",
                msg_uuid,
                "%MSG_NUMBER%",
@@ -198,7 +199,9 @@ void signal_handler(int signal)
                "%NAME%",
                model,
                "%ADDRESS%",
-               xaddr);
+               xaddr,
+               "%MAC_ADDRESS%",
+               mac_address);
 
     message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
@@ -211,7 +214,7 @@ void signal_handler(int signal)
 
     cat(message,
         template_file,
-        12,
+        14,
         "%MSG_UUID%",
         msg_uuid,
         "%MSG_NUMBER%",
@@ -223,7 +226,9 @@ void signal_handler(int signal)
         "%NAME%",
         model,
         "%ADDRESS%",
-        xaddr);
+        xaddr,
+        "%MAC_ADDRESS%",
+        mac_address);
 
     if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
         log_fatal("Error sending Bye message.\n");
@@ -449,6 +454,15 @@ int main(int argc, char **argv)
     get_ip_address(address, netmask, if_name);
     log_debug("Address = %s", address);
 
+    // Get MAC address for WS-Discovery scope
+    ret = get_mac_address(mac_address, if_name);
+    if (ret != 0) {
+        log_warn("Unable to get MAC address, will be empty in WS-Discovery scopes");
+        mac_address[0] = '\0';
+    } else {
+        log_debug("MAC Address = %s", mac_address);
+    }
+
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
         log_fatal("Unable to create socket.\n");
         exit(EXIT_FAILURE);
@@ -483,7 +497,7 @@ int main(int argc, char **argv)
     sprintf(template_file, "%s/Hello.xml", TEMPLATE_DIR);
     size = cat(NULL,
                template_file,
-               12,
+               14,
                "%MSG_UUID%",
                msg_uuid,
                "%MSG_NUMBER%",
@@ -495,7 +509,9 @@ int main(int argc, char **argv)
                "%NAME%",
                model,
                "%ADDRESS%",
-               xaddr);
+               xaddr,
+               "%MAC_ADDRESS%",
+               mac_address);
 
     message = (char *) malloc((size + 1) * sizeof(char));
     if (message == NULL) {
@@ -507,7 +523,7 @@ int main(int argc, char **argv)
 
     cat(message,
         template_file,
-        12,
+        14,
         "%MSG_UUID%",
         msg_uuid,
         "%MSG_NUMBER%",
@@ -519,7 +535,9 @@ int main(int argc, char **argv)
         "%NAME%",
         model,
         "%ADDRESS%",
-        xaddr);
+        xaddr,
+        "%MAC_ADDRESS%",
+        mac_address);
 
     addr_in.sin_addr.s_addr = inet_addr(MULTICAST_ADDRESS);
     if (sendto(sock, message, strlen(message), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
@@ -585,7 +603,7 @@ int main(int argc, char **argv)
                 sprintf(template_file, "%s/ProbeMatches.xml", TEMPLATE_DIR);
                 size = cat(NULL,
                            template_file,
-                           14,
+                           16,
                            "%MSG_UUID%",
                            msg_uuid,
                            "%REL_TO_UUID%",
@@ -599,7 +617,9 @@ int main(int argc, char **argv)
                            "%NAME%",
                            model,
                            "%ADDRESS%",
-                           xaddr);
+                           xaddr,
+                           "%MAC_ADDRESS%",
+                           mac_address);
 
                 message_loop = (char *) malloc((size + 1) * sizeof(char));
                 if (message_loop == NULL) {
@@ -609,7 +629,7 @@ int main(int argc, char **argv)
 
                 cat(message_loop,
                     template_file,
-                    14,
+                    16,
                     "%MSG_UUID%",
                     msg_uuid,
                     "%REL_TO_UUID%",
@@ -623,7 +643,9 @@ int main(int argc, char **argv)
                     "%NAME%",
                     model,
                     "%ADDRESS%",
-                    xaddr);
+                    xaddr,
+                    "%MAC_ADDRESS%",
+                    mac_address);
 
                 // Log the response content for debugging
                 log_debug("ProbeMatches response: %s", message_loop);
