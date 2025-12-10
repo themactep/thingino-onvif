@@ -57,16 +57,51 @@ LIBS_W		 = -Wl,--gc-sections -ltomcrypt
 endif
 endif
 
+PKG_CONFIG	 ?= pkg-config
+MXML_PKG	 ?= libmxml4
+MXML_CFLAGS	 := $(shell $(PKG_CONFIG) --cflags $(MXML_PKG) 2>/dev/null)
+MXML_LIBS	 := $(shell $(PKG_CONFIG) --libs $(MXML_PKG) 2>/dev/null)
+
+ifeq ($(strip $(MXML_CFLAGS)$(MXML_LIBS)),)
+MXML_PKG	 := mxml
+MXML_CFLAGS	 := $(shell $(PKG_CONFIG) --cflags $(MXML_PKG) 2>/dev/null)
+MXML_LIBS	 := $(shell $(PKG_CONFIG) --libs $(MXML_PKG) 2>/dev/null)
+endif
+
+ifeq ($(strip $(MXML_LIBS)),)
+ifneq ($(strip $(STAGING_DIR)),)
+ifneq ($(wildcard $(STAGING_DIR)/usr/lib/libmxml4.*),)
+MXML_LIBS	 := -L$(STAGING_DIR)/usr/lib -lmxml4
+else
+MXML_LIBS	 := -L$(STAGING_DIR)/usr/lib -lmxml
+endif
+else
+MXML_LIBS	 := -lmxml
+endif
+endif
+
+ifeq ($(strip $(MXML_CFLAGS)),)
+ifneq ($(strip $(STAGING_DIR)),)
+MXML_CFLAGS	 := -I$(STAGING_DIR)/usr/include/libmxml4 -I$(STAGING_DIR)/usr/include
+else
+MXML_CFLAGS	 := -I/usr/include/libmxml4 -I/usr/include
+endif
+endif
+
 # Common libraries for all builds
 # Note: For Buildroot builds, mxml is provided by the system
 # For development builds, mxml is built locally via build.sh
-LIBS_O		+= -ljct -lmxml -lpthread -lrt
-LIBS_N		+= -ljct -lmxml -lpthread -lrt
-LIBS_W		+= -lmxml -lpthread
+LIBS_O		+= -ljct -lpthread -lrt
+LIBS_N		+= -ljct -lpthread -lrt
+LIBS_W		+= -lpthread
+LIBS_O		+= $(MXML_LIBS)
+LIBS_N		+= $(MXML_LIBS)
+LIBS_W		+= $(MXML_LIBS)
 
 # Ensure headers under src/ and ezxml under project root are found
 # jct headers are expected to be in system include path
 INCLUDE		+= -I$(SRC_DIR) -I.
+INCLUDE		+= $(MXML_CFLAGS)
 
 ifeq ($(STRIP), )
     STRIP=echo
