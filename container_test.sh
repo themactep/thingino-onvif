@@ -632,11 +632,103 @@ test_preauth_events_http() {
     fi
 }
 
+# Test WS-Discovery for Home Assistant compatibility
+test_ws_discovery() {
+    echo -e "\n${YELLOW}Testing: WS-Discovery (Home Assistant style)${NC}"
+
+    if [ ! -f "tests/ws_discovery_probe.py" ]; then
+        echo -e "${YELLOW}⚠ Skipping WS-Discovery test - probe script not found${NC}"
+        return 0
+    fi
+
+    # Run the probe script
+    local probe_response
+    probe_response=$(python3 tests/ws_discovery_probe.py "$SERVER_URL")
+    local exit_code=$?
+
+    if [ $exit_code -ne 0 ]; then
+        echo -e "${RED}✗ WS-Discovery - FAILED (no response from server)${NC}"
+        return 1
+    fi
+
+    if [[ -z "$probe_response" ]]; then
+        echo -e "${RED}✗ WS-Discovery - FAILED (empty response from probe script)${NC}"
+        return 1
+    fi
+
+    # Validate the response
+    if ! assert_valid_xml "$probe_response" "ws-discovery/ProbeResponse"; then
+        return 1
+    fi
+
+    if [[ $probe_response != *"ProbeMatches"* ]]; then
+        echo -e "${RED}✗ WS-Discovery - FAILED (response does not contain ProbeMatches)${NC}"
+        [ "$VERBOSE" = true ] && echo "Response: $probe_response"
+        return 1
+    fi
+
+    # Extract XAddrs from the response
+    local xaddrs
+    xaddrs=$(echo "$probe_response" | grep -o '<d:XAddrs>[^<]*' | sed 's/<d:XAddrs>//' | sed 's/&amp;/\&/g')
+
+    if [[ -z "$xaddrs" ]]; then
+        echo -e "${RED}✗ WS-Discovery - FAILED (could not extract XAddrs from ProbeMatches)${NC}"
+        [ "$VERBOSE" = true ] && echo "Response: $probe_response"
+        return 1
+    fi
+
+    # XAddrs can be a space-separated list of URLs. We'll take the first one.
+    local device_service_url
+    device_service_url=$(echo "$xaddrs" | cut -d' ' -f1)
+
+    echo -e "${GREEN}✓ WS-Discovery - SUCCESS (found device at $device_service_url)${NC}"
+    [ "$VERBOSE" = true ] && echo "Response: $probe_response"
+
+    echo -e "\n${YELLOW}Testing: GetDeviceInformation from discovered endpoint${NC}"
+
+    local soap_request
+    soap_request=$(generate_auth_soap "GetDeviceInformation" "tds" "http://www.onvif.org/ver10/device/wsdl" "true")
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping GetDeviceInformation - authentication script not available${NC}"
+        return 0
+    fi
+
+    local response_code
+    local response
+    local soap_action="http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation"
+
+    tmp_resp=$(mktemp)
+    response_code=$(send_soap_raw "$device_service_url" "$soap_action" "$soap_request" "$tmp_resp")
+    curl_rc=$?
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp" || true
+
+    if [ $curl_rc -ne 0 ]; then
+        echo -e "${RED}✗ GetDeviceInformation (discovered) - FAILED (transport/curl error, rc=$curl_rc)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "device/GetDeviceInformation (discovered)"; then
+        return 1
+    fi
+
+    if [[ $response == *"GetDeviceInformationResponse"* ]]; then
+        echo -e "${GREEN}✓ GetDeviceInformation (discovered) - SUCCESS${NC}"
+        [ "$VERBOSE" = true ] && echo "Response: $response"
+    else
+        echo -e "${RED}✗ GetDeviceInformation (discovered) - FAILED (unexpected response, HTTP $response_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "Response: $response"
+        return 1
+    fi
+
+    return 0
+}
+
 # Function to test basic HTTP connectivity
 test_http_connectivity() {
     echo -e "\n${YELLOW}Testing HTTP connectivity...${NC}"
 
-    local response=$(curl -s -o /dev/null -w "%{http_code}" "$SERVER_URL/")
+    local response=$(curl -s -o /dev/null -w "%{\nhttp_code}" "$SERVER_URL/")
 
     # Accept any HTTP response code that indicates the server is running
     # 200 = OK, 403 = Forbidden (normal for directory without index), 404 = Not Found
@@ -681,6 +773,10 @@ echo -e "\n${BLUE}=== Running Tests ===${NC}"
 
 test_http_connectivity
 test_cgi_execution
+
+# Test WS-Discovery
+test_ws_discovery
+
 
 # PRE_AUTH verification (must be accessible without auth)
 echo -e "\n${BLUE}=== PRE_AUTH Verification ===${NC}"
