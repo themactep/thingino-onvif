@@ -269,7 +269,7 @@ int events_pull_messages()
     subs_evts = NULL;
 
     // Subscription manager replies to address http://%s%s/onvif/events_service?sub=%d
-    log_info("PullMessages request received");
+    log_debug("PullMessages request received");
 
     // Get parameters from query string
     get_from_query_string(&qs_string, &qs_size, "sub");
