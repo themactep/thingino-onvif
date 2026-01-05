@@ -90,6 +90,10 @@ typedef struct {
     char *jump_to_abs_speed; // Absolute move with speed: fmt(dx,dy,dz,pt_speed,zoom_speed)
     char *jump_to_rel_speed; // Relative move with speed: fmt(dx,dy,dz,pt_speed,zoom_speed)
     char *continuous_move;   // Continuous move with both axes: fmt(x_target, y_target) for diagonal movement
+    int reverse_supported;
+    int reverse_mode_on;
+    int eflip_supported;
+    int eflip_mode_on;
 } ptz_node_t;
 
 typedef struct {

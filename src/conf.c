@@ -522,6 +522,10 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.jump_to_abs_speed = NULL;
     service_ctx.ptz_node.jump_to_rel_speed = NULL;
     service_ctx.ptz_node.continuous_move = NULL;
+    service_ctx.ptz_node.reverse_supported = 0;
+    service_ctx.ptz_node.reverse_mode_on = 0;
+    service_ctx.ptz_node.eflip_supported = 0;
+    service_ctx.ptz_node.eflip_mode_on = 0;
 
     if (camera_section && get_object_item(camera_section, "model"))
         get_string_from_json(&(service_ctx.model), camera_section, "model");
@@ -835,6 +839,22 @@ int process_json_conf_file(char *file)
         get_string_from_json(&(service_ctx.ptz_node.jump_to_abs_speed), value, "jump_to_abs_speed");
         get_string_from_json(&(service_ctx.ptz_node.jump_to_rel_speed), value, "jump_to_rel_speed");
         get_string_from_json(&(service_ctx.ptz_node.continuous_move), value, "continuous_move");
+        get_bool_from_json(&(service_ctx.ptz_node.reverse_supported), value, "reverse_supported");
+        get_bool_from_json(&(service_ctx.ptz_node.eflip_supported), value, "eflip_supported");
+
+        JsonValue *rev_mode = get_object_item(value, "reverse_mode");
+        if (rev_mode && rev_mode->type == JSON_STRING) {
+            service_ctx.ptz_node.reverse_mode_on = (strcasecmp(rev_mode->value.string, "ON") == 0);
+        } else {
+            get_bool_from_json(&(service_ctx.ptz_node.reverse_mode_on), value, "reverse_mode_on");
+        }
+
+        JsonValue *eflip_mode = get_object_item(value, "eflip_mode");
+        if (eflip_mode && eflip_mode->type == JSON_STRING) {
+            service_ctx.ptz_node.eflip_mode_on = (strcasecmp(eflip_mode->value.string, "ON") == 0);
+        } else {
+            get_bool_from_json(&(service_ctx.ptz_node.eflip_mode_on), value, "eflip_mode_on");
+        }
     }
 
     // Load relays configuration from main configuration file

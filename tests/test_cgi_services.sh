@@ -17,7 +17,7 @@ cd test_cgi
 cat > onvif.json << 'EOF'
 {
     "model": "Test Camera",
-    "manufacturer": "Test Manufacturer", 
+    "manufacturer": "Test Manufacturer",
     "firmware_ver": "1.0.0",
     "serial_num": "TEST123",
     "hardware_id": "TEST_HW",
@@ -50,7 +50,7 @@ cat > media_request.xml << 'EOF'
 </soap:Envelope>
 EOF
 
-# Create simple SOAP request for device service  
+# Create simple SOAP request for device service
 cat > device_request.xml << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:tds="http://www.onvif.org/ver10/device/wsdl">
