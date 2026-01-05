@@ -61,13 +61,16 @@ static double ptz_onvif_to_machine_units(
     double span_onvif = onvif_max - onvif_min;
     double span_steps = steps_max - steps_min;
     double scaled;
-    if (invert) {
-        value = onvif_max - (value - onvif_min);
-    }
     if (relative) {
+        if (invert) {
+            value = -value;
+        }
         scaled = value * span_steps / span_onvif;
         scaled = clamp_double(scaled, -span_steps, span_steps);
     } else {
+        if (invert) {
+            value = onvif_max - (value - onvif_min);
+        }
         scaled = (value - onvif_min) * span_steps / span_onvif + steps_min;
         scaled = clamp_double(scaled, steps_min, steps_max);
     }
@@ -82,15 +85,19 @@ static double ptz_machine_to_onvif_units(
     double span_onvif = onvif_max - onvif_min;
     double span_steps = steps_max - steps_min;
     double scaled;
-    if (invert) {
-        value = steps_max - (value - steps_min);
-    }
+
     if (relative) {
         scaled = value * span_onvif / span_steps;
         scaled = clamp_double(scaled, -span_onvif, span_onvif);
+        if (invert) {
+            scaled = -scaled;
+        }
     } else {
         scaled = (value - steps_min) * span_onvif / span_steps + onvif_min;
         scaled = clamp_double(scaled, onvif_min, onvif_max);
+        if (invert) {
+            scaled = onvif_max - (scaled - onvif_min);
+        }
     }
     return scaled;
 }
