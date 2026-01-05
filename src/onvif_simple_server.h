@@ -74,10 +74,9 @@ typedef struct {
     int tilt_inverted;
     char *get_position;
     char *is_moving;
-    char *move_left;
-    char *move_right;
-    char *move_up;
-    char *move_down;
+    char *move_x;    // Pan movement: fmt(x_value)
+    char *move_y;    // Tilt movement: fmt(y_value)
+    char *move_both; // Diagonal movement: fmt(x_value, y_value)
     char *move_in;
     char *move_out;
     char *move_stop;
@@ -97,7 +96,6 @@ typedef struct {
     char *preset_tour_pause; // Backend pause tour command (token)
     char *jump_to_abs_speed; // Absolute move with speed: fmt(dx,dy,dz,pt_speed,zoom_speed)
     char *jump_to_rel_speed; // Relative move with speed: fmt(dx,dy,dz,pt_speed,zoom_speed)
-    char *continuous_move;   // Continuous move with both axes: fmt(x_target, y_target) for diagonal movement
     int reverse_supported;
     int reverse_mode_on;
     int eflip_supported;

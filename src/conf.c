@@ -507,10 +507,9 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.tilt_inverted = 0;
     service_ctx.ptz_node.get_position = NULL;
     service_ctx.ptz_node.is_moving = NULL;
-    service_ctx.ptz_node.move_left = NULL;
-    service_ctx.ptz_node.move_right = NULL;
-    service_ctx.ptz_node.move_up = NULL;
-    service_ctx.ptz_node.move_down = NULL;
+    service_ctx.ptz_node.move_x = NULL;
+    service_ctx.ptz_node.move_y = NULL;
+    service_ctx.ptz_node.move_both = NULL;
     service_ctx.ptz_node.move_in = NULL;
     service_ctx.ptz_node.move_out = NULL;
     service_ctx.ptz_node.move_stop = NULL;
@@ -529,7 +528,6 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.preset_tour_pause = NULL;
     service_ctx.ptz_node.jump_to_abs_speed = NULL;
     service_ctx.ptz_node.jump_to_rel_speed = NULL;
-    service_ctx.ptz_node.continuous_move = NULL;
     service_ctx.ptz_node.reverse_supported = 0;
     service_ctx.ptz_node.reverse_mode_on = 0;
     service_ctx.ptz_node.eflip_supported = 0;
@@ -831,10 +829,9 @@ int process_json_conf_file(char *file)
         get_bool_from_json(&(service_ctx.ptz_node.tilt_inverted), value, "tilt_inverted");
         get_string_from_json(&(service_ctx.ptz_node.get_position), value, "get_position");
         get_string_from_json(&(service_ctx.ptz_node.is_moving), value, "is_moving");
-        get_string_from_json(&(service_ctx.ptz_node.move_left), value, "move_left");
-        get_string_from_json(&(service_ctx.ptz_node.move_right), value, "move_right");
-        get_string_from_json(&(service_ctx.ptz_node.move_up), value, "move_up");
-        get_string_from_json(&(service_ctx.ptz_node.move_down), value, "move_down");
+        get_string_from_json(&(service_ctx.ptz_node.move_x), value, "move_x");
+        get_string_from_json(&(service_ctx.ptz_node.move_y), value, "move_y");
+        get_string_from_json(&(service_ctx.ptz_node.move_both), value, "move_both");
         get_string_from_json(&(service_ctx.ptz_node.move_in), value, "move_in");
         get_string_from_json(&(service_ctx.ptz_node.move_out), value, "move_out");
         get_string_from_json(&(service_ctx.ptz_node.move_stop), value, "move_stop");
@@ -854,7 +851,6 @@ int process_json_conf_file(char *file)
         get_string_from_json(&(service_ctx.ptz_node.preset_tour_pause), value, "preset_tour_pause");
         get_string_from_json(&(service_ctx.ptz_node.jump_to_abs_speed), value, "jump_to_abs_speed");
         get_string_from_json(&(service_ctx.ptz_node.jump_to_rel_speed), value, "jump_to_rel_speed");
-        get_string_from_json(&(service_ctx.ptz_node.continuous_move), value, "continuous_move");
         get_bool_from_json(&(service_ctx.ptz_node.reverse_supported), value, "reverse_supported");
         get_bool_from_json(&(service_ctx.ptz_node.eflip_supported), value, "eflip_supported");
 
@@ -1175,20 +1171,18 @@ void free_conf_file()
             free(service_ctx.ptz_node.goto_home_position);
         if (service_ctx.ptz_node.move_preset != NULL)
             free(service_ctx.ptz_node.move_preset);
-        if (service_ctx.ptz_node.move_stop != NULL)
-            free(service_ctx.ptz_node.move_stop);
         if (service_ctx.ptz_node.move_out != NULL)
             free(service_ctx.ptz_node.move_out);
+        if (service_ctx.ptz_node.move_stop != NULL)
+            free(service_ctx.ptz_node.move_stop);
         if (service_ctx.ptz_node.move_in != NULL)
             free(service_ctx.ptz_node.move_in);
-        if (service_ctx.ptz_node.move_down != NULL)
-            free(service_ctx.ptz_node.move_down);
-        if (service_ctx.ptz_node.move_up != NULL)
-            free(service_ctx.ptz_node.move_up);
-        if (service_ctx.ptz_node.move_right != NULL)
-            free(service_ctx.ptz_node.move_right);
-        if (service_ctx.ptz_node.move_left != NULL)
-            free(service_ctx.ptz_node.move_left);
+        if (service_ctx.ptz_node.move_both != NULL)
+            free(service_ctx.ptz_node.move_both);
+        if (service_ctx.ptz_node.move_y != NULL)
+            free(service_ctx.ptz_node.move_y);
+        if (service_ctx.ptz_node.move_x != NULL)
+            free(service_ctx.ptz_node.move_x);
         if (service_ctx.ptz_node.is_moving != NULL)
             free(service_ctx.ptz_node.is_moving);
         if (service_ctx.ptz_node.get_position != NULL)
@@ -1207,8 +1201,6 @@ void free_conf_file()
             free(service_ctx.ptz_node.jump_to_abs_speed);
         if (service_ctx.ptz_node.jump_to_rel_speed != NULL)
             free(service_ctx.ptz_node.jump_to_rel_speed);
-        if (service_ctx.ptz_node.continuous_move != NULL)
-            free(service_ctx.ptz_node.continuous_move);
     }
 
     for (i = service_ctx.relay_outputs_num - 1; i >= 0; i--) {

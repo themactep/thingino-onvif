@@ -250,21 +250,7 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest,
-                                    "media2_service_files/GetProfiles_PTZ.xml",
-                                    12,
-                                    "%MIN_X%",
-                                    min_x,
-                                    "%MAX_X%",
-                                    max_x,
-                                    "%MIN_Y%",
-                                    min_y,
-                                    "%MAX_Y%",
-                                    max_y,
-                                    "%MIN_Z%",
-                                    min_z,
-                                    "%MAX_Z%",
-                                    max_z);
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 0);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
@@ -354,21 +340,7 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest,
-                                    "media2_service_files/GetProfiles_PTZ.xml",
-                                    12,
-                                    "%MIN_X%",
-                                    min_x,
-                                    "%MAX_X%",
-                                    max_x,
-                                    "%MIN_Y%",
-                                    min_y,
-                                    "%MAX_Y%",
-                                    max_y,
-                                    "%MIN_Z%",
-                                    min_z,
-                                    "%MAX_Z%",
-                                    max_z);
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 0);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
@@ -447,21 +419,7 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest,
-                                    "media2_service_files/GetProfiles_PTZ.xml",
-                                    12,
-                                    "%MIN_X%",
-                                    min_x,
-                                    "%MAX_X%",
-                                    max_x,
-                                    "%MIN_Y%",
-                                    min_y,
-                                    "%MAX_Y%",
-                                    max_y,
-                                    "%MIN_Z%",
-                                    min_z,
-                                    "%MAX_Z%",
-                                    max_z);
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 0);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {

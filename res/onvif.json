@@ -103,8 +103,8 @@
         "pan_max": 180.0,
         "tilt_min": -90.0,
         "tilt_max": 90.0,
-        "fov_pan": 90,
-        "fov_tilt": 50,
+        "fov_pan": 90.0,
+        "fov_tilt": 50.0,
         "pan_inverted": false,
         "tilt_inverted": false,
         "reverse_supported": true,
@@ -113,10 +113,9 @@
         "eflip_mode": "OFF",
         "get_position": "/bin/motors -p",
         "is_moving": "/bin/motors -b",
-        "move_left": "/bin/motors -d h -x 0",
-        "move_right": "/bin/motors -d h -x 4000",
-        "move_up": "/bin/motors -d h -y 0",
-        "move_down": "/bin/motors -d h -y 2000",
+        "move_x": "/bin/motors -d h -x %f",
+        "move_y": "/bin/motors -d h -y %f",
+        "move_both": "/bin/motors -d h -x %f -y %f",
         "move_in": "/sbin/ptz_zoom_in",
         "move_out": "/sbin/ptz_zoom_out",
         "move_stop": "/bin/motors -d s",
@@ -127,8 +126,7 @@
         "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
         "jump_to_abs": "/bin/motors -d h -x %f -y %f",
         "jump_to_rel": "/bin/motors -d g -x %f -y %f",
-        "get_presets": "/sbin/ptz_presets -g",
-        "continuous_move": "/bin/motors -d h -x %f -y %f"
+        "get_presets": "/sbin/ptz_presets -g"
     },
     "relays": [
         {
