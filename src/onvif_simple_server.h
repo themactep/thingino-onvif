@@ -64,6 +64,10 @@ typedef struct {
     double max_step_y;
     double min_step_z;
     double max_step_z;
+    double pan_min;
+    double pan_max;
+    double tilt_min;
+    double tilt_max;
     char *get_position;
     char *is_moving;
     char *move_left;

@@ -7,10 +7,22 @@
     "adv_fault_if_unknown": false,
     "adv_synology_nvr": false,
     "aux": [
-        { "name": "IRLED ON",  "exec": "irled on"  },
-        { "name": "IRLED OFF", "exec": "irled off" },
-        { "name": "COLOR ON",  "exec": "color on"  },
-        { "name": "COLOR OFF", "exec": "color off" }
+        {
+            "name": "IRLED ON",
+            "exec": "irled on"
+        },
+        {
+            "name": "IRLED OFF",
+            "exec": "irled off"
+        },
+        {
+            "name": "COLOR ON",
+            "exec": "color on"
+        },
+        {
+            "name": "COLOR OFF",
+            "exec": "color off"
+        }
     ],
     "camera": {
         "firmware_ver": "0.0.1",
@@ -47,7 +59,11 @@
         {
             "video_source_token": "VideoSourceToken",
             "ircut_state": "Auto",
-            "ircut_modes": ["On", "Off", "Auto"],
+            "ircut_modes": [
+                "On",
+                "Off",
+                "Auto"
+            ],
             "cmd_ircut_on": "ircut on",
             "cmd_ircut_off": "ircut off",
             "cmd_ircut_auto": ""
@@ -83,6 +99,10 @@
         "max_step_y": 2000,
         "min_step_z": 0,
         "max_step_z": 0,
+        "pan_min": -1.0,
+        "pan_max": 1.0,
+        "tilt_min": -1.0,
+        "tilt_max": 1.0,
         "reverse_supported": true,
         "reverse_mode": "OFF",
         "eflip_supported": false,

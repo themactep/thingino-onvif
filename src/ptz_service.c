@@ -526,14 +526,19 @@ int ptz_get_service_capabilities()
 int ptz_get_configurations()
 {
     char use_count[8];
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
     const char *zoom_min;
     const char *zoom_max;
     const char *eflip_mode = service_ctx.ptz_node.eflip_mode_on ? "ON" : "OFF";
     const char *reverse_mode = service_ctx.ptz_node.reverse_mode_on ? "ON" : "OFF";
+
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
         zoom_min = "0.0";
@@ -600,14 +605,19 @@ int ptz_get_configurations()
 
 int ptz_get_configuration()
 {
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
     const char *zoom_min;
     const char *zoom_max;
     const char *eflip_mode = service_ctx.ptz_node.eflip_mode_on ? "ON" : "OFF";
     const char *reverse_mode = service_ctx.ptz_node.reverse_mode_on ? "ON" : "OFF";
+
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
         zoom_min = "0.0";
@@ -662,14 +672,19 @@ int ptz_get_configuration()
 
 int ptz_get_configuration_options()
 {
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
     const char *zoom_min;
     const char *zoom_max;
     char eflip_modes[128];
     char reverse_modes[128];
+
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
         zoom_min = "0.0";
@@ -736,12 +751,17 @@ int ptz_get_configuration_options()
 
 int ptz_get_nodes()
 {
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
     const char *zoom_min;
     const char *zoom_max;
+
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
         zoom_min = "0.0";
@@ -795,12 +815,17 @@ int ptz_get_nodes()
 
 int ptz_get_node()
 {
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
     const char *zoom_min;
     const char *zoom_max;
+
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
         zoom_min = "0.0";
