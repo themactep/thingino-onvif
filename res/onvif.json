@@ -103,6 +103,8 @@
         "pan_max": 1.0,
         "tilt_min": -1.0,
         "tilt_max": 1.0,
+        "pan_inverted": false,
+        "tilt_inverted": false,
         "reverse_supported": true,
         "reverse_mode": "OFF",
         "eflip_supported": false,

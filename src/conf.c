@@ -501,6 +501,8 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.pan_max = 1.0;
     service_ctx.ptz_node.tilt_min = -1.0;
     service_ctx.ptz_node.tilt_max = 1.0;
+    service_ctx.ptz_node.pan_inverted = 0;
+    service_ctx.ptz_node.tilt_inverted = 0;
     service_ctx.ptz_node.get_position = NULL;
     service_ctx.ptz_node.is_moving = NULL;
     service_ctx.ptz_node.move_left = NULL;
@@ -821,6 +823,8 @@ int process_json_conf_file(char *file)
         get_double_from_json(&(service_ctx.ptz_node.pan_max), value, "pan_max");
         get_double_from_json(&(service_ctx.ptz_node.tilt_min), value, "tilt_min");
         get_double_from_json(&(service_ctx.ptz_node.tilt_max), value, "tilt_max");
+        get_int_from_json(&(service_ctx.ptz_node.pan_inverted), value, "pan_inverted");
+        get_int_from_json(&(service_ctx.ptz_node.tilt_inverted), value, "tilt_inverted");
         get_string_from_json(&(service_ctx.ptz_node.get_position), value, "get_position");
         get_string_from_json(&(service_ctx.ptz_node.is_moving), value, "is_moving");
         get_string_from_json(&(service_ctx.ptz_node.move_left), value, "move_left");

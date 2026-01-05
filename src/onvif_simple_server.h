@@ -68,6 +68,8 @@ typedef struct {
     double pan_max;
     double tilt_min;
     double tilt_max;
+    int pan_inverted;
+    int tilt_inverted;
     char *get_position;
     char *is_moving;
     char *move_left;

@@ -53,8 +53,10 @@ static double clamp_double(double value, double min_v, double max_v)
     return value;
 }
 
-static double ptz_normalized_to_range(double normalized, double min_v, double max_v)
+static double ptz_normalized_to_range(double normalized, double min_v, double max_v, int inverted)
 {
+    if (inverted)
+        normalized = -normalized;
     if (max_v <= min_v)
         return min_v;
     double span = max_v - min_v;
@@ -62,12 +64,14 @@ static double ptz_normalized_to_range(double normalized, double min_v, double ma
     return clamp_double(mapped, min_v, max_v);
 }
 
-static double ptz_range_to_normalized(double value, double min_v, double max_v)
+static double ptz_range_to_normalized(double value, double min_v, double max_v, int inverted)
 {
     if (max_v <= min_v)
         return 0.0;
     double span = max_v - min_v;
     double normalized = ((value - min_v) / span) * 2.0 - 1.0;
+    if (inverted)
+        normalized = -normalized;
     return clamp_double(normalized, -1.0, 1.0);
 }
 
@@ -117,7 +121,7 @@ static double ptz_decode_absolute_normalized(const char *value_str, double min_v
         return value;
     }
     double clamped = clamp_double(value, min_v, max_v);
-    return ptz_range_to_normalized(clamped, min_v, max_v);
+    return ptz_range_to_normalized(clamped, min_v, max_v, 0);
 }
 
 static double ptz_decode_zoom_normalized(const char *value_str, double min_v, double max_v)
@@ -933,8 +937,8 @@ int ptz_get_presets()
 
         for (i = 0; i < presets.count; i++) {
             sprintf(token, "PresetToken_%d", presets.items[i].number);
-            double pan_norm = ptz_range_to_normalized(presets.items[i].x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-            double tilt_norm = ptz_range_to_normalized(presets.items[i].y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
+            double pan_norm = ptz_range_to_normalized(presets.items[i].x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x, service_ctx.ptz_node.pan_inverted);
+            double tilt_norm = ptz_range_to_normalized(presets.items[i].y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y, service_ctx.ptz_node.tilt_inverted);
             ptz_apply_reverse(&pan_norm, &tilt_norm);
             double zoom_norm = ptz_zoom_range_to_normalized(presets.items[i].z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
             snprintf(sx, sizeof(sx), "%.4f", pan_norm);
@@ -1634,8 +1638,8 @@ int ptz_absolute_move()
     } else {
         if (pantilt_present) {
             ptz_apply_reverse(&pan_norm, &tilt_norm);
-            dx = ptz_normalized_to_range(pan_norm, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-            dy = ptz_normalized_to_range(tilt_norm, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
+            dx = ptz_normalized_to_range(pan_norm, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x, service_ctx.ptz_node.pan_inverted);
+            dy = ptz_normalized_to_range(tilt_norm, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y, service_ctx.ptz_node.tilt_inverted);
         }
         if (zoom_present) {
             dz = ptz_zoom_normalized_to_range(zoom_norm, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
@@ -1810,8 +1814,8 @@ int ptz_get_status()
     }
 
     if (ret == 0) {
-        double pan_norm = ptz_range_to_normalized(x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-        double tilt_norm = ptz_range_to_normalized(y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
+        double pan_norm = ptz_range_to_normalized(x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x, service_ctx.ptz_node.pan_inverted);
+        double tilt_norm = ptz_range_to_normalized(y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y, service_ctx.ptz_node.tilt_inverted);
         ptz_apply_reverse(&pan_norm, &tilt_norm);
         double zoom_norm = ptz_zoom_range_to_normalized(z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
         snprintf(sx, sizeof(sx), "%.4f", pan_norm);
@@ -2552,8 +2556,8 @@ int ptz_move_and_start_tracking()
                     double pan_norm = ptz_decode_absolute_normalized(x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
                     double tilt_norm = ptz_decode_absolute_normalized(y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
                     ptz_apply_reverse(&pan_norm, &tilt_norm);
-                    dx = ptz_normalized_to_range(pan_norm, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-                    dy = ptz_normalized_to_range(tilt_norm, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
+                    dx = ptz_normalized_to_range(pan_norm, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x, service_ctx.ptz_node.pan_inverted);
+                    dy = ptz_normalized_to_range(tilt_norm, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y, service_ctx.ptz_node.tilt_inverted);
                     pantilt_present = 1;
                 }
             }
