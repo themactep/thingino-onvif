@@ -102,152 +102,6 @@ static double ptz_machine_to_onvif_units(
     return scaled;
 }
 
-static double ptz_normalized_to_range(double normalized, double min_v, double max_v, int inverted, double user_min, double user_max)
-{
-    if (inverted)
-        normalized = -normalized;
-    if (max_v <= min_v)
-        return min_v;
-    // Map from user range to -1..1, then to hardware range
-    double user_span = user_max - user_min;
-    double normalized_in_std = (user_span > 0) ? ((normalized - user_min) / user_span) * 2.0 - 1.0 : 0.0;
-    double span = max_v - min_v;
-    double mapped = min_v + ((normalized_in_std + 1.0) * 0.5 * span);
-    return clamp_double(mapped, min_v, max_v);
-}
-
-static double ptz_range_to_normalized(double value, double min_v, double max_v, int inverted, double user_min, double user_max)
-{
-    if (max_v <= min_v)
-        return user_min;
-    // Map from hardware range to -1..1, then to user range
-    double span = max_v - min_v;
-    double normalized_std = ((value - min_v) / span) * 2.0 - 1.0;
-    if (inverted)
-        normalized_std = -normalized_std;
-    double user_span = user_max - user_min;
-    double normalized = user_min + ((normalized_std + 1.0) * 0.5 * user_span);
-    return clamp_double(normalized, user_min, user_max);
-}
-
-static double ptz_zoom_normalized_to_range(double normalized, double min_v, double max_v)
-{
-    if (normalized < 0.0)
-        normalized = 0.0;
-    if (normalized > 1.0)
-        normalized = 1.0;
-    if (max_v <= min_v)
-        return min_v;
-    double span = max_v - min_v;
-    return clamp_double(min_v + normalized * span, min_v, max_v);
-}
-
-static double ptz_zoom_range_to_normalized(double value, double min_v, double max_v)
-{
-    if (max_v <= min_v)
-        return 0.0;
-    double span = max_v - min_v;
-    double normalized = (value - min_v) / span;
-    if (normalized < 0.0)
-        normalized = 0.0;
-    if (normalized > 1.0)
-        normalized = 1.0;
-    return normalized;
-}
-
-static double ptz_relative_normalized_to_delta(double normalized, double min_v, double max_v)
-{
-    double span = max_v - min_v;
-    if (span <= 0.0)
-        return 0.0;
-    return normalized * span;
-}
-
-static double ptz_decode_absolute_normalized(const char *value_str, double min_v, double max_v, double user_min, double user_max, int inverted)
-{
-    if (value_str == NULL)
-        return user_min + (user_max - user_min) * 0.5;
-    double value = atof(value_str);
-    // Check if value is in user range (normalized space)
-    if (value >= user_min - PTZ_NORMALIZED_TOLERANCE && value <= user_max + PTZ_NORMALIZED_TOLERANCE) {
-        double clamped = clamp_double(value, user_min, user_max);
-        // Apply inversion in user space: flip around center of user range
-        if (inverted) {
-            double center = (user_min + user_max) * 0.5;
-            clamped = 2.0 * center - clamped;
-        }
-        return clamped;
-    }
-    // Otherwise treat as hardware range and convert
-    double clamped = clamp_double(value, min_v, max_v);
-    return ptz_range_to_normalized(clamped, min_v, max_v, inverted, user_min, user_max);
-}
-
-static double ptz_decode_zoom_normalized(const char *value_str, double min_v, double max_v)
-{
-    if (value_str == NULL)
-        return 0.0;
-    double value = atof(value_str);
-    if (value >= -PTZ_NORMALIZED_TOLERANCE && value <= 1.0 + PTZ_NORMALIZED_TOLERANCE) {
-        if (value < 0.0)
-            value = 0.0;
-        if (value > 1.0)
-            value = 1.0;
-        return value;
-    }
-    double clamped = clamp_double(value, min_v, max_v);
-    return ptz_zoom_range_to_normalized(clamped, min_v, max_v);
-}
-
-static double ptz_decode_relative_normalized(const char *value_str, double min_v, double max_v, double user_min, double user_max, int inverted)
-{
-    if (value_str == NULL)
-        return 0.0;
-    double value = atof(value_str);
-    double user_span = user_max - user_min;
-    // Check if value is in user normalized range (relative movements use delta from range)
-    if (fabs(value) <= user_span + PTZ_NORMALIZED_TOLERANCE) {
-        double clamped = clamp_double(value, -user_span, user_span);
-        // Apply inversion: negate the relative movement
-        if (inverted) {
-            clamped = -clamped;
-        }
-        return clamped;
-    }
-    // Otherwise treat as hardware delta
-    double span = max_v - min_v;
-    if (span <= 0.0)
-        return 0.0;
-    double normalized = (value / span) * user_span;
-    if (inverted) {
-        normalized = -normalized;
-    }
-    return clamp_double(normalized, -user_span, user_span);
-}
-
-static double ptz_decode_zoom_relative_normalized(const char *value_str, double min_v, double max_v)
-{
-    if (value_str == NULL)
-        return 0.0;
-    double value = atof(value_str);
-    if (fabs(value) <= 1.0 + PTZ_NORMALIZED_TOLERANCE) {
-        if (value < -1.0)
-            value = -1.0;
-        if (value > 1.0)
-            value = 1.0;
-        return value;
-    }
-    double span = max_v - min_v;
-    if (span <= 0.0)
-        return 0.0;
-    double normalized = value / span;
-    if (normalized < -1.0)
-        normalized = -1.0;
-    if (normalized > 1.0)
-        normalized = 1.0;
-    return normalized;
-}
-
 static void ptz_apply_reverse(double *onvif_pan, double *onvif_tilt)
 {
     if (!service_ctx.ptz_node.reverse_mode_on)
@@ -1213,35 +1067,37 @@ int ptz_continuous_move()
             y = get_attribute(pantilt_node, "y");
             log_debug("PTZ: Raw X attribute: %s", x ? x : "NULL");
             log_debug("PTZ: Raw Y attribute: %s", y ? y : "NULL");
-            double pan_norm = 0.0;
-            double tilt_norm = 0.0;
+            double pan_onvif = 0.0;
+            double tilt_onvif = 0.0;
             int pan_has = 0;
             int tilt_has = 0;
             if (x != NULL) {
-                pan_norm = ptz_decode_relative_normalized(x,
-                                                          service_ctx.ptz_node.min_step_x,
-                                                          service_ctx.ptz_node.max_step_x,
-                                                          service_ctx.ptz_node.pan_min,
-                                                          service_ctx.ptz_node.pan_max,
-                                                          service_ctx.ptz_node.pan_inverted);
+                pan_onvif = atof(x);
                 pan_has = 1;
             }
             if (y != NULL) {
-                tilt_norm = ptz_decode_relative_normalized(y,
-                                                           service_ctx.ptz_node.min_step_y,
-                                                           service_ctx.ptz_node.max_step_y,
-                                                           service_ctx.ptz_node.tilt_min,
-                                                           service_ctx.ptz_node.tilt_max,
-                                                           service_ctx.ptz_node.tilt_inverted);
+                tilt_onvif = atof(y);
                 tilt_has = 1;
             }
             if (pan_has || tilt_has) {
-                ptz_apply_reverse(pan_has ? &pan_norm : NULL, tilt_has ? &tilt_norm : NULL);
+                ptz_apply_reverse(pan_has ? &pan_onvif : NULL, tilt_has ? &tilt_onvif : NULL);
             }
             if (pan_has)
-                dx = pan_norm;
+                dx = ptz_onvif_to_machine_units(pan_onvif,
+                                                service_ctx.ptz_node.min_step_x,
+                                                service_ctx.ptz_node.max_step_x,
+                                                service_ctx.ptz_node.pan_min,
+                                                service_ctx.ptz_node.pan_max,
+                                                service_ctx.ptz_node.pan_inverted,
+                                                true);
             if (tilt_has)
-                dy = tilt_norm;
+                dy = ptz_onvif_to_machine_units(tilt_onvif,
+                                                service_ctx.ptz_node.min_step_y,
+                                                service_ctx.ptz_node.max_step_y,
+                                                service_ctx.ptz_node.tilt_min,
+                                                service_ctx.ptz_node.tilt_max,
+                                                service_ctx.ptz_node.tilt_inverted,
+                                                true);
         }
 
         // Look for Zoom as sibling of PanTilt under Velocity, not inside PanTilt
@@ -1261,7 +1117,8 @@ int ptz_continuous_move()
             z = get_attribute(zoom_node, "x");
             log_debug("PTZ: Raw Z attribute: %s", z ? z : "NULL");
             if (z != NULL) {
-                dz = ptz_decode_zoom_relative_normalized(z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
+                double zoom_onvif = atof(z);
+                dz = ptz_onvif_to_machine_units(zoom_onvif, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z, 0.0, 1.0, false, true);
             }
         }
     }
