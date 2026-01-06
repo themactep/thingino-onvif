@@ -29,12 +29,12 @@
                     <tt:Range>
                         <tt:URI>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:URI>
                         <tt:XRange>
-                            <tt:Min>%MIN_X%</tt:Min>
-                            <tt:Max>%MAX_X%</tt:Max>
+                            <tt:Min>-1.0</tt:Min>
+                            <tt:Max>1.0</tt:Max>
                         </tt:XRange>
                         <tt:YRange>
-                            <tt:Min>%MIN_Y%</tt:Min>
-                            <tt:Max>%MAX_Y%</tt:Max>
+                            <tt:Min>-1.0</tt:Min>
+                            <tt:Max>1.0</tt:Max>
                         </tt:YRange>
                     </tt:Range>
                 </tt:PanTiltLimits>
@@ -42,8 +42,8 @@
                     <tt:Range>
                         <tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>
                         <tt:XRange>
-                            <tt:Min>%MIN_Z%</tt:Min>
-                            <tt:Max>%MAX_Z%</tt:Max>
+                            <tt:Min>0.0</tt:Min>
+                            <tt:Max>1.0</tt:Max>
                         </tt:XRange>
                     </tt:Range>
                 </tt:ZoomLimits>

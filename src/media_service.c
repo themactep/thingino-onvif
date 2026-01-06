@@ -281,23 +281,7 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest,
-                            "media_service_files/GetProfile_PTZ.xml",
-                            14,
-                            "%USE_COUNT%",
-                            "1",
-                            "%MIN_X%",
-                            min_x,
-                            "%MAX_X%",
-                            max_x,
-                            "%MIN_Y%",
-                            min_y,
-                            "%MAX_Y%",
-                            max_y,
-                            "%MIN_Z%",
-                            min_z,
-                            "%MAX_Z%",
-                            max_z);
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 2, "%USE_COUNT%", "1");
             }
 
             size += cat(dest, "media_service_files/GetProfiles_footer.xml", 0);
@@ -352,23 +336,7 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest,
-                            "media_service_files/GetProfile_PTZ.xml",
-                            14,
-                            "%USE_COUNT%",
-                            "2",
-                            "%MIN_X%",
-                            min_x,
-                            "%MAX_X%",
-                            max_x,
-                            "%MIN_Y%",
-                            min_y,
-                            "%MAX_Y%",
-                            max_y,
-                            "%MIN_Z%",
-                            min_z,
-                            "%MAX_Z%",
-                            max_z);
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 2, "%USE_COUNT%", "2");
             }
 
             size += cat(dest, "media_service_files/GetProfiles_middle.xml", 0);
@@ -410,23 +378,7 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest,
-                            "media_service_files/GetProfile_PTZ.xml",
-                            14,
-                            "%USE_COUNT%",
-                            "2",
-                            "%MIN_X%",
-                            min_x,
-                            "%MAX_X%",
-                            max_x,
-                            "%MIN_Y%",
-                            min_y,
-                            "%MAX_Y%",
-                            max_y,
-                            "%MIN_Z%",
-                            min_z,
-                            "%MAX_Z%",
-                            max_z);
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 2, "%USE_COUNT%", "2");
             }
 
             size += cat(dest, "media_service_files/GetProfiles_footer.xml", 0);
@@ -515,21 +467,7 @@ int media_get_profile()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest,
-                            "media_service_files/GetProfile_PTZ.xml",
-                            12,
-                            "%MIN_X%",
-                            min_x,
-                            "%MAX_X%",
-                            max_x,
-                            "%MIN_Y%",
-                            min_y,
-                            "%MAX_Y%",
-                            max_y,
-                            "%MIN_Z%",
-                            min_z,
-                            "%MAX_Z%",
-                            max_z);
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 0);
             }
 
             size += cat(dest, "media_service_files/GetProfile_footer.xml", 0);
@@ -584,21 +522,7 @@ int media_get_profile()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                size += cat(dest,
-                            "media_service_files/GetProfile_PTZ.xml",
-                            12,
-                            "%MIN_X%",
-                            min_x,
-                            "%MAX_X%",
-                            max_x,
-                            "%MIN_Y%",
-                            min_y,
-                            "%MAX_Y%",
-                            max_y,
-                            "%MIN_Z%",
-                            min_z,
-                            "%MAX_Z%",
-                            max_z);
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 0);
             }
 
             size += cat(dest, "media_service_files/GetProfile_footer.xml", 0);

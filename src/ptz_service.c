@@ -36,13 +36,14 @@
 extern service_context_t service_ctx;
 presets_t presets;
 
+#define PTZ_URI_PANTILT_ABS_SPHERICAL "http://www.onvif.org/ver10/tptz/PanTiltSpaces/SphericalPositionSpace"
 #define PTZ_URI_PANTILT_ABS_GENERIC "http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace"
 #define PTZ_URI_ZOOM_ABS_GENERIC "http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace"
 #define PTZ_URI_PANTILT_REL_GENERIC "http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace"
+#define PTZ_URI_PANTILT_REL_FOV "http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationSpaceFov"
 #define PTZ_URI_ZOOM_REL_GENERIC "http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace"
 #define PTZ_URI_PANTILT_VEL_GENERIC "http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace"
 #define PTZ_URI_ZOOM_VEL_GENERIC "http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace"
-#define PTZ_NORMALIZED_TOLERANCE 0.01
 
 static double clamp_double(double value, double min_v, double max_v)
 {
@@ -53,143 +54,71 @@ static double clamp_double(double value, double min_v, double max_v)
     return value;
 }
 
-static double ptz_normalized_to_range(double normalized, double min_v, double max_v)
+static double ptz_onvif_to_machine_units(
+    double value, double steps_min, double steps_max, double onvif_min, double onvif_max, bool invert, bool relative)
 {
-    if (max_v <= min_v)
-        return min_v;
-    double span = max_v - min_v;
-    double mapped = min_v + ((normalized + 1.0) * 0.5 * span);
-    return clamp_double(mapped, min_v, max_v);
-}
-
-static double ptz_range_to_normalized(double value, double min_v, double max_v)
-{
-    if (max_v <= min_v)
-        return 0.0;
-    double span = max_v - min_v;
-    double normalized = ((value - min_v) / span) * 2.0 - 1.0;
-    return clamp_double(normalized, -1.0, 1.0);
-}
-
-static double ptz_zoom_normalized_to_range(double normalized, double min_v, double max_v)
-{
-    if (normalized < 0.0)
-        normalized = 0.0;
-    if (normalized > 1.0)
-        normalized = 1.0;
-    if (max_v <= min_v)
-        return min_v;
-    double span = max_v - min_v;
-    return clamp_double(min_v + normalized * span, min_v, max_v);
-}
-
-static double ptz_zoom_range_to_normalized(double value, double min_v, double max_v)
-{
-    if (max_v <= min_v)
-        return 0.0;
-    double span = max_v - min_v;
-    double normalized = (value - min_v) / span;
-    if (normalized < 0.0)
-        normalized = 0.0;
-    if (normalized > 1.0)
-        normalized = 1.0;
-    return normalized;
-}
-
-static double ptz_relative_normalized_to_delta(double normalized, double min_v, double max_v)
-{
-    double span = max_v - min_v;
-    if (span <= 0.0)
-        return 0.0;
-    return normalized * span;
-}
-
-static double ptz_decode_absolute_normalized(const char *value_str, double min_v, double max_v)
-{
-    if (value_str == NULL)
-        return 0.0;
-    double value = atof(value_str);
-    if (fabs(value) <= 1.0 + PTZ_NORMALIZED_TOLERANCE) {
-        if (value < -1.0)
-            value = -1.0;
-        if (value > 1.0)
-            value = 1.0;
-        return value;
+    if (onvif_max <= onvif_min)
+        return steps_min;
+    double span_onvif = onvif_max - onvif_min;
+    double span_steps = steps_max - steps_min;
+    double scaled;
+    if (relative) {
+        if (invert) {
+            value = -value;
+        }
+        scaled = value * span_steps / span_onvif;
+        scaled = clamp_double(scaled, -span_steps, span_steps);
+    } else {
+        if (invert) {
+            value = onvif_max - (value - onvif_min);
+        }
+        scaled = (value - onvif_min) * span_steps / span_onvif + steps_min;
+        scaled = clamp_double(scaled, steps_min, steps_max);
     }
-    double clamped = clamp_double(value, min_v, max_v);
-    return ptz_range_to_normalized(clamped, min_v, max_v);
+    return scaled;
 }
 
-static double ptz_decode_zoom_normalized(const char *value_str, double min_v, double max_v)
+static double ptz_machine_to_onvif_units(
+    double value, double steps_min, double steps_max, double onvif_min, double onvif_max, bool invert, bool relative)
 {
-    if (value_str == NULL)
-        return 0.0;
-    double value = atof(value_str);
-    if (value >= -PTZ_NORMALIZED_TOLERANCE && value <= 1.0 + PTZ_NORMALIZED_TOLERANCE) {
-        if (value < 0.0)
-            value = 0.0;
-        if (value > 1.0)
-            value = 1.0;
-        return value;
+    if (steps_max <= steps_min)
+        return onvif_min;
+    double span_onvif = onvif_max - onvif_min;
+    double span_steps = steps_max - steps_min;
+    double scaled;
+
+    if (relative) {
+        scaled = value * span_onvif / span_steps;
+        scaled = clamp_double(scaled, -span_onvif, span_onvif);
+        if (invert) {
+            scaled = -scaled;
+        }
+    } else {
+        scaled = (value - steps_min) * span_onvif / span_steps + onvif_min;
+        scaled = clamp_double(scaled, onvif_min, onvif_max);
+        if (invert) {
+            scaled = onvif_max - (scaled - onvif_min);
+        }
     }
-    double clamped = clamp_double(value, min_v, max_v);
-    return ptz_zoom_range_to_normalized(clamped, min_v, max_v);
+    return scaled;
 }
 
-static double ptz_decode_relative_normalized(const char *value_str, double min_v, double max_v)
+static double ptz_fov_to_machine_units(
+    double value, double steps_min, double steps_max, double onvif_min, double onvif_max, double fov_span, bool invert)
 {
-    if (value_str == NULL)
-        return 0.0;
-    double value = atof(value_str);
-    if (fabs(value) <= 1.0 + PTZ_NORMALIZED_TOLERANCE) {
-        if (value < -1.0)
-            value = -1.0;
-        if (value > 1.0)
-            value = 1.0;
-        return value;
-    }
-    double span = max_v - min_v;
-    if (span <= 0.0)
-        return 0.0;
-    double normalized = value / span;
-    if (normalized < -1.0)
-        normalized = -1.0;
-    if (normalized > 1.0)
-        normalized = 1.0;
-    return normalized;
+    double scaled;
+    scaled = value * fov_span / 2.0;
+    return ptz_onvif_to_machine_units(scaled, steps_min, steps_max, onvif_min, onvif_max, invert, true);
 }
 
-static double ptz_decode_zoom_relative_normalized(const char *value_str, double min_v, double max_v)
-{
-    if (value_str == NULL)
-        return 0.0;
-    double value = atof(value_str);
-    if (fabs(value) <= 1.0 + PTZ_NORMALIZED_TOLERANCE) {
-        if (value < -1.0)
-            value = -1.0;
-        if (value > 1.0)
-            value = 1.0;
-        return value;
-    }
-    double span = max_v - min_v;
-    if (span <= 0.0)
-        return 0.0;
-    double normalized = value / span;
-    if (normalized < -1.0)
-        normalized = -1.0;
-    if (normalized > 1.0)
-        normalized = 1.0;
-    return normalized;
-}
-
-static void ptz_apply_reverse(double *pan_norm, double *tilt_norm)
+static void ptz_apply_reverse(double *onvif_pan, double *onvif_tilt)
 {
     if (!service_ctx.ptz_node.reverse_mode_on)
         return;
-    if (pan_norm)
-        *pan_norm = -*pan_norm;
-    if (tilt_norm)
-        *tilt_norm = -*tilt_norm;
+    if (onvif_pan)
+        *onvif_pan = -*onvif_pan;
+    if (onvif_tilt)
+        *onvif_tilt = -*onvif_tilt;
 }
 
 static int ptz_space_matches(const char *space_attr, const char *expected_uri)
@@ -526,22 +455,17 @@ int ptz_get_service_capabilities()
 int ptz_get_configurations()
 {
     char use_count[8];
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
-    const char *zoom_min;
-    const char *zoom_max;
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
     const char *eflip_mode = service_ctx.ptz_node.eflip_mode_on ? "ON" : "OFF";
     const char *reverse_mode = service_ctx.ptz_node.reverse_mode_on ? "ON" : "OFF";
 
-    if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
-        zoom_min = "0.0";
-        zoom_max = "1.0";
-    } else {
-        zoom_min = "0.0";
-        zoom_max = "0.0";
-    }
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     // Calculate UseCount: number of profiles that use PTZ
     // If PTZ is enabled, UseCount equals the number of profiles
@@ -564,10 +488,6 @@ int ptz_get_configurations()
                     tilt_min,
                     "%MAX_Y%",
                     tilt_max,
-                    "%MIN_Z%",
-                    zoom_min,
-                    "%MAX_Z%",
-                    zoom_max,
                     "%EFLIP_MODE%",
                     eflip_mode,
                     "%REVERSE_MODE%",
@@ -577,7 +497,7 @@ int ptz_get_configurations()
 
     return cat("stdout",
                "ptz_service_files/GetConfigurations.xml",
-               18,
+               14,
                "%USE_COUNT%",
                use_count,
                "%MIN_X%",
@@ -588,10 +508,6 @@ int ptz_get_configurations()
                tilt_min,
                "%MAX_Y%",
                tilt_max,
-               "%MIN_Z%",
-               zoom_min,
-               "%MAX_Z%",
-               zoom_max,
                "%EFLIP_MODE%",
                eflip_mode,
                "%REVERSE_MODE%",
@@ -600,26 +516,21 @@ int ptz_get_configurations()
 
 int ptz_get_configuration()
 {
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
-    const char *zoom_min;
-    const char *zoom_max;
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
     const char *eflip_mode = service_ctx.ptz_node.eflip_mode_on ? "ON" : "OFF";
     const char *reverse_mode = service_ctx.ptz_node.reverse_mode_on ? "ON" : "OFF";
 
-    if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
-        zoom_min = "0.0";
-        zoom_max = "1.0";
-    } else {
-        zoom_min = "0.0";
-        zoom_max = "0.0";
-    }
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     long size = cat(NULL,
                     "ptz_service_files/GetConfiguration.xml",
-                    16,
+                    12,
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -628,10 +539,6 @@ int ptz_get_configuration()
                     tilt_min,
                     "%MAX_Y%",
                     tilt_max,
-                    "%MIN_Z%",
-                    zoom_min,
-                    "%MAX_Z%",
-                    zoom_max,
                     "%EFLIP_MODE%",
                     eflip_mode,
                     "%REVERSE_MODE%",
@@ -641,7 +548,7 @@ int ptz_get_configuration()
 
     return cat("stdout",
                "ptz_service_files/GetConfiguration.xml",
-               16,
+               12,
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -650,10 +557,6 @@ int ptz_get_configuration()
                tilt_min,
                "%MAX_Y%",
                tilt_max,
-               "%MIN_Z%",
-               zoom_min,
-               "%MAX_Z%",
-               zoom_max,
                "%EFLIP_MODE%",
                eflip_mode,
                "%REVERSE_MODE%",
@@ -662,22 +565,17 @@ int ptz_get_configuration()
 
 int ptz_get_configuration_options()
 {
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
-    const char *zoom_min;
-    const char *zoom_max;
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
     char eflip_modes[128];
     char reverse_modes[128];
 
-    if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
-        zoom_min = "0.0";
-        zoom_max = "1.0";
-    } else {
-        zoom_min = "0.0";
-        zoom_max = "0.0";
-    }
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     if (service_ctx.ptz_node.eflip_supported) {
         strcpy(eflip_modes, "<tt:Mode>OFF</tt:Mode><tt:Mode>ON</tt:Mode>");
@@ -693,7 +591,7 @@ int ptz_get_configuration_options()
 
     long size = cat(NULL,
                     "ptz_service_files/GetConfigurationOptions.xml",
-                    16,
+                    12,
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -702,10 +600,6 @@ int ptz_get_configuration_options()
                     tilt_min,
                     "%MAX_Y%",
                     tilt_max,
-                    "%MIN_Z%",
-                    zoom_min,
-                    "%MAX_Z%",
-                    zoom_max,
                     "%EFLIP_MODES%",
                     eflip_modes,
                     "%REVERSE_MODES%",
@@ -715,7 +609,7 @@ int ptz_get_configuration_options()
 
     return cat("stdout",
                "ptz_service_files/GetConfigurationOptions.xml",
-               16,
+               12,
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -724,10 +618,6 @@ int ptz_get_configuration_options()
                tilt_min,
                "%MAX_Y%",
                tilt_max,
-               "%MIN_Z%",
-               zoom_min,
-               "%MAX_Z%",
-               zoom_max,
                "%EFLIP_MODES%",
                eflip_modes,
                "%REVERSE_MODES%",
@@ -736,27 +626,22 @@ int ptz_get_configuration_options()
 
 int ptz_get_nodes()
 {
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
-    const char *zoom_min;
-    const char *zoom_max;
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
 
-    if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
-        zoom_min = "0.0";
-        zoom_max = "1.0";
-    } else {
-        zoom_min = "0.0";
-        zoom_max = "0.0";
-    }
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     char max_tours[16];
     sprintf(max_tours, "%d", service_ctx.ptz_node.max_preset_tours);
 
     long size = cat(NULL,
                     "ptz_service_files/GetNodes.xml",
-                    14,
+                    10,
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -765,10 +650,6 @@ int ptz_get_nodes()
                     tilt_min,
                     "%MAX_Y%",
                     tilt_max,
-                    "%MIN_Z%",
-                    zoom_min,
-                    "%MAX_Z%",
-                    zoom_max,
                     "%MAX_PRESET_TOURS%",
                     max_tours);
 
@@ -776,7 +657,7 @@ int ptz_get_nodes()
 
     return cat("stdout",
                "ptz_service_files/GetNodes.xml",
-               14,
+               10,
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -785,30 +666,21 @@ int ptz_get_nodes()
                tilt_min,
                "%MAX_Y%",
                tilt_max,
-               "%MIN_Z%",
-               zoom_min,
-               "%MAX_Z%",
-               zoom_max,
                "%MAX_PRESET_TOURS%",
                max_tours);
 }
 
 int ptz_get_node()
 {
-    const char *pan_min = "-1.0";
-    const char *pan_max = "1.0";
-    const char *tilt_min = "-1.0";
-    const char *tilt_max = "1.0";
-    const char *zoom_min;
-    const char *zoom_max;
+    char pan_min[16];
+    char pan_max[16];
+    char tilt_min[16];
+    char tilt_max[16];
 
-    if (service_ctx.ptz_node.max_step_z > service_ctx.ptz_node.min_step_z) {
-        zoom_min = "0.0";
-        zoom_max = "1.0";
-    } else {
-        zoom_min = "0.0";
-        zoom_max = "0.0";
-    }
+    snprintf(pan_min, sizeof(pan_min), "%.4f", service_ctx.ptz_node.pan_min);
+    snprintf(pan_max, sizeof(pan_max), "%.4f", service_ctx.ptz_node.pan_max);
+    snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
+    snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
     const char *node_token = get_element("NodeToken", "Body");
     if (strcmp("PTZNodeToken", node_token) != 0) {
@@ -821,7 +693,7 @@ int ptz_get_node()
 
     long size = cat(NULL,
                     "ptz_service_files/GetNode.xml",
-                    14,
+                    10,
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -830,10 +702,6 @@ int ptz_get_node()
                     tilt_min,
                     "%MAX_Y%",
                     tilt_max,
-                    "%MIN_Z%",
-                    zoom_min,
-                    "%MAX_Z%",
-                    zoom_max,
                     "%MAX_PRESET_TOURS%",
                     max_tours);
 
@@ -841,7 +709,7 @@ int ptz_get_node()
 
     return cat("stdout",
                "ptz_service_files/GetNode.xml",
-               14,
+               10,
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -850,10 +718,6 @@ int ptz_get_node()
                tilt_min,
                "%MAX_Y%",
                tilt_max,
-               "%MIN_Z%",
-               zoom_min,
-               "%MAX_Z%",
-               zoom_max,
                "%MAX_PRESET_TOURS%",
                max_tours);
 }
@@ -908,13 +772,33 @@ int ptz_get_presets()
 
         for (i = 0; i < presets.count; i++) {
             sprintf(token, "PresetToken_%d", presets.items[i].number);
-            double pan_norm = ptz_range_to_normalized(presets.items[i].x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-            double tilt_norm = ptz_range_to_normalized(presets.items[i].y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
-            ptz_apply_reverse(&pan_norm, &tilt_norm);
-            double zoom_norm = ptz_zoom_range_to_normalized(presets.items[i].z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
-            snprintf(sx, sizeof(sx), "%.4f", pan_norm);
-            snprintf(sy, sizeof(sy), "%.4f", tilt_norm);
-            snprintf(sz, sizeof(sz), "%.4f", zoom_norm);
+            // Convert from machine units to ONVIF units
+            double pan_onvif = ptz_machine_to_onvif_units(presets.items[i].x,
+                                                          service_ctx.ptz_node.min_step_x,
+                                                          service_ctx.ptz_node.max_step_x,
+                                                          service_ctx.ptz_node.pan_min,
+                                                          service_ctx.ptz_node.pan_max,
+                                                          service_ctx.ptz_node.pan_inverted,
+                                                          false);
+            double tilt_onvif = ptz_machine_to_onvif_units(presets.items[i].y,
+                                                           service_ctx.ptz_node.min_step_y,
+                                                           service_ctx.ptz_node.max_step_y,
+                                                           service_ctx.ptz_node.tilt_min,
+                                                           service_ctx.ptz_node.tilt_max,
+                                                           service_ctx.ptz_node.tilt_inverted,
+                                                           false);
+            // Apply reverse after conversion to ONVIF space
+            ptz_apply_reverse(&pan_onvif, &tilt_onvif);
+            double zoom_onvif = ptz_machine_to_onvif_units(presets.items[i].z,
+                                                           service_ctx.ptz_node.min_step_z,
+                                                           service_ctx.ptz_node.max_step_z,
+                                                           0.0,
+                                                           1.0,
+                                                           false,
+                                                           false);
+            snprintf(sx, sizeof(sx), "%.4f", pan_onvif);
+            snprintf(sy, sizeof(sy), "%.4f", tilt_onvif);
+            snprintf(sz, sizeof(sz), "%.4f", zoom_onvif);
             size = cat(
                 dest, "ptz_service_files/GetPresets_2.xml", 10, "%TOKEN%", token, "%NAME%", presets.items[i].name, "%X%", sx, "%Y%", sy, "%Z%", sz);
             if (c == 0)
@@ -1102,25 +986,37 @@ int ptz_continuous_move()
             y = get_attribute(pantilt_node, "y");
             log_debug("PTZ: Raw X attribute: %s", x ? x : "NULL");
             log_debug("PTZ: Raw Y attribute: %s", y ? y : "NULL");
-            double pan_norm = 0.0;
-            double tilt_norm = 0.0;
+            double pan_onvif = 0.0;
+            double tilt_onvif = 0.0;
             int pan_has = 0;
             int tilt_has = 0;
             if (x != NULL) {
-                pan_norm = ptz_decode_relative_normalized(x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
+                pan_onvif = atof(x);
                 pan_has = 1;
             }
             if (y != NULL) {
-                tilt_norm = ptz_decode_relative_normalized(y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
+                tilt_onvif = atof(y);
                 tilt_has = 1;
             }
             if (pan_has || tilt_has) {
-                ptz_apply_reverse(pan_has ? &pan_norm : NULL, tilt_has ? &tilt_norm : NULL);
+                ptz_apply_reverse(pan_has ? &pan_onvif : NULL, tilt_has ? &tilt_onvif : NULL);
             }
             if (pan_has)
-                dx = pan_norm;
+                dx = ptz_onvif_to_machine_units(pan_onvif,
+                                                service_ctx.ptz_node.min_step_x,
+                                                service_ctx.ptz_node.max_step_x,
+                                                service_ctx.ptz_node.pan_min,
+                                                service_ctx.ptz_node.pan_max,
+                                                service_ctx.ptz_node.pan_inverted,
+                                                true);
             if (tilt_has)
-                dy = tilt_norm;
+                dy = ptz_onvif_to_machine_units(tilt_onvif,
+                                                service_ctx.ptz_node.min_step_y,
+                                                service_ctx.ptz_node.max_step_y,
+                                                service_ctx.ptz_node.tilt_min,
+                                                service_ctx.ptz_node.tilt_max,
+                                                service_ctx.ptz_node.tilt_inverted,
+                                                true);
         }
 
         // Look for Zoom as sibling of PanTilt under Velocity, not inside PanTilt
@@ -1140,7 +1036,8 @@ int ptz_continuous_move()
             z = get_attribute(zoom_node, "x");
             log_debug("PTZ: Raw Z attribute: %s", z ? z : "NULL");
             if (z != NULL) {
-                dz = ptz_decode_zoom_relative_normalized(z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
+                double zoom_onvif = atof(z);
+                dz = ptz_onvif_to_machine_units(zoom_onvif, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z, 0.0, 1.0, false, true);
             }
         }
     }
@@ -1152,81 +1049,59 @@ int ptz_continuous_move()
     if (y != NULL)
         log_debug("PTZ: ContinuousMove Y velocity (normalized): %f", dy);
 
-    // Check if we have diagonal movement (both X and Y non-zero) and continuous_move command is configured
+    // Check if we have diagonal movement (both X and Y non-zero) and move_both command is configured
     int has_diagonal = (x != NULL && dx != 0.0 && y != NULL && dy != 0.0);
-    int use_continuous_move = has_diagonal && (service_ctx.ptz_node.continuous_move != NULL);
+    int use_both = has_diagonal && (service_ctx.ptz_node.move_both != NULL);
+    int has_x_only = (x != NULL && dx != 0.0 && (y == NULL || dy == 0.0));
+    int has_y_only = (y != NULL && dy != 0.0 && (x == NULL || dx == 0.0));
 
-    if (use_continuous_move) {
-        // Use single command for true diagonal movement
-        double x_target, y_target;
+    // Calculate target positions based on velocity direction
+    double x_target = 0.0;
+    double y_target = 0.0;
 
-        // Calculate target positions based on velocity direction
+    if (x != NULL && dx != 0.0) {
         if (dx > 0.0) {
             x_target = service_ctx.ptz_node.max_step_x;
         } else {
             x_target = service_ctx.ptz_node.min_step_x;
         }
+    }
 
+    if (y != NULL && dy != 0.0) {
         if (dy > 0.0) {
-            y_target = service_ctx.ptz_node.min_step_y; // Up means min
+            y_target = service_ctx.ptz_node.max_step_y;
         } else {
-            y_target = service_ctx.ptz_node.max_step_y; // Down means max
+            y_target = service_ctx.ptz_node.min_step_y;
         }
+    }
 
-        sprintf(sys_command, service_ctx.ptz_node.continuous_move, x_target, y_target);
-        log_debug("PTZ: Executing diagonal continuous_move command: %s", sys_command);
+    // Execute movement commands based on what's needed
+    if (use_both) {
+        // Use single command for true diagonal movement
+        sprintf(sys_command, service_ctx.ptz_node.move_both, x_target, y_target);
+        log_debug("PTZ: Executing move_both command: %s", sys_command);
         system(sys_command);
         ret = 0;
-    } else {
-        // Fall back to separate axis commands
-
-        // Check for validation errors before executing any commands
-        if (x != NULL && dx != 0.0) {
-            if (dx > 0.0 && service_ctx.ptz_node.move_right == NULL) {
-                send_action_failed_fault("ptz_service", -3);
-                return -3;
-            }
-            if (dx < 0.0 && service_ctx.ptz_node.move_left == NULL) {
-                send_action_failed_fault("ptz_service", -4);
-                return -4;
-            }
+    } else if (has_x_only) {
+        // X movement only
+        if (service_ctx.ptz_node.move_x == NULL) {
+            send_action_failed_fault("ptz_service", -3);
+            return -3;
         }
-
-        if (y != NULL && dy != 0.0) {
-            if (dy > 0.0 && service_ctx.ptz_node.move_up == NULL) {
-                send_action_failed_fault("ptz_service", -5);
-                return -5;
-            }
-            if (dy < 0.0 && service_ctx.ptz_node.move_down == NULL) {
-                send_action_failed_fault("ptz_service", -6);
-                return -6;
-            }
+        sprintf(sys_command, service_ctx.ptz_node.move_x, x_target);
+        log_debug("PTZ: Executing move_x command: %s", sys_command);
+        system(sys_command);
+        ret = 0;
+    } else if (has_y_only) {
+        // Y movement only
+        if (service_ctx.ptz_node.move_y == NULL) {
+            send_action_failed_fault("ptz_service", -4);
+            return -4;
         }
-
-        // Execute movement commands - both axes if needed for diagonal movement
-        if (x != NULL && dx > 0.0) {
-            sprintf(sys_command, service_ctx.ptz_node.move_right, dx);
-            log_debug("PTZ: Executing move_right command: %s", sys_command);
-            system(sys_command);
-            ret = 0;
-        } else if (x != NULL && dx < 0.0) {
-            sprintf(sys_command, service_ctx.ptz_node.move_left, -dx);
-            log_debug("PTZ: Executing move_left command: %s", sys_command);
-            system(sys_command);
-            ret = 0;
-        }
-
-        if (y != NULL && dy > 0.0) {
-            sprintf(sys_command, service_ctx.ptz_node.move_up, dy);
-            log_debug("PTZ: Executing move_up command: %s", sys_command);
-            system(sys_command);
-            ret = 0;
-        } else if (y != NULL && dy < 0.0) {
-            sprintf(sys_command, service_ctx.ptz_node.move_down, -dy);
-            log_debug("PTZ: Executing move_down command: %s", sys_command);
-            system(sys_command);
-            ret = 0;
-        }
+        sprintf(sys_command, service_ctx.ptz_node.move_y, y_target);
+        log_debug("PTZ: Executing move_y command: %s", sys_command);
+        system(sys_command);
+        ret = 0;
     }
 
     if (z != NULL) {
@@ -1377,30 +1252,54 @@ int ptz_relative_move()
             if ((x == NULL) || (y == NULL)) {
                 ret = -4;
             } else {
-                double pan_norm = ptz_decode_relative_normalized(x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-                double tilt_norm = ptz_decode_relative_normalized(y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
-                ptz_apply_reverse(&pan_norm, &tilt_norm);
-                dx = ptz_relative_normalized_to_delta(pan_norm, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-                dy = ptz_relative_normalized_to_delta(tilt_norm, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
+                double pan_onvif = atof(x);
+                double tilt_onvif = atof(y);
+                // Apply reverse if needed (in ONVIF space before conversion)
+                ptz_apply_reverse(&pan_onvif, &tilt_onvif);
+                // Convert from ONVIF delta to machine delta
+                dx = ptz_onvif_to_machine_units(pan_onvif,
+                                                service_ctx.ptz_node.min_step_x,
+                                                service_ctx.ptz_node.max_step_x,
+                                                service_ctx.ptz_node.pan_min,
+                                                service_ctx.ptz_node.pan_max,
+                                                service_ctx.ptz_node.pan_inverted,
+                                                true);
+                dy = ptz_onvif_to_machine_units(tilt_onvif,
+                                                service_ctx.ptz_node.min_step_y,
+                                                service_ctx.ptz_node.max_step_y,
+                                                service_ctx.ptz_node.tilt_min,
+                                                service_ctx.ptz_node.tilt_max,
+                                                service_ctx.ptz_node.tilt_inverted,
+                                                true);
                 pantilt_present = 1;
             }
-        } else if (strcmp("http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationSpaceFov", space_p) == 0) {
+        } else if (strcmp(PTZ_URI_PANTILT_REL_FOV, space_p) == 0) {
             if ((x == NULL) || (y == NULL)) {
                 ret = -8;
             } else {
                 dx = atof(x);
-                if ((dx > 100.0) || (dx < -100.0)) {
+                if ((dx > 1) || (dx < -1)) {
                     ret = -9;
                 }
                 dy = atof(y);
-                if ((dy > 100.0) || (dy < -100.0)) {
+                if ((dy > 1) || (dy < -1)) {
                     ret = -10;
                 }
                 if (ret == 0) {
-                    dx = (dx / 100.0) * (63.0 / 2.0);
-                    dy = (dy / 100.0) * (37.0 / 2.0);
-                    dx = dx / (360.0 / service_ctx.ptz_node.max_step_x);
-                    dy = dy / (180.0 / service_ctx.ptz_node.max_step_y);
+                    dx = ptz_fov_to_machine_units(dx,
+                                                  service_ctx.ptz_node.min_step_x,
+                                                  service_ctx.ptz_node.max_step_x,
+                                                  service_ctx.ptz_node.pan_min,
+                                                  service_ctx.ptz_node.pan_max,
+                                                  service_ctx.ptz_node.fov_pan,
+                                                  service_ctx.ptz_node.pan_inverted);
+                    dy = ptz_fov_to_machine_units(dy,
+                                                  service_ctx.ptz_node.min_step_y,
+                                                  service_ctx.ptz_node.max_step_y,
+                                                  service_ctx.ptz_node.tilt_min,
+                                                  service_ctx.ptz_node.tilt_max,
+                                                  service_ctx.ptz_node.fov_tilt,
+                                                  service_ctx.ptz_node.tilt_inverted);
                     ptz_apply_reverse(&dx, &dy);
                     pantilt_present = 1;
                 }
@@ -1421,8 +1320,9 @@ int ptz_relative_move()
             if (z == NULL) {
                 ret = -7;
             } else {
-                double zoom_norm = ptz_decode_zoom_relative_normalized(z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
-                dz = ptz_relative_normalized_to_delta(zoom_norm, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
+                double zoom_onvif = atof(z);
+                // Convert from ONVIF delta to machine delta
+                dz = ptz_onvif_to_machine_units(zoom_onvif, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z, 0.0, 1.0, false, true);
                 zoom_present = 1;
             }
         } else {
@@ -1518,16 +1418,63 @@ int ptz_absolute_move()
 
     int pantilt_present = 0;
     int zoom_present = 0;
-    double pan_norm = 0.0;
-    double tilt_norm = 0.0;
-    double zoom_norm = 0.0;
 
     node = get_element_ptr(NULL, "Position", "Body");
     if (node != NULL) {
         mxml_node_t *pan_tilt_node = get_element_in_element_ptr("PanTilt", node);
         if (pan_tilt_node != NULL) {
             const char *space_attr = get_attribute(pan_tilt_node, "space");
-            if (space_attr != NULL && strcmp(space_attr, PTZ_URI_PANTILT_ABS_GENERIC) != 0) {
+            if ((space_attr == NULL) || (strcmp(space_attr, PTZ_URI_PANTILT_ABS_GENERIC) == 0)) {
+                x = get_attribute(pan_tilt_node, "x");
+                y = get_attribute(pan_tilt_node, "y");
+                if ((x != NULL) && (y != NULL)) {
+                    double pan_onvif = atof(x);
+                    double tilt_onvif = atof(y);
+                    // Apply reverse if needed (in ONVIF space before conversion)
+                    ptz_apply_reverse(&pan_onvif, &tilt_onvif);
+                    // Convert from ONVIF units to machine units (generic space: -1 to 1)
+                    dx = ptz_onvif_to_machine_units(pan_onvif,
+                                                    service_ctx.ptz_node.min_step_x,
+                                                    service_ctx.ptz_node.max_step_x,
+                                                    -1.0,
+                                                    1.0,
+                                                    service_ctx.ptz_node.pan_inverted,
+                                                    false);
+                    dy = ptz_onvif_to_machine_units(tilt_onvif,
+                                                    service_ctx.ptz_node.min_step_y,
+                                                    service_ctx.ptz_node.max_step_y,
+                                                    -1.0,
+                                                    1.0,
+                                                    service_ctx.ptz_node.tilt_inverted,
+                                                    false);
+                    pantilt_present = 1;
+                }
+            } else if (strcmp(space_attr, PTZ_URI_PANTILT_ABS_SPHERICAL) == 0) {
+                x = get_attribute(pan_tilt_node, "x");
+                y = get_attribute(pan_tilt_node, "y");
+                if ((x != NULL) && (y != NULL)) {
+                    double pan_onvif = atof(x);
+                    double tilt_onvif = atof(y);
+                    // Apply reverse if needed (in ONVIF space before conversion)
+                    ptz_apply_reverse(&pan_onvif, &tilt_onvif);
+                    // Convert from ONVIF units to machine units (spherical space: pan_min/max, tilt_min/max)
+                    dx = ptz_onvif_to_machine_units(pan_onvif,
+                                                    service_ctx.ptz_node.min_step_x,
+                                                    service_ctx.ptz_node.max_step_x,
+                                                    service_ctx.ptz_node.pan_min,
+                                                    service_ctx.ptz_node.pan_max,
+                                                    service_ctx.ptz_node.pan_inverted,
+                                                    false);
+                    dy = ptz_onvif_to_machine_units(tilt_onvif,
+                                                    service_ctx.ptz_node.min_step_y,
+                                                    service_ctx.ptz_node.max_step_y,
+                                                    service_ctx.ptz_node.tilt_min,
+                                                    service_ctx.ptz_node.tilt_max,
+                                                    service_ctx.ptz_node.tilt_inverted,
+                                                    false);
+                    pantilt_present = 1;
+                }
+            } else {
                 send_fault("ptz_service",
                            "Sender",
                            "ter:InvalidArgVal",
@@ -1535,13 +1482,6 @@ int ptz_absolute_move()
                            "Space not supported",
                            "Pan/Tilt absolute space is not supported");
                 return -4;
-            }
-            x = get_attribute(pan_tilt_node, "x");
-            y = get_attribute(pan_tilt_node, "y");
-            if ((x != NULL) && (y != NULL)) {
-                pan_norm = ptz_decode_absolute_normalized(x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-                tilt_norm = ptz_decode_absolute_normalized(y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
-                pantilt_present = 1;
             }
         }
         mxml_node_t *zoom_node = get_element_in_element_ptr("Zoom", node);
@@ -1558,7 +1498,9 @@ int ptz_absolute_move()
             }
             z = get_attribute(zoom_node, "x");
             if (z != NULL) {
-                zoom_norm = ptz_decode_zoom_normalized(z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
+                double zoom_onvif = atof(z);
+                // Convert from ONVIF units (0.0 to 1.0) to machine units
+                dz = ptz_onvif_to_machine_units(zoom_onvif, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z, 0.0, 1.0, false, false);
                 zoom_present = 1;
             }
         }
@@ -1607,14 +1549,7 @@ int ptz_absolute_move()
     if (!pantilt_present && !zoom_present) {
         ret = -4;
     } else {
-        if (pantilt_present) {
-            ptz_apply_reverse(&pan_norm, &tilt_norm);
-            dx = ptz_normalized_to_range(pan_norm, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-            dy = ptz_normalized_to_range(tilt_norm, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
-        }
-        if (zoom_present) {
-            dz = ptz_zoom_normalized_to_range(zoom_norm, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
-        }
+        // Conversions already done above directly to machine units
 
         if (pantilt_present) {
             if (service_ctx.ptz_node.jump_to_abs_speed != NULL && (pt_speed >= 0.0 || zoom_speed >= 0.0)) {
@@ -1785,13 +1720,27 @@ int ptz_get_status()
     }
 
     if (ret == 0) {
-        double pan_norm = ptz_range_to_normalized(x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-        double tilt_norm = ptz_range_to_normalized(y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
-        ptz_apply_reverse(&pan_norm, &tilt_norm);
-        double zoom_norm = ptz_zoom_range_to_normalized(z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
-        snprintf(sx, sizeof(sx), "%.4f", pan_norm);
-        snprintf(sy, sizeof(sy), "%.4f", tilt_norm);
-        snprintf(sz, sizeof(sz), "%.4f", zoom_norm);
+        // Convert from machine units to ONVIF units
+        double pan_onvif = ptz_machine_to_onvif_units(x,
+                                                      service_ctx.ptz_node.min_step_x,
+                                                      service_ctx.ptz_node.max_step_x,
+                                                      service_ctx.ptz_node.pan_min,
+                                                      service_ctx.ptz_node.pan_max,
+                                                      service_ctx.ptz_node.pan_inverted,
+                                                      false);
+        double tilt_onvif = ptz_machine_to_onvif_units(y,
+                                                       service_ctx.ptz_node.min_step_y,
+                                                       service_ctx.ptz_node.max_step_y,
+                                                       service_ctx.ptz_node.tilt_min,
+                                                       service_ctx.ptz_node.tilt_max,
+                                                       service_ctx.ptz_node.tilt_inverted,
+                                                       false);
+        // Apply reverse after conversion to ONVIF space
+        ptz_apply_reverse(&pan_onvif, &tilt_onvif);
+        double zoom_onvif = ptz_machine_to_onvif_units(z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z, 0.0, 1.0, false, false);
+        snprintf(sx, sizeof(sx), "%.4f", pan_onvif);
+        snprintf(sy, sizeof(sy), "%.4f", tilt_onvif);
+        snprintf(sz, sizeof(sz), "%.4f", zoom_onvif);
         if (i == 1)
             strcpy(si, "MOVING");
         else
@@ -2512,7 +2461,55 @@ int ptz_move_and_start_tracking()
 
             if (pt) {
                 const char *space_attr = get_attribute(pt, "space");
-                if (space_attr != NULL && strcmp(space_attr, PTZ_URI_PANTILT_ABS_GENERIC) != 0) {
+                const char *x = get_attribute(pt, "x");
+                const char *y = get_attribute(pt, "y");
+                if ((space_attr == NULL) || (strcmp(space_attr, PTZ_URI_PANTILT_ABS_GENERIC) == 0)) {
+                    if (x && y) {
+                        double pan_onvif = atof(x);
+                        double tilt_onvif = atof(y);
+                        // Apply reverse if needed (in ONVIF space before conversion)
+                        ptz_apply_reverse(&pan_onvif, &tilt_onvif);
+                        // Convert from ONVIF units to machine units (generic space: -1 to 1)
+                        dx = ptz_onvif_to_machine_units(pan_onvif,
+                                                        service_ctx.ptz_node.min_step_x,
+                                                        service_ctx.ptz_node.max_step_x,
+                                                        -1.0,
+                                                        1.0,
+                                                        service_ctx.ptz_node.pan_inverted,
+                                                        false);
+                        dy = ptz_onvif_to_machine_units(tilt_onvif,
+                                                        service_ctx.ptz_node.min_step_y,
+                                                        service_ctx.ptz_node.max_step_y,
+                                                        -1.0,
+                                                        1.0,
+                                                        service_ctx.ptz_node.tilt_inverted,
+                                                        false);
+                        pantilt_present = 1;
+                    }
+                } else if (strcmp(space_attr, PTZ_URI_PANTILT_ABS_SPHERICAL) == 0) {
+                    if (x && y) {
+                        double pan_onvif = atof(x);
+                        double tilt_onvif = atof(y);
+                        // Apply reverse if needed (in ONVIF space before conversion)
+                        ptz_apply_reverse(&pan_onvif, &tilt_onvif);
+                        // Convert from ONVIF units to machine units (spherical space: pan_min/max, tilt_min/max)
+                        dx = ptz_onvif_to_machine_units(pan_onvif,
+                                                        service_ctx.ptz_node.min_step_x,
+                                                        service_ctx.ptz_node.max_step_x,
+                                                        service_ctx.ptz_node.pan_min,
+                                                        service_ctx.ptz_node.pan_max,
+                                                        service_ctx.ptz_node.pan_inverted,
+                                                        false);
+                        dy = ptz_onvif_to_machine_units(tilt_onvif,
+                                                        service_ctx.ptz_node.min_step_y,
+                                                        service_ctx.ptz_node.max_step_y,
+                                                        service_ctx.ptz_node.tilt_min,
+                                                        service_ctx.ptz_node.tilt_max,
+                                                        service_ctx.ptz_node.tilt_inverted,
+                                                        false);
+                        pantilt_present = 1;
+                    }
+                } else {
                     send_fault("ptz_service",
                                "Sender",
                                "ter:InvalidArgVal",
@@ -2520,16 +2517,6 @@ int ptz_move_and_start_tracking()
                                "Space not supported",
                                "Pan/Tilt absolute space is not supported");
                     return -4;
-                }
-                const char *x = get_attribute(pt, "x");
-                const char *y = get_attribute(pt, "y");
-                if (x && y) {
-                    double pan_norm = ptz_decode_absolute_normalized(x, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-                    double tilt_norm = ptz_decode_absolute_normalized(y, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
-                    ptz_apply_reverse(&pan_norm, &tilt_norm);
-                    dx = ptz_normalized_to_range(pan_norm, service_ctx.ptz_node.min_step_x, service_ctx.ptz_node.max_step_x);
-                    dy = ptz_normalized_to_range(tilt_norm, service_ctx.ptz_node.min_step_y, service_ctx.ptz_node.max_step_y);
-                    pantilt_present = 1;
                 }
             }
             if (zm) {
@@ -2545,8 +2532,15 @@ int ptz_move_and_start_tracking()
                 }
                 const char *z = get_attribute(zm, "x");
                 if (z) {
-                    double zoom_norm = ptz_decode_zoom_normalized(z, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
-                    dz = ptz_zoom_normalized_to_range(zoom_norm, service_ctx.ptz_node.min_step_z, service_ctx.ptz_node.max_step_z);
+                    double zoom_onvif = atof(z);
+                    // Convert from ONVIF units to machine units
+                    dz = ptz_onvif_to_machine_units(zoom_onvif,
+                                                    service_ctx.ptz_node.min_step_z,
+                                                    service_ctx.ptz_node.max_step_z,
+                                                    0.0,
+                                                    1.0,
+                                                    false,
+                                                    false);
                     zoom_present = 1;
                 }
             }
