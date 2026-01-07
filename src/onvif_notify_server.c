@@ -56,6 +56,78 @@
 
 #define PID_SIZE 32
 
+static int parse_reference_url(const char *reference, char *host, size_t host_len, char *page, size_t page_len, int *port_out)
+{
+    const char *scheme_end;
+    const char *authority;
+    const char *path_start;
+    const char *host_end;
+    const char *port_sep = NULL;
+    size_t host_size;
+    long port_tmp = 0;
+
+    if (reference == NULL || host == NULL || page == NULL || port_out == NULL)
+        return -1;
+
+    scheme_end = strstr(reference, "://");
+    if (scheme_end == NULL)
+        return -1;
+
+    authority = scheme_end + 3; // skip "://"
+    if (*authority == '\0')
+        return -1;
+
+    path_start = strchr(authority, '/');
+    if (path_start == NULL) {
+        host_end = reference + strlen(reference);
+    } else {
+        host_end = path_start;
+    }
+
+    port_sep = memchr(authority, ':', (size_t) (host_end - authority));
+    if (port_sep != NULL) {
+        host_size = (size_t) (port_sep - authority);
+    } else {
+        host_size = (size_t) (host_end - authority);
+    }
+
+    if (host_size == 0 || host_size >= host_len)
+        return -1;
+
+    memcpy(host, authority, host_size);
+    host[host_size] = '\0';
+
+    if (port_sep != NULL) {
+        const char *port_str = port_sep + 1;
+        size_t port_len = (size_t) (host_end - port_sep - 1);
+        char port_buf[8];
+
+        if (port_len == 0 || port_len >= sizeof(port_buf))
+            return -1;
+        memcpy(port_buf, port_str, port_len);
+        port_buf[port_len] = '\0';
+        port_tmp = strtol(port_buf, NULL, 10);
+        if (port_tmp <= 0 || port_tmp > 65535)
+            return -1;
+    }
+
+    *port_out = (int) (port_tmp > 0 ? port_tmp : (*port_out));
+
+    if (path_start == NULL) {
+        if (page_len < 2)
+            return -1;
+        page[0] = '/';
+        page[1] = '\0';
+    } else {
+        size_t remaining = strlen(path_start);
+        if (remaining >= page_len)
+            return -1;
+        memcpy(page, path_start, remaining + 1);
+    }
+
+    return 0;
+}
+
 shm_t *subs_evts;
 service_context_t service_ctx;
 
@@ -158,7 +230,10 @@ int create_pid(char *file_name)
         return -1;
 
     memset(pid_buffer, '\0', PID_SIZE);
-    sprintf(pid_buffer, "%ld\n", (long) getpid());
+    if (snprintf(pid_buffer, sizeof(pid_buffer), "%ld\n", (long) getpid()) >= (int) sizeof(pid_buffer)) {
+        fclose(f);
+        return -2;
+    }
     if (fwrite(pid_buffer, strlen(pid_buffer), 1, f) != 1) {
         fclose(f);
         return -2;
@@ -224,7 +299,7 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     char *header;
     char *message;
     int size;
-    char size_string[8];
+    char size_string[32];
     char template_file[1024];
     int sockfd;
     struct sockaddr_in remote;
@@ -236,10 +311,9 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     // Prepare IP address
     if (strncmp("https", reference, 5) == 0)
         port = 443;
-    if (strchr(&reference[6], ':') == NULL) {
-        sscanf(reference, "%*[^:]%*[:/]%[^/]%s", host, page);
-    } else {
-        sscanf(reference, "%*[^:]%*[:/]%[^:]:%d%s", host, &port, page);
+    if (parse_reference_url(reference, host, sizeof(host), page, sizeof(page), &port) != 0) {
+        log_error("Invalid reference URL: %s", reference);
+        return -5;
     }
 
     // Configure socket
@@ -282,15 +356,32 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
                service_ctx.events[alarm_index].source_value,
                "%VALUE%",
                value);
-    sprintf(size_string, "%d", size);
+    int size_len = snprintf(size_string, sizeof(size_string), "%d", size);
+    if (size_len < 0 || size_len >= (int) sizeof(size_string)) {
+        log_error("Notify payload size too large");
+        close(sockfd);
+        return -3;
+    }
 
-    header = (char *) malloc((strlen(header_fmt) + strlen(page) + strlen(host) + strlen(size_string) + 4) * sizeof(char));
+    int header_calc = snprintf(NULL, 0, header_fmt, page, host, size_string);
+    if (header_calc < 0) {
+        log_error("Failed to compute header size");
+        close(sockfd);
+        return -3;
+    }
+    size_t header_length = (size_t) header_calc + 1;
+    header = (char *) malloc(header_length);
     if (header == NULL) {
         log_error("Malloc error.\n");
         close(sockfd);
         return -3;
     }
-    sprintf(header, header_fmt, page, host, size_string);
+    if (snprintf(header, header_length, header_fmt, page, host, size_string) >= (int) header_length) {
+        log_error("Header formatting error");
+        free(header);
+        close(sockfd);
+        return -3;
+    }
 
     message = (char *) malloc((size + strlen(header) + 1) * sizeof(char));
     if (message == NULL) {
@@ -478,7 +569,10 @@ int handle_inotify_events(int fd, char *dir)
 
             /* Print event type. */
             if (((event->mask & (IN_CREATE | IN_DELETE | IN_MODIFY)) != 0) && ((event->mask & IN_ISDIR) == 0) && (event->len)) {
-                sprintf(input_file, "%s/%s", dir, event->name);
+                if (snprintf(input_file, sizeof(input_file), "%s/%s", dir, event->name) >= (int) sizeof(input_file)) {
+                    log_error("Input path too long for %s/%s", dir, event->name);
+                    continue;
+                }
                 if (event->mask & IN_CREATE) {
                     strcpy(value, "true");
                     log_debug("File %s created", input_file);
