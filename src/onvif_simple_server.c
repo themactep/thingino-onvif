@@ -589,6 +589,19 @@ int main(int argc, char **argv)
     // log_debug("Authentication completed, auth_error = %d", auth_error);
     // log_debug("About to process method: %s for service: %s", method ? method : "NULL", prog_name ? prog_name : "NULL");
 
+    // Special case: Synology NVR CreateProfile bypass (before authentication)
+    if ((service_ctx.adv_synology_nvr == 1) && (strcasecmp("media_service", prog_name) == 0) && (strcasecmp("CreateProfile", method) == 0)) {
+        log_debug("Synology NVR mode: bypassing authentication for CreateProfile");
+        send_fault("media_service",
+                   "Receiver",
+                   "ter:Action",
+                   "ter:MaxNVTProfiles",
+                   "Max profile number reached",
+                   "The maximum number of supported profiles supported by the device has been reached");
+        close_xml();
+        return 0;
+    }
+
     log_debug("Authentication check result: auth_error=%d", auth_error);
     if (auth_error == 0) {
         log_debug("Authentication passed, dispatching method: %s", method);
@@ -597,16 +610,6 @@ int main(int argc, char **argv)
     } else {
         log_error("Authentication failed, sending HTTP 401 Unauthorized");
         send_authentication_error();
-    }
-
-    // Synology hack handling
-    if ((service_ctx.adv_synology_nvr == 1) && (strcasecmp("media_service", prog_name) == 0) && (strcasecmp("CreateProfile", method) == 0)) {
-        send_fault("media_service",
-                   "Receiver",
-                   "ter:Action",
-                   "ter:MaxNVTProfiles",
-                   "Max profile number reached",
-                   "The maximum number of supported profiles supported by the device has been reached");
     }
 
     close_xml();

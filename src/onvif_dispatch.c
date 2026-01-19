@@ -42,11 +42,6 @@ static int condition_adv_enable_media2(void)
     return service_ctx.adv_enable_media2 == 1;
 }
 
-static int condition_synology_nvr(void)
-{
-    return service_ctx.adv_synology_nvr == 1;
-}
-
 // Dispatch table - clean, maintainable, and extensible
 static const onvif_method_entry_t onvif_dispatch_table[] = {
     // Device service methods (no conditions)
@@ -221,20 +216,7 @@ int dispatch_onvif_method(const char *service, const char *method)
         }
     }
 
-    // No handler found - check for special cases first
-
-    // Special case: Synology NVR CreateProfile hack
-    if ((service_ctx.adv_synology_nvr == 1) && (strcasecmp("media_service", service) == 0) && (strcasecmp("CreateProfile", method) == 0)) {
-        send_fault("media_service",
-                   "Receiver",
-                   "ter:Action",
-                   "ter:MaxNVTProfiles",
-                   "Max profile number reached",
-                   "The maximum number of supported profiles supported by the device has been reached");
-        return 0;
-    }
-
-    // Call appropriate unsupported method handler
+    // No handler found - call appropriate unsupported method handler
     if (strcasecmp("device_service", service) == 0) {
         return device_unsupported(method);
     } else if (strcasecmp("media_service", service) == 0) {
