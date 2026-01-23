@@ -1,10 +1,12 @@
 [
   {
+    "token": "IRCutFilter",
     "idle_state": "close",
     "close": "ircut off",
     "open": "ircut on"
   },
   {
+    "token": "IRLEDs",
     "idle_state": "close",
     "close": "irled off",
     "open": "irled on"

@@ -158,7 +158,13 @@ int deviceio_get_relay_outputs()
         size = cat(dest, "deviceio_service_files/GetRelayOutputs_header.xml", 0);
 
         for (i = 0; i < service_ctx.relay_outputs_num; i++) {
-            sprintf(token, "RelayOutputToken_%d", i);
+            // Use custom token if provided, otherwise generate default
+            if (service_ctx.relay_outputs[i].token && service_ctx.relay_outputs[i].token[0] != '\0') {
+                strncpy(token, service_ctx.relay_outputs[i].token, sizeof(token) - 1);
+                token[sizeof(token) - 1] = '\0';
+            } else {
+                sprintf(token, "RelayOutputToken_%d", i);
+            }
             if (service_ctx.relay_outputs[i].idle_state == IDLE_STATE_OPEN)
                 strcpy(idle_state, "open");
             else
@@ -253,37 +259,56 @@ int deviceio_set_relay_output_settings()
 
 int deviceio_set_relay_output_state()
 {
-    int itoken;
+    int i, itoken = -1;
     const char *token = get_element("RelayOutputToken", "Body");
     const char *state = get_element("LogicalState", "Body");
     char sys_command[MAX_LEN];
 
     sys_command[0] = '\0';
 
-    if ((token != NULL) && (strlen(token) == 18) && (strncasecmp("RelayOutputToken_", token, 17) == 0)) {
-        itoken = token[17] - 48;
+    if (token == NULL) {
+        send_fault("deviceio_service", "Sender", "ter:InvalidArgVal", "ter:RelayToken", "Relay token", "Missing relay token");
+        return -1;
+    }
 
-        if ((itoken >= 0) && (itoken < service_ctx.relay_outputs_num)) {
-            if (strcasecmp("active", state) == 0) {
-                if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
-                    sprintf(sys_command, service_ctx.relay_outputs[itoken].close);
-                } else {
-                    sprintf(sys_command, service_ctx.relay_outputs[itoken].open);
-                }
-            } else {
-                if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
-                    sprintf(sys_command, service_ctx.relay_outputs[itoken].open);
-                } else {
-                    sprintf(sys_command, service_ctx.relay_outputs[itoken].close);
-                }
+    // Try to find matching relay by token
+    for (i = 0; i < service_ctx.relay_outputs_num; i++) {
+        // Check if custom token matches
+        if (service_ctx.relay_outputs[i].token && service_ctx.relay_outputs[i].token[0] != '\0') {
+            if (strcmp(token, service_ctx.relay_outputs[i].token) == 0) {
+                itoken = i;
+                break;
             }
-        } else {
-            send_fault("deviceio_service", "Sender", "ter:InvalidArgVal", "ter:RelayToken", "Relay token", "Unknown relay token reference");
-            return -1;
         }
-    } else {
+        // Check if default token matches (RelayOutputToken_N)
+        else {
+            char default_token[32];
+            sprintf(default_token, "RelayOutputToken_%d", i);
+            if (strcmp(token, default_token) == 0) {
+                itoken = i;
+                break;
+            }
+        }
+    }
+
+    if (itoken < 0 || itoken >= service_ctx.relay_outputs_num) {
         send_fault("deviceio_service", "Sender", "ter:InvalidArgVal", "ter:RelayToken", "Relay token", "Unknown relay token reference");
         return -2;
+    }
+
+    // Determine which command to execute
+    if (strcasecmp("active", state) == 0) {
+        if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
+            sprintf(sys_command, service_ctx.relay_outputs[itoken].close);
+        } else {
+            sprintf(sys_command, service_ctx.relay_outputs[itoken].open);
+        }
+    } else {
+        if (service_ctx.relay_outputs[itoken].idle_state == IDLE_STATE_OPEN) {
+            sprintf(sys_command, service_ctx.relay_outputs[itoken].open);
+        } else {
+            sprintf(sys_command, service_ctx.relay_outputs[itoken].close);
+        }
     }
 
     if (sys_command[0] != '\0') {

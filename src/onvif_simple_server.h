@@ -51,6 +51,7 @@ typedef struct {
 } stream_profile_t;
 
 typedef struct {
+    char *token;        // Optional custom token (defaults to RelayOutputToken_N)
     int idle_state;
     char *close;
     char *open;

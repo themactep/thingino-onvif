@@ -888,10 +888,12 @@ int process_json_conf_file(char *file)
             }
 
             service_ctx.relay_outputs = (relay_output_t *) realloc(service_ctx.relay_outputs, service_ctx.relay_outputs_num * sizeof(relay_output_t));
+            service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].token = NULL;
             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].idle_state = IDLE_STATE_CLOSE;
             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].close = NULL;
             service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].open = NULL;
             char *tmp = NULL;
+            get_string_from_json(&(service_ctx.relay_outputs[service_ctx.relay_outputs_num - 1].token), item, "token");
             get_string_from_json(&tmp, item, "idle_state");
             if (tmp) {
                 if (!strcasecmp(tmp, "open"))
