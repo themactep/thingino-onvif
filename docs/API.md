@@ -83,7 +83,8 @@ Templates: `wsd_files/*.xml`
 
 ## Authentication
 - If `user` and `password` are set in `/etc/onvif.json`, the server expects WS-Security UsernameToken with PasswordDigest.
-- RTSP and snapshot URLs returned by Media/Media2 include embedded credentials if present.
+- Per ONVIF Core Spec 5.9.1, RTSP and HTTP snapshot requests use the same credentials via digest authentication.
+- URIs returned by GetStreamUri/GetSnapshotUri do NOT include embedded credentials to comply with ONVIF spec.
 
 ## Notes
 - Only a subset of ONVIF is implemented; unsupported operations respond with SOAP Fault.

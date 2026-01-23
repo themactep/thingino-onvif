@@ -1395,72 +1395,18 @@ int construct_uri_with_credentials(
         return -1;
     }
 
-    // Check if credentials are configured and non-empty
-    if (username != NULL && password != NULL && strlen(username) > 0 && strlen(password) > 0) {
-        // Create URI with embedded credentials: protocol://username:password@host/path
-        char temp_uri[MAX_LEN];
-        char *protocol_end = strstr(uri_template, "://");
-
-        if (protocol_end != NULL) {
-            // Extract protocol (rtsp, http, https, etc.)
-            int protocol_len = protocol_end - uri_template + 3;
-            char protocol[16];
-
-            if (protocol_len >= sizeof(protocol)) {
-                // Protocol too long, fallback to original format
-                if (snprintf(output_buffer, buffer_size, uri_template, address) >= (int) buffer_size) {
-                    strncpy(output_buffer, uri_template, buffer_size - 1);
-                    output_buffer[buffer_size - 1] = '\0';
-                }
-                return 0;
-            }
-
-            strncpy(protocol, uri_template, protocol_len);
-            protocol[protocol_len] = '\0';
-
-            // Extract path part (everything after %s placeholder)
-            char *path_start = strstr(uri_template + protocol_len, "/");
-            char *path = (path_start != NULL) ? path_start : "";
-
-            // Construct URI with credentials
-            if (snprintf(temp_uri, sizeof(temp_uri), "%s%s:%s@%s%s", protocol, username, password, address, path) >= (int) sizeof(temp_uri)) {
-                // Constructed URI too long, fallback to original format
-                if (snprintf(output_buffer, buffer_size, uri_template, address) >= (int) buffer_size) {
-                    strncpy(output_buffer, uri_template, buffer_size - 1);
-                    output_buffer[buffer_size - 1] = '\0';
-                }
-                return 0;
-            }
-
-            // Copy the constructed URI to output buffer
-            if (strlen(temp_uri) >= buffer_size) {
-                // Output buffer too small, fallback to original format
-                if (snprintf(output_buffer, buffer_size, uri_template, address) >= (int) buffer_size) {
-                    strncpy(output_buffer, uri_template, buffer_size - 1);
-                    output_buffer[buffer_size - 1] = '\0';
-                }
-                return 0;
-            }
-
-            strcpy(output_buffer, temp_uri);
-            return 0;
-
-        } else {
-            // Protocol not found, fallback to original format
-            if (snprintf(output_buffer, buffer_size, uri_template, address) >= (int) buffer_size) {
-                strncpy(output_buffer, uri_template, buffer_size - 1);
-                output_buffer[buffer_size - 1] = '\0';
-            }
-            return 0;
-        }
-    } else {
-        // No credentials configured, use original format
-        if (snprintf(output_buffer, buffer_size, uri_template, address) >= (int) buffer_size) {
-            strncpy(output_buffer, uri_template, buffer_size - 1);
-            output_buffer[buffer_size - 1] = '\0';
-        }
-        return 0;
+    // Per ONVIF specification, URIs should not contain embedded credentials.
+    // Clients must use the same authentication method as the ONVIF service itself.
+    // Embedding credentials causes issues with clients like Home Assistant that
+    // add authentication separately, resulting in "Cannot combine AUTH argument
+    // with credentials encoded in URL" errors.
+    
+    // Always use original URI format without embedded credentials
+    if (snprintf(output_buffer, buffer_size, uri_template, address) >= (int) buffer_size) {
+        strncpy(output_buffer, uri_template, buffer_size - 1);
+        output_buffer[buffer_size - 1] = '\0';
     }
+    return 0;
 }
 
 /**
