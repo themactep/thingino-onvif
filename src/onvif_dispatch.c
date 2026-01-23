@@ -58,6 +58,14 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"device_service", "GetCapabilities", device_get_capabilities, NULL},
     {"device_service", "GetNetworkInterfaces", device_get_network_interfaces, NULL},
     {"device_service", "GetDiscoveryMode", device_get_discovery_mode, NULL},
+    
+    // SetRelayOutputState exposed through device_service per ONVIF spec design
+    // The ONVIF specification defines SetRelayOutputState elements in the Device
+    // service namespace (tds:), even though operations are exposed through DeviceIO.
+    // This is intentional per ONVIF Core Spec 8.6.3. Strict WSDL clients (like Zeep)
+    // cannot find the element definitions when calling through DeviceIO service, so
+    // exposing it here allows spec-compliant access where elements are defined.
+    {"device_service", "SetRelayOutputState", deviceio_set_relay_output_state, NULL},
 
     // DeviceIO service methods (no conditions)
     {"deviceio_service", "GetVideoSources", deviceio_get_video_sources, NULL},
