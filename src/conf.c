@@ -1123,6 +1123,25 @@ int process_json_conf_file(char *file)
     // Keep json_file alive - it will be freed by the system when the program exits
     // In a long-running program, you would store json_file globally and free it in cleanup
 
+    // Ensure the highest resolution profile is Profile_0 (Main Stream)
+    if (service_ctx.profiles_num > 1) {
+        // Simple bubble sort for descending resolution
+        for (int i = 0; i < service_ctx.profiles_num - 1; i++) {
+            for (int j = 0; j < service_ctx.profiles_num - i - 1; j++) {
+                long res1 = (long)service_ctx.profiles[j].width * service_ctx.profiles[j].height;
+                long res2 = (long)service_ctx.profiles[j + 1].width * service_ctx.profiles[j + 1].height;
+
+                if (res2 > res1) {
+                    // Swap
+                    stream_profile_t temp = service_ctx.profiles[j];
+                    service_ctx.profiles[j] = service_ctx.profiles[j + 1];
+                    service_ctx.profiles[j + 1] = temp;
+                    log_debug("Swapped Profile_%d and Profile_%d to prioritize higher resolution", j, j+1);
+                }
+            }
+        }
+    }
+
     return 0;
 }
 
