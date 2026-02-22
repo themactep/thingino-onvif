@@ -1395,15 +1395,33 @@ int construct_uri_with_credentials(
         return -1;
     }
 
-    // Per ONVIF specification, URIs should not contain embedded credentials.
-    // Clients must use the same authentication method as the ONVIF service itself.
-    // Embedding credentials causes issues with clients like Home Assistant that
-    // add authentication separately, resulting in "Cannot combine AUTH argument
-    // with credentials encoded in URL" errors.
-    
-    // Always use original URI format without embedded credentials
-    if (snprintf(output_buffer, buffer_size, uri_template, address) >= (int) buffer_size) {
-        strncpy(output_buffer, uri_template, buffer_size - 1);
+    // Build base URL from template
+    char base_url[MAX_LEN];
+    if (snprintf(base_url, sizeof(base_url), uri_template, address) >= (int) sizeof(base_url)) {
+        strncpy(base_url, uri_template, sizeof(base_url) - 1);
+        base_url[sizeof(base_url) - 1] = '\0';
+    }
+
+    // Append API key as ?token= query parameter so ONVIF clients (e.g. Home Assistant)
+    // can fetch the snapshot URL without requiring a separate auth mechanism.
+    // The key is read from the same file used by the web UI auth middleware.
+    const char *api_key_file = "/etc/thingino-api.key";
+    char api_key[256] = {0};
+    FILE *f = fopen(api_key_file, "r");
+    if (f) {
+        if (fgets(api_key, sizeof(api_key), f)) {
+            // Strip trailing whitespace/newlines
+            char *end = api_key + strlen(api_key) - 1;
+            while (end >= api_key && (*end == '\n' || *end == '\r' || *end == ' '))
+                *end-- = '\0';
+        }
+        fclose(f);
+    }
+
+    if (api_key[0] != '\0') {
+        snprintf(output_buffer, buffer_size, "%s?token=%s", base_url, api_key);
+    } else {
+        strncpy(output_buffer, base_url, buffer_size - 1);
         output_buffer[buffer_size - 1] = '\0';
     }
     return 0;
