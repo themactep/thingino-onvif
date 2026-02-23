@@ -55,6 +55,20 @@
       "input_file": "/tmp/hardware_failure"
     }
   ],
+  "imaging": [
+    {
+      "video_source_token": "VideoSourceToken",
+      "ircut_state": "Auto",
+      "ircut_modes": [
+        "On",
+        "Off",
+        "Auto"
+      ],
+      "cmd_ircut_on": "/sbin/ircut on",
+      "cmd_ircut_off": "/sbin/ircut off",
+      "cmd_ircut_auto": "/sbin/ircut auto"
+    }
+  ],
   "profiles": {
     "stream0": {
       "name": "Profile_0",

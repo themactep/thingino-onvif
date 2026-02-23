@@ -180,12 +180,17 @@ static const char *find_child_value(mxml_node_t *node, const char *tag)
 
     if (mxmlGetType(node) == MXML_TYPE_ELEMENT) {
         const char *name = mxmlGetElement(node);
-        if (name && strcmp(name, tag) == 0) {
-            mxml_node_t *text = mxmlGetFirstChild(node);
-            while (text) {
-                if (mxmlGetType(text) == MXML_TYPE_TEXT)
-                    return mxmlGetText(text, NULL);
-                text = mxmlGetNextSibling(text);
+        /* Strip namespace prefix (e.g. "tt:IrCutFilter" -> "IrCutFilter") */
+        if (name) {
+            const char *colon = strchr(name, ':');
+            const char *local_name = colon ? colon + 1 : name;
+            if (strcmp(local_name, tag) == 0) {
+                mxml_node_t *text = mxmlGetFirstChild(node);
+                while (text) {
+                    if (mxmlGetType(text) == MXML_TYPE_TEXT)
+                        return mxmlGetText(text, NULL);
+                    text = mxmlGetNextSibling(text);
+                }
             }
         }
     }
