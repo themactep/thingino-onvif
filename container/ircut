@@ -1,0 +1,15 @@
+#!/bin/bash
+# Mock ircut command for container testing
+# Updates the ircut_state in /etc/onvif.json so subsequent
+# GetImagingSettings calls return the new value.
+STATE="${1:-}"
+case "$STATE" in
+    on)   IR="On" ;;
+    off)  IR="Off" ;;
+    auto) IR="Auto" ;;
+    *)    exit 0 ;;
+esac
+TMP=$(mktemp)
+sed "s/\"ircut_state\": \"[^\"]*\"/\"ircut_state\": \"$IR\"/" /etc/onvif.json > "$TMP"
+cp "$TMP" /etc/onvif.json
+rm -f "$TMP"

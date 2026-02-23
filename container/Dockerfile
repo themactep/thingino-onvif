@@ -28,24 +28,35 @@ COPY media_service_files      /app/cgi-bin/media_service_files/
 COPY media2_service_files     /app/cgi-bin/media2_service_files/
 COPY ptz_service_files        /app/cgi-bin/ptz_service_files/
 
-# Copy template files for notify server (to its expected directory)
+# Copy template files for notify server (to its expected path /var/www/onvif/notify_files)
+COPY notify_files             /var/www/onvif/notify_files/
+# Also keep copy at legacy path for any other references
 COPY notify_files             /etc/onvif_notify_server/
+
+# Create /run/motion directory required by onvif_notify_server (event input directory)
+RUN mkdir -p /run/motion
 
 # Copy template files for WSD server (to its expected directory)
 COPY wsd_files                /etc/wsd_simple_server/
 
-# Copy config file
+# Copy config file and make it writable so mock commands can update state
 COPY onvif.json               /etc/onvif.json
+RUN chown www-data:www-data /etc/onvif.json && chmod 644 /etc/onvif.json
 
-# Copy mock motors script for PTZ testing
+# Create a test API key so snapshot URLs include a ?token= parameter
+RUN echo "test-snapshot-token" > /etc/thingino-api.key
+
+# Copy mock scripts for testing
 COPY motors                   /bin/motors
+COPY ircut                    /sbin/ircut
 
 # Change the ownership of the files to the www-data user
 # This is the user that Lighttpd runs as on Debian
 RUN chown -R www-data:www-data /app/cgi-bin
 
-# Make motors script executable
+# Make mock scripts executable
 RUN chmod +x /bin/motors
+RUN chmod +x /sbin/ircut
 
 # Grant execute permissions to your C apps
 RUN chmod +x \
@@ -77,5 +88,10 @@ VOLUME ["/var/www/onvif/raw_logs"]
 
 EXPOSE 8000
 
-# Command to run the Lighttpd server when the container starts
-CMD ["lighttpd", "-D", "-f", "/etc/lighttpd/lighttpd.conf"]
+# Startup script: launches onvif_notify_server (needed for pull-point subscriptions)
+# then starts lighttpd in the foreground.
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Command to run the startup script when the container starts
+CMD ["/start.sh"]

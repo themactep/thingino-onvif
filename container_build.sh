@@ -19,8 +19,8 @@ cp ../wsd_simple_server ./
 
 echo "Updating config for container environment..."
 
-# Set network instaface
-#sed -i 's/"ifs": "enp174s0"/"ifs": "lo"/g' onvif.json
+# Set network interface to loopback (always available in container)
+sed -i 's/"ifs": "wlan0"/"ifs": "lo"/g' onvif.json
 
 # Enable PTZ
 sed -i 's/"enable": 0,/"enable": 1,/' onvif.json

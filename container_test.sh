@@ -23,6 +23,29 @@ test_deviceio_audio_endpoints() {
     test_onvif_service "deviceio_service" "GetAudioSources" "DeviceIO GetAudioSources" true "<tmd:GetAudioSourcesResponse"
 }
 
+# Test URI Token Validation (RTSP should not have token, snapshot should)
+test_uri_token_validation() {
+    echo -e "\n${YELLOW}Testing: URI Token Validation${NC}"
+
+    # Check if lib_wsse.sh exists
+    if [ ! -f tools/onvif/lib_wsse.sh ]; then
+        echo -e "${YELLOW}⚠ Skipping URI token validation - lib_wsse.sh not found${NC}"
+        return 0
+    fi
+
+    # Extract host from SERVER_URL (e.g., http://localhost:8080 -> localhost:8080)
+    local host_port=$(echo "$SERVER_URL" | sed 's|http[s]*://||')
+
+    # Run the validation test script
+    if bash tests/test_uri_token_validation.sh -h "$host_port" -u "$DEFAULT_USERNAME" -p "$DEFAULT_PASSWORD"; then
+        echo -e "${GREEN}✓ URI Token Validation - SUCCESS${NC}"
+        return 0
+    else
+        echo -e "${RED}✗ URI Token Validation - FAILED${NC}"
+        return 1
+    fi
+}
+
 # Helper to inject WSSE header and tokens into imaging SOAP templates
 render_imaging_template() {
     local template_path=$1
@@ -728,7 +751,7 @@ test_ws_discovery() {
 test_http_connectivity() {
     echo -e "\n${YELLOW}Testing HTTP connectivity...${NC}"
 
-    local response=$(curl -s -o /dev/null -w "%{\nhttp_code}" "$SERVER_URL/")
+    local response=$(curl -s -o /dev/null -w "%{http_code}" "$SERVER_URL/")
 
     # Accept any HTTP response code that indicates the server is running
     # 200 = OK, 403 = Forbidden (normal for directory without index), 404 = Not Found
@@ -816,6 +839,9 @@ test_onvif_service "device_service" "GetServices" "Get Available Services" false
 # Test media services (auth required)
 test_onvif_service "media_service" "GetProfiles" "Get Media Profiles" true
 test_onvif_service "media_service" "GetVideoSources" "Get Video Sources" true
+
+# URI Token Validation (RTSP vs Snapshot URLs)
+test_uri_token_validation
 
 # Audio Backchannel (AudioOutput) tests
 test_audio_output_endpoints

@@ -1,0 +1,158 @@
+{
+    "audio": {
+        "output_enabled": true
+    },
+    "adv_enable_media2": false,
+    "adv_fault_if_set": false,
+    "adv_fault_if_unknown": false,
+    "adv_synology_nvr": false,
+    "aux": [
+        {
+            "name": "IRLED ON",
+            "exec": "irled on"
+        },
+        {
+            "name": "IRLED OFF",
+            "exec": "irled off"
+        },
+        {
+            "name": "COLOR ON",
+            "exec": "color on"
+        },
+        {
+            "name": "COLOR OFF",
+            "exec": "color off"
+        }
+    ],
+    "camera": {
+        "firmware_ver": "0.0.1",
+        "hardware_id": "HWID",
+        "manufacturer": "Manufacturer",
+        "model": "Model",
+        "serial_num": "SN1234567890"
+    },
+    "events_enable": 1,
+    "events": [
+        {
+            "topic": "tns1:VideoSource/MotionAlarm",
+            "source_name": "VideoSourceConfigurationToken",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "VideoSourceConfigToken",
+            "input_file": "/run/motion/motion_alarm"
+        },
+        {
+            "topic": "tns1:RuleEngine/CellMotionDetector/Motion",
+            "source_name": "VideoSourceConfigurationToken",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "VideoSourceConfigToken",
+            "input_file": "/run/motion/motion_alarm"
+        },
+        {
+            "topic": "tns1:Device/HardwareFailure",
+            "source_name": "Source",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "HardwareId",
+            "input_file": "/tmp/hardware_failure"
+        }
+    ],
+    "imaging": [
+        {
+            "video_source_token": "VideoSourceToken",
+            "ircut_state": "Auto",
+            "ircut_modes": [
+                "On",
+                "Off",
+                "Auto"
+            ],
+            "cmd_ircut_on": "ircut on",
+            "cmd_ircut_off": "ircut off",
+            "cmd_ircut_auto": ""
+        }
+    ],
+    "profiles": {
+        "stream0": {
+            "name": "Profile_0",
+            "width": 1920,
+            "height": 1080,
+            "url": "rtsp://%s/ch0",
+            "snapurl": "http://%s/image.jpg",
+            "type": "H264",
+            "audio_encoder": "AAC",
+            "audio_decoder": "AAC"
+        },
+        "stream1": {
+            "name": "Profile_1",
+            "width": 640,
+            "height": 360,
+            "url": "rtsp://%s/ch1",
+            "snapurl": "http://%s/image.jpg",
+            "type": "H264",
+            "audio_encoder": "AAC",
+            "audio_decoder": "AAC"
+        }
+    },
+    "ptz": {
+        "enable": 1,
+        "min_step_x": 0,
+        "max_step_x": 4000,
+        "min_step_y": 0,
+        "max_step_y": 2000,
+        "min_step_z": 0,
+        "max_step_z": 0,
+        "pan_min": -180.0,
+        "pan_max": 180.0,
+        "tilt_min": -90.0,
+        "tilt_max": 90.0,
+        "fov_pan": 90.0,
+        "fov_tilt": 50.0,
+        "pan_inverted": false,
+        "tilt_inverted": false,
+        "reverse_supported": true,
+        "reverse_mode": "OFF",
+        "eflip_supported": false,
+        "eflip_mode": "OFF",
+        "get_position": "/bin/motors -p",
+        "is_moving": "/bin/motors -b",
+        "move_x": "/bin/motors -d h -x %f",
+        "move_y": "/bin/motors -d h -y %f",
+        "move_both": "/bin/motors -d h -x %f -y %f",
+        "move_in": "/sbin/ptz_zoom_in",
+        "move_out": "/sbin/ptz_zoom_out",
+        "move_stop": "/bin/motors -d s",
+        "move_preset": "/sbin/ptz_presets %d > /dev/null",
+        "goto_home_position": "/bin/motors -d b",
+        "set_preset": "/sbin/ptz_presets -a %d %s > /dev/null",
+        "set_home_position": "/sbin/ptz_set_home",
+        "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
+        "jump_to_abs": "/bin/motors -d h -x %f -y %f",
+        "jump_to_rel": "/bin/motors -d g -x %f -y %f",
+        "get_presets": "/sbin/ptz_presets -g"
+    },
+    "relays": [
+        {
+            "idle_state": "close",
+            "close": "ircut off",
+            "open": "ircut on"
+        },
+        {
+            "idle_state": "close",
+            "close": "irled off",
+            "open": "irled on"
+        }
+    ],
+    "scopes": [
+        "onvif://www.onvif.org/Profile/Streaming",
+        "onvif://www.onvif.org/Profile/T",
+        "onvif://www.onvif.org/hardware",
+        "onvif://www.onvif.org/name"
+    ],
+    "server": {
+        "ifs": "wlan0",
+        "log_directory": "",
+        "log_level": "INFO",
+        "log_on_error_only": false,
+        "password": "thingino",
+        "port": 80,
+        "username": "thingino"
+    }
+}
