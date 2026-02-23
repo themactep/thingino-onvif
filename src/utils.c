@@ -1388,8 +1388,7 @@ int is_topic_in_expression(const char *topic_expression, char *topic)
  * @param password Password for authentication (can be NULL or empty)
  * @return 0 on success, -1 on error
  */
-int construct_uri_with_credentials(
-    char *output_buffer, size_t buffer_size, const char *uri_template, const char *address, const char *username, const char *password)
+int construct_uri_with_token(char *output_buffer, size_t buffer_size, const char *uri_template, const char *address)
 {
     if (output_buffer == NULL || uri_template == NULL || address == NULL || buffer_size == 0) {
         return -1;
@@ -1402,15 +1401,12 @@ int construct_uri_with_credentials(
         base_url[sizeof(base_url) - 1] = '\0';
     }
 
-    // Append API key as ?token= query parameter so ONVIF clients (e.g. Home Assistant)
-    // can fetch the snapshot URL without requiring a separate auth mechanism.
-    // The key is read from the same file used by the web UI auth middleware.
+    // Append API key as ?token= query parameter for HTTP snapshot URLs
     const char *api_key_file = "/etc/thingino-api.key";
     char api_key[256] = {0};
     FILE *f = fopen(api_key_file, "r");
     if (f) {
         if (fgets(api_key, sizeof(api_key), f)) {
-            // Strip trailing whitespace/newlines
             char *end = api_key + strlen(api_key) - 1;
             while (end >= api_key && (*end == '\n' || *end == '\r' || *end == ' '))
                 *end-- = '\0';
@@ -1426,6 +1422,27 @@ int construct_uri_with_credentials(
     }
     return 0;
 }
+
+int construct_uri(char *output_buffer, size_t buffer_size, const char *uri_template, const char *address)
+{
+    if (output_buffer == NULL || uri_template == NULL || address == NULL || buffer_size == 0) {
+        return -1;
+    }
+
+    if (snprintf(output_buffer, buffer_size, uri_template, address) >= (int) buffer_size) {
+        strncpy(output_buffer, uri_template, buffer_size - 1);
+        output_buffer[buffer_size - 1] = '\0';
+    }
+
+    return 0;
+}
+
+int construct_uri_with_credentials(
+    char *output_buffer, size_t buffer_size, const char *uri_template, const char *address, const char *username, const char *password)
+{
+    return construct_uri_with_token(output_buffer, buffer_size, uri_template, address);
+}
+
 
 /**
  * Thread function to run a reboot

@@ -105,6 +105,8 @@ int gen_uuid(char *g_uuid);
 int get_from_query_string(char **ret, int *ret_size, char *par);
 int set_video_codec(char *buffer, int buffer_len, int codec, int ver);
 int set_audio_codec(char *buffer, int buffer_len, int codec, int ver);
+int construct_uri(char *output_buffer, size_t buffer_size, const char *uri_template, const char *address);
+int construct_uri_with_token(char *output_buffer, size_t buffer_size, const char *uri_template, const char *address);
 int construct_uri_with_credentials(
     char *output_buffer, size_t buffer_size, const char *uri_template, const char *address, const char *username, const char *password);
 

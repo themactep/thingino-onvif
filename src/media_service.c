@@ -862,8 +862,8 @@ int media_get_snapshot_uri()
             return -2;
         }
 
-        // Construct snapshot URL with embedded credentials if configured
-        construct_uri_with_credentials(line, MAX_LEN, service_ctx.profiles[0].snapurl, address, service_ctx.username, service_ctx.password);
+        // Construct snapshot URL with token authentication
+        construct_uri_with_token(line, MAX_LEN, service_ctx.profiles[0].snapurl, address);
 
         // Escape html chars
         html_escape(line, MAX_LEN);
@@ -886,8 +886,8 @@ int media_get_snapshot_uri()
             return -3;
         }
 
-        // Construct snapshot URL with embedded credentials if configured
-        construct_uri_with_credentials(line, MAX_LEN, service_ctx.profiles[1].snapurl, address, service_ctx.username, service_ctx.password);
+        // Construct snapshot URL with token authentication
+        construct_uri_with_token(line, MAX_LEN, service_ctx.profiles[1].snapurl, address);
 
         // Escape html chars
         html_escape(line, MAX_LEN);
@@ -932,8 +932,8 @@ int media_get_stream_uri()
             return -2;
         }
 
-        // Construct RTSP URL with embedded credentials if configured
-        construct_uri_with_credentials(line, MAX_LEN, service_ctx.profiles[0].url, address, service_ctx.username, service_ctx.password);
+        // Construct RTSP URL
+        construct_uri(line, MAX_LEN, service_ctx.profiles[0].url, address);
 
         // Escape html chars
         html_escape(line, MAX_LEN);
@@ -955,8 +955,8 @@ int media_get_stream_uri()
             return -3;
         }
 
-        // Construct RTSP URL with embedded credentials if configured
-        construct_uri_with_credentials(line, MAX_LEN, service_ctx.profiles[1].url, address, service_ctx.username, service_ctx.password);
+        // Construct RTSP URL
+        construct_uri(line, MAX_LEN, service_ctx.profiles[1].url, address);
 
         // Escape html chars
         html_escape(line, MAX_LEN);
