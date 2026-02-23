@@ -451,7 +451,19 @@ int main(int argc, char **argv)
     addr_in.sin_family = AF_INET;
     addr_in.sin_port = htons(PORT);
 
-    get_ip_address(address, netmask, if_name);
+    ret = get_ip_address(address, netmask, if_name);
+    if (ret != 0) {
+        int retries = 10;
+        while (ret != 0 && retries-- > 0) {
+            log_warn("Unable to get IP address for %s, retrying...", if_name);
+            sleep(1);
+            ret = get_ip_address(address, netmask, if_name);
+        }
+        if (ret != 0) {
+            log_fatal("Unable to get IP address for interface %s\n", if_name);
+            exit(EXIT_FAILURE);
+        }
+    }
     log_debug("Address = %s", address);
 
     // Get MAC address for WS-Discovery scope
