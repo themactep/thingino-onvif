@@ -290,7 +290,7 @@ int media_get_profiles()
             }
 
             if (media_audio_output_supported()) {
-                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
                     "%PROFILES_NUM%", profiles_num,
@@ -354,7 +354,7 @@ int media_get_profiles()
             }
 
             if (media_audio_output_supported()) {
-                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
                     "%PROFILES_NUM%", profiles_num,
@@ -405,7 +405,7 @@ int media_get_profiles()
             }
 
             if (media_audio_output_supported()) {
-                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
                     "%PROFILES_NUM%", profiles_num,
@@ -509,7 +509,7 @@ int media_get_profile()
             }
 
             if (media_audio_output_supported()) {
-                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
                     "%PROFILES_NUM%", profiles_num,
@@ -573,7 +573,7 @@ int media_get_profile()
             }
 
             if (media_audio_output_supported()) {
-                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
                     "%PROFILES_NUM%", profiles_num,
