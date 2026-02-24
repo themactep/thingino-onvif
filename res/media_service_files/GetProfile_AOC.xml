@@ -1,0 +1,8 @@
+                <tt:Extension>
+                    <tt:AudioOutputConfiguration token="%AUDIO_OUTPUT_CONFIG_TOKEN%">
+                        <tt:Name>%AUDIO_OUTPUT_NAME%</tt:Name>
+                        <tt:UseCount>%PROFILES_NUM%</tt:UseCount>
+                        <tt:OutputToken>%AUDIO_OUTPUT_TOKEN%</tt:OutputToken>
+                        <tt:OutputLevel>%AUDIO_OUTPUT_LEVEL%</tt:OutputLevel>
+                    </tt:AudioOutputConfiguration>
+                </tt:Extension>

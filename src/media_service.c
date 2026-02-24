@@ -216,14 +216,19 @@ int media_get_profiles()
     char stmp_vsc_w[16], stmp_vsc_h[16];
     char stmp_w[16], stmp_h[16];
     char audio_enc_h[16], audio_enc_l[16];
+    char audio_output_level[8];
     long size;
     int c;
     char dest_a[] = "stdout";
     char *dest;
     char min_x[256], max_x[256], min_y[256], max_y[256], min_z[256], max_z[256];
+    const char *audio_output_config_token = service_ctx.audio.backchannel.configuration_token ? service_ctx.audio.backchannel.configuration_token : "";
+    const char *audio_output_name = service_ctx.audio.backchannel.name ? service_ctx.audio.backchannel.name : "";
+    const char *audio_output_token = service_ctx.audio.backchannel.token ? service_ctx.audio.backchannel.token : "";
 
     audio_enc_h[0] = '\0';
     audio_enc_l[0] = '\0';
+    snprintf(audio_output_level, sizeof(audio_output_level), "%d", service_ctx.audio.backchannel.output_level);
     sprintf(profiles_num, "%d", service_ctx.profiles_num);
     sprintf(min_x, "%.1f", service_ctx.ptz_node.min_step_x);
     sprintf(max_x, "%.1f", service_ctx.ptz_node.max_step_x);
@@ -284,6 +289,15 @@ int media_get_profiles()
                 size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 2, "%USE_COUNT%", "1");
             }
 
+            if (media_audio_output_supported()) {
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                    "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
+                    "%AUDIO_OUTPUT_NAME%", audio_output_name,
+                    "%PROFILES_NUM%", profiles_num,
+                    "%AUDIO_OUTPUT_TOKEN%", audio_output_token,
+                    "%AUDIO_OUTPUT_LEVEL%", audio_output_level);
+            }
+
             size += cat(dest, "media_service_files/GetProfiles_footer.xml", 0);
         }
 
@@ -339,6 +353,15 @@ int media_get_profiles()
                 size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 2, "%USE_COUNT%", "2");
             }
 
+            if (media_audio_output_supported()) {
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                    "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
+                    "%AUDIO_OUTPUT_NAME%", audio_output_name,
+                    "%PROFILES_NUM%", profiles_num,
+                    "%AUDIO_OUTPUT_TOKEN%", audio_output_token,
+                    "%AUDIO_OUTPUT_LEVEL%", audio_output_level);
+            }
+
             size += cat(dest, "media_service_files/GetProfiles_middle.xml", 0);
 
             // Get the video source configuration from the 1st profile
@@ -381,6 +404,15 @@ int media_get_profiles()
                 size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 2, "%USE_COUNT%", "2");
             }
 
+            if (media_audio_output_supported()) {
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                    "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
+                    "%AUDIO_OUTPUT_NAME%", audio_output_name,
+                    "%PROFILES_NUM%", profiles_num,
+                    "%AUDIO_OUTPUT_TOKEN%", audio_output_token,
+                    "%AUDIO_OUTPUT_LEVEL%", audio_output_level);
+            }
+
             size += cat(dest, "media_service_files/GetProfiles_footer.xml", 0);
         }
     } else {
@@ -417,6 +449,12 @@ int media_get_profile()
     sprintf(max_y, "%.1f", service_ctx.ptz_node.max_step_y);
     sprintf(min_z, "%.1f", service_ctx.ptz_node.min_step_z);
     sprintf(max_z, "%.1f", service_ctx.ptz_node.max_step_z);
+
+    const char *audio_output_config_token = service_ctx.audio.backchannel.configuration_token ? service_ctx.audio.backchannel.configuration_token : "";
+    const char *audio_output_name = service_ctx.audio.backchannel.name ? service_ctx.audio.backchannel.name : "";
+    const char *audio_output_token = service_ctx.audio.backchannel.token ? service_ctx.audio.backchannel.token : "";
+    char audio_output_level[8];
+    snprintf(audio_output_level, sizeof(audio_output_level), "%d", service_ctx.audio.backchannel.output_level);
 
     if ((service_ctx.profiles_num > 0) && (strcasecmp(service_ctx.profiles[0].name, profile_token) == 0)) {
         // We need 1st step to evaluate content length
@@ -468,6 +506,15 @@ int media_get_profile()
 
             if (service_ctx.ptz_node.enable == 1) {
                 size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 0);
+            }
+
+            if (media_audio_output_supported()) {
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                    "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
+                    "%AUDIO_OUTPUT_NAME%", audio_output_name,
+                    "%PROFILES_NUM%", profiles_num,
+                    "%AUDIO_OUTPUT_TOKEN%", audio_output_token,
+                    "%AUDIO_OUTPUT_LEVEL%", audio_output_level);
             }
 
             size += cat(dest, "media_service_files/GetProfile_footer.xml", 0);
@@ -523,6 +570,15 @@ int media_get_profile()
 
             if (service_ctx.ptz_node.enable == 1) {
                 size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 0);
+            }
+
+            if (media_audio_output_supported()) {
+                size += cat(dest, "media_service_files/GetProfile_AOC.xml", 8,
+                    "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
+                    "%AUDIO_OUTPUT_NAME%", audio_output_name,
+                    "%PROFILES_NUM%", profiles_num,
+                    "%AUDIO_OUTPUT_TOKEN%", audio_output_token,
+                    "%AUDIO_OUTPUT_LEVEL%", audio_output_level);
             }
 
             size += cat(dest, "media_service_files/GetProfile_footer.xml", 0);
