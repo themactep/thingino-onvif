@@ -48,6 +48,8 @@ int ptz_set_preset();
 int ptz_set_home_position();
 int ptz_remove_preset();
 int ptz_send_auxiliary_command();
+int ptz_set_configuration();
+int ptz_get_compatible_configurations();
 
 int ptz_move_and_start_tracking();
 // Preset Tours

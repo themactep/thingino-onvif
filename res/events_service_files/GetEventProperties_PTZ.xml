@@ -1,0 +1,48 @@
+                <tns1:PTZController>
+                    <PTZPresets wstop:topic="false">
+                        <Invoked wstop:topic="true">
+                            <tt:MessageDescription IsProperty="false">
+                                <tt:Source>
+                                    <tt:SimpleItemDescription Name="PTZConfigurationToken" Type="tt:ReferenceToken"/>
+                                </tt:Source>
+                                <tt:Data>
+                                    <tt:SimpleItemDescription Name="PresetToken" Type="tt:ReferenceToken"/>
+                                    <tt:SimpleItemDescription Name="PresetName" Type="xsd:string"/>
+                                </tt:Data>
+                            </tt:MessageDescription>
+                        </Invoked>
+                        <Reached wstop:topic="true">
+                            <tt:MessageDescription IsProperty="false">
+                                <tt:Source>
+                                    <tt:SimpleItemDescription Name="PTZConfigurationToken" Type="tt:ReferenceToken"/>
+                                </tt:Source>
+                                <tt:Data>
+                                    <tt:SimpleItemDescription Name="PresetToken" Type="tt:ReferenceToken"/>
+                                    <tt:SimpleItemDescription Name="PresetName" Type="xsd:string"/>
+                                </tt:Data>
+                            </tt:MessageDescription>
+                        </Reached>
+                        <Aborted wstop:topic="true">
+                            <tt:MessageDescription IsProperty="false">
+                                <tt:Source>
+                                    <tt:SimpleItemDescription Name="PTZConfigurationToken" Type="tt:ReferenceToken"/>
+                                </tt:Source>
+                                <tt:Data>
+                                    <tt:SimpleItemDescription Name="PresetToken" Type="tt:ReferenceToken"/>
+                                    <tt:SimpleItemDescription Name="PresetName" Type="xsd:string"/>
+                                </tt:Data>
+                            </tt:MessageDescription>
+                        </Aborted>
+                        <Left wstop:topic="true">
+                            <tt:MessageDescription IsProperty="false">
+                                <tt:Source>
+                                    <tt:SimpleItemDescription Name="PTZConfigurationToken" Type="tt:ReferenceToken"/>
+                                </tt:Source>
+                                <tt:Data>
+                                    <tt:SimpleItemDescription Name="PresetToken" Type="tt:ReferenceToken"/>
+                                    <tt:SimpleItemDescription Name="PresetName" Type="xsd:string"/>
+                                </tt:Data>
+                            </tt:MessageDescription>
+                        </Left>
+                    </PTZPresets>
+                </tns1:PTZController>

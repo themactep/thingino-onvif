@@ -1031,6 +1031,134 @@ int device_get_discovery_mode()
     return cat("stdout", "device_service_files/GetDiscoveryMode.xml", 0);
 }
 
+int device_get_ntp()
+{
+    char ntp_server[256];
+    FILE *fp;
+    char line[512];
+    int found = 0;
+
+    // Try common NTP config file locations on embedded Linux
+    const char *ntp_conf_paths[] = {"/etc/ntp.conf", "/etc/chrony.conf", "/etc/chrony/chrony.conf", NULL};
+    for (int p = 0; ntp_conf_paths[p] != NULL && !found; p++) {
+        fp = fopen(ntp_conf_paths[p], "r");
+        if (fp == NULL)
+            continue;
+        while (fgets(line, sizeof(line), fp) != NULL) {
+            // Match "server <host>" or "pool <host>" directives
+            if (sscanf(line, "server %255s", ntp_server) == 1 ||
+                sscanf(line, "pool %255s", ntp_server) == 1) {
+                // Skip comments and options flags (e.g., "iburst")
+                if (ntp_server[0] != '#' && ntp_server[0] != '\0') {
+                    found = 1;
+                    break;
+                }
+            }
+        }
+        fclose(fp);
+    }
+
+    if (!found) {
+        // Fallback: check uci/config or use a safe default
+        strncpy(ntp_server, "pool.ntp.org", sizeof(ntp_server) - 1);
+        ntp_server[sizeof(ntp_server) - 1] = '\0';
+    }
+
+    long size = cat(NULL, "device_service_files/GetNTP.xml", 2, "%NTP_SERVER%", ntp_server);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetNTP.xml", 2, "%NTP_SERVER%", ntp_server);
+}
+
+int device_get_network_protocols()
+{
+    char http_port[8];
+    sprintf(http_port, "%d", service_ctx.port);
+
+    long size = cat(NULL, "device_service_files/GetNetworkProtocols.xml", 2, "%HTTP_PORT%", http_port);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/GetNetworkProtocols.xml", 2, "%HTTP_PORT%", http_port);
+}
+
+int device_set_system_date_and_time()
+{
+    const char *date_type;
+    const char *year_s, *month_s, *day_s;
+    const char *hour_s, *min_s, *sec_s;
+    int year, month, day, hour, min, sec;
+    char cmd[64];
+
+    date_type = get_element("DateTimeType", "Body");
+
+    if (date_type != NULL && strcasecmp(date_type, "NTP") == 0) {
+        // NTP-managed time; accept request but take no action
+        log_info("SetSystemDateAndTime: NTP mode requested, ignoring manual time");
+    } else {
+        // Manual time set - parse UTCDateTime elements
+        year_s  = get_element("Year",   "Body");
+        month_s = get_element("Month",  "Body");
+        day_s   = get_element("Day",    "Body");
+        hour_s  = get_element("Hour",   "Body");
+        min_s   = get_element("Minute", "Body");
+        sec_s   = get_element("Second", "Body");
+
+        if (year_s && month_s && day_s && hour_s && min_s && sec_s) {
+            year  = atoi(year_s);
+            month = atoi(month_s);
+            day   = atoi(day_s);
+            hour  = atoi(hour_s);
+            min   = atoi(min_s);
+            sec   = atoi(sec_s);
+            // date -s "YYYY-MM-DD HH:MM:SS" (BusyBox and GNU date compatible)
+            snprintf(cmd, sizeof(cmd), "date -s \"%04d-%02d-%02d %02d:%02d:%02d\" > /dev/null 2>&1",
+                     year, month, day, hour, min, sec);
+            log_info("SetSystemDateAndTime: setting time via: %s", cmd);
+            system(cmd);
+            // Also sync hardware clock if available
+            system("hwclock -w > /dev/null 2>&1");
+        } else {
+            log_warn("SetSystemDateAndTime: missing date/time elements in request");
+        }
+    }
+
+    long size = cat(NULL, "device_service_files/SetSystemDateAndTime.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "device_service_files/SetSystemDateAndTime.xml", 0);
+}
+
+int device_create_users()
+{
+    // Devices with static user accounts return MaxUsers fault
+    send_fault("device_service",
+               "Receiver",
+               "ter:Action",
+               "ter:MaxUsers",
+               "Maximum users reached",
+               "The maximum number of users supported by the device has been reached");
+    return -1;
+}
+
+int device_delete_users()
+{
+    const char *username = get_element("Username", "Body");
+    if (username == NULL || username[0] == '\0') {
+        send_fault("device_service", "Sender", "ter:InvalidArgVal", "ter:UsernameMissing",
+                   "Username missing", "No username was provided");
+        return -1;
+    }
+    // On devices with fixed user accounts, we accept the call silently
+    // (pretend success so VMS tools do not loop retrying)
+    send_empty_response("tds", "DeleteUsers");
+    return 0;
+}
+
+int device_set_user()
+{
+    // Accept without error; password changes on embedded devices are
+    // handled outside of ONVIF scope (e.g., via web UI or /etc/passwd)
+    send_empty_response("tds", "SetUser");
+    return 0;
+}
+
 int device_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)

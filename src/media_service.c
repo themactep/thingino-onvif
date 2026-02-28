@@ -2105,6 +2105,139 @@ int media_set_audio_output_configuration()
     }
 }
 
+int media_delete_profile()
+{
+    // All profiles are fixed — deletion is not permitted
+    send_fault("media_service",
+               "Sender",
+               "ter:InvalidArgVal",
+               "ter:DeletionOfFixedProfile",
+               "Deletion of fixed profile",
+               "The profile cannot be deleted because it is a fixed profile");
+    return -1;
+}
+
+int media_get_metadata_configurations()
+{
+    // Return an empty list: no configurable metadata configurations on this device
+    send_empty_response("trt", "GetMetadataConfigurations");
+    return 0;
+}
+
+int media_get_metadata_configuration()
+{
+    send_fault("media_service", "Sender", "ter:InvalidArgVal", "ter:NoConfig",
+               "No config", "The requested metadata configuration does not exist");
+    return -1;
+}
+
+int media_get_compatible_metadata_configurations()
+{
+    send_empty_response("trt", "GetCompatibleMetadataConfigurations");
+    return 0;
+}
+
+int media_get_metadata_configuration_options()
+{
+    send_empty_response("trt", "GetMetadataConfigurationOptions");
+    return 0;
+}
+
+int media_set_metadata_configuration()
+{
+    if (service_ctx.adv_fault_if_set) {
+        send_fault("media_service", "Receiver", "ter:Action", "ter:ConfigModify",
+                   "Configuration modification not supported",
+                   "The configuration parameters are not possible to set");
+    } else {
+        send_empty_response("trt", "SetMetadataConfiguration");
+    }
+    return 0;
+}
+
+int media_add_video_encoder_configuration()
+{
+    send_empty_response("trt", "AddVideoEncoderConfiguration");
+    return 0;
+}
+
+int media_add_video_source_configuration()
+{
+    send_empty_response("trt", "AddVideoSourceConfiguration");
+    return 0;
+}
+
+int media_add_audio_encoder_configuration()
+{
+    send_empty_response("trt", "AddAudioEncoderConfiguration");
+    return 0;
+}
+
+int media_add_audio_source_configuration()
+{
+    send_empty_response("trt", "AddAudioSourceConfiguration");
+    return 0;
+}
+
+int media_add_ptz_configuration()
+{
+    send_empty_response("trt", "AddPTZConfiguration");
+    return 0;
+}
+
+int media_remove_video_encoder_configuration()
+{
+    send_empty_response("trt", "RemoveVideoEncoderConfiguration");
+    return 0;
+}
+
+int media_remove_video_source_configuration()
+{
+    send_empty_response("trt", "RemoveVideoSourceConfiguration");
+    return 0;
+}
+
+int media_remove_audio_encoder_configuration()
+{
+    send_empty_response("trt", "RemoveAudioEncoderConfiguration");
+    return 0;
+}
+
+int media_remove_audio_source_configuration()
+{
+    send_empty_response("trt", "RemoveAudioSourceConfiguration");
+    return 0;
+}
+
+int media_remove_ptz_configuration()
+{
+    send_empty_response("trt", "RemovePTZConfiguration");
+    return 0;
+}
+
+int media_start_multicast_streaming()
+{
+    send_fault("media_service", "Receiver", "ter:Action", "ter:InvalidMulticastSettings",
+               "Invalid multicast settings", "Multicast streaming is not supported");
+    return -1;
+}
+
+int media_stop_multicast_streaming()
+{
+    send_empty_response("trt", "StopMulticastStreaming");
+    return 0;
+}
+
+int media_set_synchronization_point()
+{
+    // Signal streaming backend to produce an I-frame (best-effort via system call)
+    // The actual I-frame forcing depends on the streaming backend
+    log_info("SetSynchronizationPoint requested for media_service");
+    system("kill -USR2 $(cat /var/run/streaming.pid 2>/dev/null) > /dev/null 2>&1");
+    send_empty_response("trt", "SetSynchronizationPoint");
+    return 0;
+}
+
 int media_unsupported(const char *method)
 {
     if (service_ctx.adv_fault_if_unknown == 1)

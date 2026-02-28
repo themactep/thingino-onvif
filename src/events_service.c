@@ -1122,6 +1122,13 @@ int events_get_event_properties()
                 total_size += size;
         }
 
+        // Advertise PTZ preset events when PTZ is enabled (spec §5.11.1)
+        if (service_ctx.ptz_node.enable == 1) {
+            size = cat(dest, "events_service_files/GetEventProperties_PTZ.xml", 0);
+            if (c == 0)
+                total_size += size;
+        }
+
         size = cat(dest, "events_service_files/GetEventProperties_3.xml", 0);
         if (c == 0)
             total_size += size;

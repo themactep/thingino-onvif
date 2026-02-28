@@ -75,7 +75,7 @@
             "width": 1920,
             "height": 1080,
             "url": "rtsp://%s/ch0",
-            "snapurl": "http://%s/x/ch0.jpg",
+            "snapurl": "http://%s/image.jpg",
             "type": "H264",
             "audio_encoder": "AAC",
             "audio_decoder": "AAC"
@@ -85,7 +85,7 @@
             "width": 640,
             "height": 360,
             "url": "rtsp://%s/ch1",
-            "snapurl": "http://%s/x/ch1.jpg",
+            "snapurl": "http://%s/image.jpg",
             "type": "H264",
             "audio_encoder": "AAC",
             "audio_decoder": "AAC"

@@ -57,6 +57,26 @@ int media_set_audio_source_configuration();
 int media_set_video_encoder_configuration();
 int media_set_audio_encoder_configuration();
 int media_set_audio_output_configuration();
+int media_set_metadata_configuration();
+int media_set_synchronization_point();
+
+int media_delete_profile();
+int media_get_metadata_configurations();
+int media_get_metadata_configuration();
+int media_get_compatible_metadata_configurations();
+int media_get_metadata_configuration_options();
+int media_add_video_encoder_configuration();
+int media_add_video_source_configuration();
+int media_add_audio_encoder_configuration();
+int media_add_audio_source_configuration();
+int media_add_ptz_configuration();
+int media_remove_video_encoder_configuration();
+int media_remove_video_source_configuration();
+int media_remove_audio_encoder_configuration();
+int media_remove_audio_source_configuration();
+int media_remove_ptz_configuration();
+int media_start_multicast_streaming();
+int media_stop_multicast_streaming();
 
 int media_unsupported(const char *method);
 

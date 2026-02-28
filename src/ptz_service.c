@@ -2619,3 +2619,39 @@ int ptz_unsupported(const char *method)
         send_empty_response("tptz", (char *) method);
     return -1;
 }
+
+int ptz_set_configuration()
+{
+    // PTZ configuration is fixed on this device.
+    // If adv_fault_if_set is enabled, return ConfigModify; otherwise accept silently.
+    if (service_ctx.adv_fault_if_set) {
+        send_fault("ptz_service",
+                   "Receiver",
+                   "ter:Action",
+                   "ter:ConfigModify",
+                   "Configuration modification not supported",
+                   "The configuration parameters are not possible to set");
+        return -1;
+    }
+
+    long size = cat(NULL, "ptz_service_files/SetConfiguration.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "ptz_service_files/SetConfiguration.xml", 0);
+}
+
+int ptz_get_compatible_configurations()
+{
+    char use_count[8];
+
+    if (service_ctx.ptz_node.enable == 1) {
+        sprintf(use_count, "%d", service_ctx.profiles_num);
+    } else {
+        sprintf(use_count, "0");
+    }
+
+    long size = cat(NULL, "ptz_service_files/GetCompatibleConfigurations.xml", 2,
+                    "%USE_COUNT%", use_count);
+    output_http_headers(size);
+    return cat("stdout", "ptz_service_files/GetCompatibleConfigurations.xml", 2,
+               "%USE_COUNT%", use_count);
+}

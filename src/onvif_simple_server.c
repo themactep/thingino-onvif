@@ -609,7 +609,7 @@ int main(int argc, char **argv)
         dispatch_onvif_method(prog_name, method);
     } else {
         log_error("Authentication failed, sending HTTP 401 Unauthorized");
-        send_authentication_challenge();
+        send_authentication_error();
     }
 
     close_xml();

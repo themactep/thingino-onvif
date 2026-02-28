@@ -1833,3 +1833,62 @@ int media2_unsupported(const char *method)
         send_empty_response("tr2", (char *) method);
     return -1;
 }
+
+int media2_create_profile()
+{
+    // Profiles are fixed on this device
+    send_fault("media2_service",
+               "Receiver",
+               "ter:Action",
+               "ter:MaxNVTProfiles",
+               "Max profile number reached",
+               "The maximum number of supported profiles supported by the device has been reached");
+    return -1;
+}
+
+int media2_add_configuration()
+{
+    // Accept gracefully — configurations are fixed, but acknowledging the request
+    // avoids client errors during VMS onboarding flows
+    long size = cat(NULL, "media2_service_files/AddConfiguration.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "media2_service_files/AddConfiguration.xml", 0);
+}
+
+int media2_remove_configuration()
+{
+    long size = cat(NULL, "media2_service_files/RemoveConfiguration.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "media2_service_files/RemoveConfiguration.xml", 0);
+}
+
+int media2_delete_profile()
+{
+    // All profiles are fixed — deletion is not permitted
+    send_fault("media2_service",
+               "Sender",
+               "ter:InvalidArgVal",
+               "ter:DeletionOfFixedProfile",
+               "Deletion of fixed profile",
+               "The profile cannot be deleted because it is a fixed profile");
+    return -1;
+}
+
+int media2_set_synchronization_point()
+{
+    // Signal streaming backend to produce an I-frame (best-effort)
+    log_info("Media2 SetSynchronizationPoint requested");
+    system("kill -USR2 $(cat /var/run/streaming.pid 2>/dev/null) > /dev/null 2>&1");
+    long size = cat(NULL, "media2_service_files/SetSynchronizationPoint.xml", 0);
+    output_http_headers(size);
+    return cat("stdout", "media2_service_files/SetSynchronizationPoint.xml", 0);
+}
+
+int media2_get_video_encoder_instances()
+{
+    char total[4];
+    snprintf(total, sizeof(total), "%d", service_ctx.profiles_num > 0 ? service_ctx.profiles_num : 1);
+    long size = cat(NULL, "media2_service_files/GetVideoEncoderInstances.xml", 2, "%TOTAL%", total);
+    output_http_headers(size);
+    return cat("stdout", "media2_service_files/GetVideoEncoderInstances.xml", 2, "%TOTAL%", total);
+}

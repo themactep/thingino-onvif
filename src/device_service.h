@@ -21,15 +21,21 @@ int device_get_services();
 int device_get_service_capabilities();
 int device_get_device_information();
 int device_get_system_date_and_time();
+int device_set_system_date_and_time();
 int device_system_reboot();
 int device_get_scopes();
 int device_get_users();
+int device_create_users();
+int device_delete_users();
+int device_set_user();
 int device_get_wsdl_url();
 int device_get_capabilities();
 int device_get_network_interfaces();
+int device_get_network_protocols();
 int device_get_discovery_mode();
 int device_get_hostname();
 int device_get_endpoint_reference();
+int device_get_ntp();
 
 int device_unsupported(const char *method);
 

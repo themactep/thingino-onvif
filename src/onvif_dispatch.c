@@ -49,16 +49,22 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"device_service", "GetServiceCapabilities", device_get_service_capabilities, NULL},
     {"device_service", "GetDeviceInformation", device_get_device_information, NULL},
     {"device_service", "GetSystemDateAndTime", device_get_system_date_and_time, NULL},
+    {"device_service", "SetSystemDateAndTime", device_set_system_date_and_time, NULL},
     {"device_service", "SystemReboot", device_system_reboot, NULL},
     {"device_service", "GetScopes", device_get_scopes, NULL},
     {"device_service", "GetUsers", device_get_users, NULL},
+    {"device_service", "CreateUsers", device_create_users, NULL},
+    {"device_service", "DeleteUsers", device_delete_users, NULL},
+    {"device_service", "SetUser", device_set_user, NULL},
     {"device_service", "GetWsdlUrl", device_get_wsdl_url, NULL},
     {"device_service", "GetHostname", device_get_hostname, NULL},
     {"device_service", "GetEndpointReference", device_get_endpoint_reference, NULL},
     {"device_service", "GetCapabilities", device_get_capabilities, NULL},
     {"device_service", "GetNetworkInterfaces", device_get_network_interfaces, NULL},
+    {"device_service", "GetNetworkProtocols", device_get_network_protocols, NULL},
     {"device_service", "GetDiscoveryMode", device_get_discovery_mode, NULL},
-    
+    {"device_service", "GetNTP", device_get_ntp, NULL},
+
     // SetRelayOutputState exposed through device_service per ONVIF spec design
     // The ONVIF specification defines SetRelayOutputState elements in the Device
     // service namespace (tds:), even though operations are exposed through DeviceIO.
@@ -118,6 +124,26 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"media_service", "SetVideoEncoderConfiguration", media_set_video_encoder_configuration, condition_adv_fault_if_set},
     {"media_service", "SetAudioEncoderConfiguration", media_set_audio_encoder_configuration, condition_adv_fault_if_set},
     {"media_service", "SetAudioOutputConfiguration", media_set_audio_output_configuration, condition_adv_fault_if_set},
+    {"media_service", "SetMetadataConfiguration", media_set_metadata_configuration, condition_adv_fault_if_set},
+    // Media service additional operations
+    {"media_service", "DeleteProfile", media_delete_profile, NULL},
+    {"media_service", "GetMetadataConfigurations", media_get_metadata_configurations, NULL},
+    {"media_service", "GetMetadataConfiguration", media_get_metadata_configuration, NULL},
+    {"media_service", "GetCompatibleMetadataConfigurations", media_get_compatible_metadata_configurations, NULL},
+    {"media_service", "GetMetadataConfigurationOptions", media_get_metadata_configuration_options, NULL},
+    {"media_service", "AddVideoEncoderConfiguration", media_add_video_encoder_configuration, NULL},
+    {"media_service", "AddVideoSourceConfiguration", media_add_video_source_configuration, NULL},
+    {"media_service", "AddAudioEncoderConfiguration", media_add_audio_encoder_configuration, NULL},
+    {"media_service", "AddAudioSourceConfiguration", media_add_audio_source_configuration, NULL},
+    {"media_service", "AddPTZConfiguration", media_add_ptz_configuration, NULL},
+    {"media_service", "RemoveVideoEncoderConfiguration", media_remove_video_encoder_configuration, NULL},
+    {"media_service", "RemoveVideoSourceConfiguration", media_remove_video_source_configuration, NULL},
+    {"media_service", "RemoveAudioEncoderConfiguration", media_remove_audio_encoder_configuration, NULL},
+    {"media_service", "RemoveAudioSourceConfiguration", media_remove_audio_source_configuration, NULL},
+    {"media_service", "RemovePTZConfiguration", media_remove_ptz_configuration, NULL},
+    {"media_service", "StartMulticastStreaming", media_start_multicast_streaming, NULL},
+    {"media_service", "StopMulticastStreaming", media_stop_multicast_streaming, NULL},
+    {"media_service", "SetSynchronizationPoint", media_set_synchronization_point, NULL},
 
     // Imaging service methods (exposed only when configured)
     {"imaging_service", "GetServiceCapabilities", imaging_get_service_capabilities, NULL},
@@ -160,6 +186,8 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"ptz_service", "SetPreset", ptz_set_preset, NULL},
     {"ptz_service", "SetHomePosition", ptz_set_home_position, NULL},
     {"ptz_service", "RemovePreset", ptz_remove_preset, NULL},
+    {"ptz_service", "SetConfiguration", ptz_set_configuration, NULL},
+    {"ptz_service", "GetCompatibleConfigurations", ptz_get_compatible_configurations, NULL},
 
     // Events service methods (no conditions)
     {"events_service", "GetServiceCapabilities", events_get_service_capabilities, NULL},
@@ -189,6 +217,19 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"media2_service", "GetAudioDecoderConfigurationOptions", media2_get_audio_decoder_configuration_options, condition_adv_enable_media2},
     {"media2_service", "GetSnapshotUri", media2_get_snapshot_uri, condition_adv_enable_media2},
     {"media2_service", "GetStreamUri", media2_get_stream_uri, condition_adv_enable_media2},
+    // Media2 SET methods (conditional on adv_fault_if_set)
+    {"media2_service", "SetVideoSourceConfiguration", media2_set_video_source_configuration, condition_adv_fault_if_set},
+    {"media2_service", "SetAudioSourceConfiguration", media2_set_audio_source_configuration, condition_adv_fault_if_set},
+    {"media2_service", "SetVideoEncoderConfiguration", media2_set_video_encoder_configuration, condition_adv_fault_if_set},
+    {"media2_service", "SetAudioEncoderConfiguration", media2_set_audio_encoder_configuration, condition_adv_fault_if_set},
+    {"media2_service", "SetAudioOutputConfiguration", media2_set_audio_output_configuration, condition_adv_fault_if_set},
+    // Media2 profile management
+    {"media2_service", "CreateProfile", media2_create_profile, condition_adv_enable_media2},
+    {"media2_service", "AddConfiguration", media2_add_configuration, condition_adv_enable_media2},
+    {"media2_service", "RemoveConfiguration", media2_remove_configuration, condition_adv_enable_media2},
+    {"media2_service", "DeleteProfile", media2_delete_profile, condition_adv_enable_media2},
+    {"media2_service", "SetSynchronizationPoint", media2_set_synchronization_point, condition_adv_enable_media2},
+    {"media2_service", "GetVideoEncoderInstances", media2_get_video_encoder_instances, condition_adv_enable_media2},
 
     // Sentinel entry - marks end of table
     {NULL, NULL, NULL, NULL}};
