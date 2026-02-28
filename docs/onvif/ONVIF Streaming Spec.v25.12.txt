@@ -4,18 +4,18 @@ ONVIF™
 
 ONVIF™
 Streaming Specification
-Version 23.06
-June, 2023
+Version 25.12
+December, 2025
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 ONVIF™
 
 –2–
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
-Copyright © 2008-2023 ONVIF™ All rights reserved.
+Copyright © 2008-2025 ONVIF™ All rights reserved.
 Recipients of this document may copy, distribute, publish, or display this document so long as this copyright notice, license and disclaimer
 are retained with all copies of the document. No license is granted to modify this document.
 THIS DOCUMENT IS PROVIDED "AS IS," AND THE CORPORATION AND ITS MEMBERS AND THEIR AFFILIATES, MAKE
@@ -36,7 +36,7 @@ CORPORATION.
 
 –3–
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 CONTENTS
 1
@@ -85,7 +85,7 @@ Live Streaming
 5.1.1.4 SRTP data transfer via UDP ....................................................................................... 9
 5.1.1.5 RTP/RTSP/HTTP/TCP ................................................................................................. 9
 5.1.1.6 RTP/RTSP/TCP/WebSocket ........................................................................................ 9
-5.1.2 Media Transport .............................................................................................................. 10
+5.1.2 Media Transport ............................................................................................................... 10
 5.1.2.1 RTP .......................................................................................................................... 10
 5.1.2.2 RTCP ....................................................................................................................... 13
 5.1.3 Synchronization Point ...................................................................................................... 14
@@ -126,7 +126,7 @@ Live Streaming
 
 –4–
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 Error handling ........................................................................................................................ 27
 
@@ -199,21 +199,27 @@ Authentication .................................................................
 7.3.1.2 Example: WebSocket Handshake .............................................................................. 36
 7.3.2 Data Transfer .................................................................................................................. 36
 7.3.2.1 WebSocket Message Frame Format .......................................................................... 36
+8
+
+MulticastAudioDecoder SRTP Packet Format
+
 Annex A
 
 Revision History
 
-37
+36
+38
 
 ONVIF™
 
 –5–
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 1 Scope
-This document defines the ONVIF specific streaming extensions for live and replay streaming. The corresponding web service APIs to retrieve the streaming URIs are defined in separate documents and are not covered
-in this document.
+This document defines the ONVIF specific streaming extensions for live and replay streaming. The
+corresponding web service APIs to retrieve the streaming URIs are defined in separate documents and are
+not covered in this document.
 
 2 Normative references
 ISO/IEC 14496-2:2004, Information technology -- Coding of audio-visual objects -- Part 2: Visual
@@ -222,7 +228,8 @@ ISO/IEC 14496-10:2008, Information technology -- Coding of audio-visual objects 
 Coding
 ISO/IEC 23008-2:2015, Information technology -- High efficiency coding and media delivery in heterogeneous
 environments -- Part 2: High efficiency video coding
-ITU-T G.711, Pulse code modulation (PCM) of voice frequencies <http://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-G.711-198811-I!!PDF-E&type=items>
+ITU-T G.711, Pulse code modulation (PCM) of voice frequencies <http://www.itu.int/rec/dologin_pub.asp?
+lang=e&id=T-REC-G.711-198811-I!!PDF-E&type=items>
 ITU-T G.726, 40, 32, 24, 16 kbit/s Adaptive Differential Pulse Code Modulation (ADPCM)
 <http://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-G.726-199012-I!!PDF-E&type=items>
 RSA Laboratories, PKCS #10 v1.7: Certification Request Syntax Standard, RSA Laboratories
@@ -250,16 +257,17 @@ IETF RFC 3984, RTP Payload Format for H.264 Video
 <http://www.ietf.org/rfc/rfc3984>
 IETF RFC 3016, RTP Payload Format for MPEG-4 Audio/Visual Streams
 <http://www.ietf.org/rfc/rfc3016>
+IETF RFC 4566, SDP: Session Description Protocol
 
 ONVIF™
 
 –6–
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
-IETF RFC 4566, SDP: Session Description Protocol
 <http://www.ietf.org/rfc/rfc4566.txt>
-IETF RFC 4567, Key Management Extensions for Session Description Protocol (SDP) and Real Time Streaming Protocol (RTSP)
+IETF RFC 4567, Key Management Extensions for Session Description Protocol (SDP) and Real Time
+Streaming Protocol (RTSP)
 <http://www.ietf.org/rfc/rfc4567.txt>
 IETF RFC 4571, Framing Real-time Transport Protocol (RTP) and RTP Control Protocol (RTCP) Packets over
 Connection-Oriented Transport
@@ -273,15 +281,19 @@ IETF RFC 5888 The Session Description Protocol (SDP) Grouping Framework
 <https:/tools.ietf.org/html/rfc5888>
 IETF RFC 6455, The WebSocket Protocol
 <http://www.ietf.org/rfc/rfc6455.txt>
+IETF RFC 7714, AES-GCM Authenticated Encryption in the Secure Real-time Transport Protocol (SRTP)
+<http://www.ietf.org/rfc/rfc7714.txt>
 IETF RFC 7798, RTP Payload Format for High Efficiency Video Coding (HEVC)
 <http://www.ietf.org/rfc/rfc7798.txt>
 IETF RFC 7826, Real-Time Streaming Protocol Version 2.0
 <http://www.ietf.org/rfc/rfc7826.txt>
+IETF RFC 8285, A General Mechanism for RTP Header Extensions
+<https://www.ietf.org/rfc/rfc8285.txt>
 GZIP file format specification version 4.3
 <http://tools.ietf.org/html/rfc1952>
 Apple Computer Inc. RTSP over HTTP, Tunneling QuickTime RTSP and RTP over HTTP
-<https://opensource.apple.com/source/
-QuickTimeStreamingServer/QuickTimeStreamingServer-412.42/Documentation/RTSP_Over_HTTP.pdf>
+<https://opensource.apple.com/source/QuickTimeStreamingServer/QuickTimeStreamingServer-412.42/
+Documentation/RTSP_Over_HTTP.pdf>
 ONVIF Core Specification
 <http://www.onvif.org/specs/core/ONVIF-Core-Specification.pdf>
 ONVIF Media Service Specification
@@ -295,18 +307,20 @@ ONVIF Replay Control Service Specification
 3.1 Definitions
 Access Unit
 
-One or more frames or samples of audio, video, or metadata which are contained in a group of RTP packets having the same presentation time.
-
-Metadata
-
-All streaming data except video and audio, including video analytics results,
-PTZ position data and other metadata (such as textual data from POS applications).
+One or more frames or samples of audio, video, or metadata which are
+contained in a group of RTP packets having the same presentation time.
 
 ONVIF™
 
 –7–
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
+
+Metadata
+
+All streaming data except video and audio, including video analytics results,
+PTZ position data and other metadata (such as textual data from POS
+applications).
 
 Recording
 
@@ -317,7 +331,8 @@ recorded in parallel with different settings
 
 Track
 
-An individual data channel consisting of video, audio, or metadata. This definition is consistent with the definition of track in [RFC 2326]
+An individual data channel consisting of video, audio, or metadata. This
+definition is consistent with the definition of track in [RFC 2326]
 
 3.2 Abbreviations
 AAC
@@ -408,24 +423,21 @@ Efficient XML Interchange Format
 
 –8–
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 4 Overview
 
 Control Plane
 
 Media Plane
-
 Application / User interface
 Media stream
 Audio stream
 Video stream
-Metadata stream
-(XML)
+Metadata stream (XML)
 
 Device control
-Media config
-u ration
+Media configuration
 
 Media control
 
@@ -437,11 +449,13 @@ RTSP
 RTP/RTCP
 RTSP
 HTTP
-TLS
-UDP
 
 HTTP
 HTTP
+
+TLS
+UDP
+
 TLS
 TCP
 
@@ -498,7 +512,7 @@ HEVC [ISO23008-2]
 
 –9–
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 and for the following audio codecs:
 
@@ -550,17 +564,17 @@ sent from the client via POST must be base64 encoded.
 
 5.1.1.6 RTP/RTSP/TCP/WebSocket
 The device indicating support for RTSP over WebSocket, as explained in section 5.11 of the ONVIF Media2
-Service Specification and section 5.5 of the ONVIF Replay Control Service Specification, shall support stream-
+Service Specification and section 5.5 of the ONVIF Replay Control Service Specification, shall support
 
 ONVIF™
 
 – 10 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
-ing media using WebSocket protocol according to this specification. The provided URI shall set the hierarchical
-part (hier_part) to absolute path (abs_path) [RFC 2396]. For example, if the WebSocket URI with network path
-is “ws://1.2.3.4/my-websocket-uri”, the provided URI shall be “ws:/my-websocket-uri”.
+streaming media using WebSocket protocol according to this specification. The provided URI shall set the
+hierarchical part (hier_part) to absolute path (abs_path) [RFC 2396]. For example, if the WebSocket URI with
+network path is “ws://1.2.3.4/my-websocket-uri”, the provided URI shall be “ws:/my-websocket-uri”.
 For RTSP tunneling over WebSocket a device shall support RTP/RTSP/TCP interleaved binary data as defined
 in [RFC 2326] Section 10.12.
 WebSocket protocol implementation shall conform to [RFC 6455] - The WebSocket Protocol.
@@ -679,9 +693,12 @@ Extension (X):
 
 0/1
 
-Depends on the use of extension of RTP header. The specification defines two scenarios where
-a RTP header extension could be
-used to transmit additional information:
+Depends on the use of extension
+of RTP header. The specification
+defines two scenarios where
+a RTP header extension could
+be used to transmit additional
+information:
 
 1 bit
 
@@ -701,7 +718,7 @@ Header field
 
 – 11 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 Value
 
@@ -709,10 +726,12 @@ Description
 
 0/1
 
-The usage shall be conform to related RFCs (e.g. [RFC 3984] for
+The usage shall be conform to
+related RFCs (e.g. [RFC 3984] for
 H.264 Video) or to this standard
 e.g “JPEG over RTP” (see Section
-5.1.3) or RTP streaming of metadata (see Section 5.1.2.1.1).
+5.1.3) or RTP streaming of
+metadata (see Section 5.1.2.1.1).
 
 4 bits
 Marker (M):
@@ -727,7 +746,9 @@ Sequence Number:
 16 bits
 
 The initial value of the “sequence
-number” should be random (unpredictable) to make known-plaintext attacks on encryption more difficult.
+number” should be random
+(unpredictable) to make knownplaintext attacks on encryption
+more difficult.
 This number increments by one for
 each RTP data packet sent
 
@@ -740,7 +761,8 @@ to make known-plaintext attacks
 on encryption more difficult.
 See Section 5.1.2.2.1 for further
 details of Media Synchronization.
-The usage of the timestamp is dependent on the codec.
+The usage of the timestamp is
+dependent on the codec.
 
 SSRC
 
@@ -771,21 +793,24 @@ a RTP clock rate of 90000 Hz. Only UTC timestamps shall be used within the metad
 synchronization of video and audio data streams is done using RTCP.
 
 The Metadata payload is an XML document with root node tt:MetaDataStream. There is no limitation on the
-size of the XML document. If GZIP compression is used, the payload starts with a GZIP header according to
-RFC 1952 followed by the compressed data. A marker bit signals the end of the compressed data. When a synchronization point (see section “Synchronization Points” of the ONVIF Media Service Specification) is requested for the stream, the previous XML document shall be closed and a new one started. It is RECOMMENDED
-to start new XML documents after 1 second, at the longest. The RTP timestamp of the Metadata stream has
-no specific meaning. The Metadata stream multiplexes Metadata from different sources. This specification defines placeholders for the Scene Description of the Video Analytics, the PTZ Status of the PTZ controller and
+size of the XML document. If GZIP compression is used, the payload starts with a GZIP header according
+to RFC 1952 followed by the compressed data. A marker bit signals the end of the compressed data. When
+a synchronization point (see section “Synchronization Points” of the ONVIF Media Service Specification)
+is requested for the stream, the previous XML document shall be closed and a new one started. It is
+RECOMMENDED to start new XML documents after 1 second, at the longest. The RTP timestamp of the
+Metadata stream has no specific meaning. The Metadata stream multiplexes Metadata from different sources.
+This specification defines placeholders for the Scene Description of the Video Analytics, the PTZ Status of
 
 ONVIF™
 
 – 12 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
-the Notifications of the Event Configuration. A device can select which of these parts should be multiplexed
-into the Metadata during the Media Configuration (see seciont “Metadata Configuration” of the ONVIF Media
-Service Specification). Each part can appear multiple times in arbitrary order within the document. A Metadata
-connection can be bi-directional using the backchannel mechanism (see Section 5.3).
+the PTZ controller and the Notifications of the Event Configuration. A device can select which of these parts
+should be multiplexed into the Metadata during the Media Configuration (see seciont “Metadata Configuration”
+of the ONVIF Media Service Specification). Each part can appear multiple times in arbitrary order within the
+document. A Metadata connection can be bi-directional using the backchannel mechanism (see Section 5.3).
 Metadata stream contains the following elements:
 
 •
@@ -820,8 +845,9 @@ The place-holders for the different metadata sources have the following XMLstruc
 </xs:choice>
 </xs:complexType>
 
-Note: For a PTZ supported device, the PTZStream in metadata provides the PTZ position information, whenever there is a change in the PTZ position, whereas PTZStatus defined inside VideoAnalyticsStream, provides
-PTZ position information at the time of generating scene description.
+Note: For a PTZ supported device, the PTZStream in metadata provides the PTZ position information,
+whenever there is a change in the PTZ position, whereas PTZStatus defined inside VideoAnalyticsStream,
+provides PTZ position information at the time of generating scene description.
 The following is an example of a metadata XML document:
 <?xml version="1.0" encoding="UTF-8"?>
 <tt:MetadataStream xmlns:tt="http://www.onvif.org/ver10/schema">
@@ -851,7 +877,7 @@ The following is an example of a metadata XML document:
 
 – 13 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 5.1.2.2 RTCP
 The RTP Control Protocol provides feedback on quality of service being provided by RTP and synchronization
@@ -964,7 +990,7 @@ Figure 4: RTCP Sender Report
 
 – 14 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 The wall clock should be common in the device and each timestamp value should be determined properly.
 The client can synchronize different media streams at the appropriate timing based on the RTP clock and wall
@@ -976,8 +1002,9 @@ be required in the system .
 Figure 5: Media Synchronization
 
 5.1.3 Synchronization Point
-Synchronization points allow clients to decode and correctly use data after the synchronization point. A synchronization point MAY be requested by a client in case of decoder error (e.g. in consequence of packet loss)
-to enforce the device to add an I-Frame as soon as possible or to request the current ptz or event status.
+Synchronization points allow clients to decode and correctly use data after the synchronization point. A
+synchronization point MAY be requested by a client in case of decoder error (e.g. in consequence of packet
+loss) to enforce the device to add an I-Frame as soon as possible or to request the current ptz or event status.
 The WebService based methods require to support the Synchronization Point request as defined in the section
 “Synchronization Point” of the ONVIF Media Service Specification.
 In addition it is recommended to support the PLI messages as described in [RFC 4585] in order to allow
@@ -1001,7 +1028,7 @@ The client can get information about “NTP server availability” from the devi
 
 – 15 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 0
 1
@@ -1033,14 +1060,13 @@ empty header extension).
 The entropy-encoded scan data section MAY not be present in all RTP packets. A complete RTP/JPEG header
 however shall be present in the initial packet of every frame and all packets containing an entropy-encoded
 scan data section, otherwise it MAY be missing.
-The fragment offset field within the RTP/JPEG header, according to [RFC 2435], should be used as if no
-header extension would be present. Additionally, if a packet does not contain an entropy-encoded scan data
-segment, but contains a header extension the fragment offset field shall not be zero if any packets containing
-an entropy-encoded scan data section for the same frame have been transmitted. If the initial packet of a frame
-contains no header extension, according to this standard, its fragment offset field shall be zero, otherwise
-it should be zero. All packets including an RTP/JPEG header with a fragment offset of zero and a Q value
-between 128-255 shall include a quantization table header according to Section 3.1.8 of [RFC 2435], other
-packets shall NOT include this header.
+The fragment offset field within the RTP/JPEG header, according to [RFC 2435], should be used as if no header
+extension would be present. Additionally, if a packet does not contain an entropy-encoded scan data segment,
+but contains a header extension the fragment offset field shall not be zero if any packets containing an entropyencoded scan data section for the same frame have been transmitted. If the initial packet of a frame contains
+no header extension, according to this standard, its fragment offset field shall be zero, otherwise it should be
+zero. All packets including an RTP/JPEG header with a fragment offset of zero and a Q value between 128-255
+shall include a quantization table header according to Section 3.1.8 of [RFC 2435], other packets shall NOT
+include this header.
 
 5.1.4.2 Logical decoding specification
 For the decoding specification, it is assumed that the original packet order within the RTP stream has been
@@ -1054,7 +1080,7 @@ its marker bit set, shall be concatenated as they occur within the stream ignori
 
 – 16 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 Otherwise (at least an empty header extension as specified above is present in the initial packet of a frame),
 the following rules apply for each such frame:
@@ -1074,24 +1100,28 @@ a JPEG SOI marker (0xFFD8).
 
 •
 
-If the Q-value of the RTP/JPEG scan header within the initial packet of a frame is not zero, the quantization tables shall be pre-initialized according to the rules of [RFC 2435]. If Q is equal to zero the
-quantization tables shall be copied from the previous frame, allowing for DQT markers within this initial
-header extension payload (sequence) to override them.
+If the Q-value of the RTP/JPEG scan header within the initial packet of a frame is not zero, the
+quantization tables shall be pre-initialized according to the rules of [RFC 2435]. If Q is equal to zero
+the quantization tables shall be copied from the previous frame, allowing for DQT markers within this
+initial header extension payload (sequence) to override them.
 
 •
 
 If this frame is the initial frame of a sequence, the Huffman tables shall be pre-initialized according to
 [RFC 2435]. The Huffman tables for all subsequent frames shall be copied from the previous frame,
-allowing the frames to be overridden by DHT markers within the initial header extension payload (sequence).
+allowing the frames to be overridden by DHT markers within the initial header extension payload
+(sequence).
 
 •
 
-If the initial RTP header extension payload (sequence) supplies no DRI marker, but the RTP/JPEG
-header of the initial packet of a frame contains an RTP/JPEG restart marker, a DRI marker corresponding to the rules of [RFC 2435] shall be appended to the initial header extension payload (sequence).
-Otherwise, if the initial RTP header extension (sequence) supplies a DRI marker, the marker shall take
-precedence over any other RTP/JPEG restart marker according to [RFC 2435] for the same frame.
-However, for compatibility with decoders conforming to [RFC 2435] only, encoders normally should
-use an RTP/JPEG restart marker with consistent values, if restart intervals are to be used.
+If the initial RTP header extension payload (sequence) supplies no DRI marker, but the RTP/
+JPEG header of the initial packet of a frame contains an RTP/JPEG restart marker, a DRI marker
+corresponding to the rules of [RFC 2435] shall be appended to the initial header extension payload
+(sequence). Otherwise, if the initial RTP header extension (sequence) supplies a DRI marker, the
+marker shall take precedence over any other RTP/JPEG restart marker according to [RFC 2435] for
+the same frame. However, for compatibility with decoders conforming to [RFC 2435] only, encoders
+normally should use an RTP/JPEG restart marker with consistent values, if restart intervals are to be
+used.
 
 •
 
@@ -1117,7 +1147,8 @@ additional SOF header.
 •
 
 If the initial header extension payload (sequence) supplies no SOS marker, a corresponding marker
-shall be derived according to [RFC 2435] and appended to it, otherwise the SOS marker in the extension takes precedence.
+shall be derived according to [RFC 2435] and appended to it, otherwise the SOS marker in the
+extension takes precedence.
 An SOS marker shall NOT be derived from previous frames.
 If the SOS marker is present and not followed by entropy-encoded scan data within the extension, the
 marker shall be the final marker within the initial extension payload (sequence) of a frame. Necessary
@@ -1125,18 +1156,19 @@ padding with 0xFF-octets shall NOT follow this marker but MAY precede it.
 
 •
 
-The remaining entropy-encoded scan data and header extensions payloads shall be logically appended in the same order as they occur within the RTP stream up to the end of the frame as indicated by
-the RTP marker bit. A final EOI marker shall also be added if it is not yet present within the logical
+The remaining entropy-encoded scan data and header extensions payloads shall be logically
+appended in the same order as they occur within the RTP stream up to the end of the frame as indicated
+by the RTP marker bit. A final EOI marker shall also be added if it is not yet present within the logical
 sequence for this frame,.
-For each frame, the resulting sequence up to and including the first (possibly added) EOI marker shall
-be a valid (possibly abbreviated) JPEG stream, resulting in one complete image from the decoding
 
 ONVIF™
 
 – 17 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
+For each frame, the resulting sequence up to and including the first (possibly added) EOI marker shall
+be a valid (possibly abbreviated) JPEG stream, resulting in one complete image from the decoding
 process for this frame. The meaning of any data after this first EOI marker for each frame is outside
 the scope of this specification.
 Implementations should provide for each frame the complete JPEG headers. This holds especially for the width
@@ -1171,7 +1203,7 @@ GetStreamUri command defined in the ONVIF Media Service Specification.
 
 – 18 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 Figure 7: Stream Control
 
@@ -1181,11 +1213,11 @@ All devices and clients shall support RTSP ([RFC 2326]) for session initiation a
 use TCP as its transport protocol, the default TCP port for RTSP traffic is 554. The Session Description Protocol
 (SDP) shall be used to provide media stream information and SDP shall conform to [RFC 4566].
 Table 2: RTSP methods.
+a
+
 Method
 
-Direction
-
-SPEC
+Direction SPEC
 
 OPTIONS
 
@@ -1193,7 +1225,8 @@ R->T T>R
 
 MX
 
-Required to get optional method capability and to allow different versions in the future.
+Required to get optional method capability and to allow
+different versions in the future.
 
 DESCRIBE
 
@@ -1240,21 +1273,17 @@ PAUSE
 
 R->T
 
-a
-
 Description
 
 ONVIF™
 Method
 
 – 19 –
-Direction
-
-SPEC
+Direction SPEC
 
 a
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 Description
 reducing redundant data and congested network traffic can
@@ -1294,7 +1323,8 @@ O
 
 Required to release a media session.
 
-An optional method to keep an RTSP session alive (R->T direction only).
+An optional method to keep an RTSP session alive (R->T
+direction only).
 
 aX: Not supported, M: Mandatory, O: Optional
 
@@ -1348,7 +1378,7 @@ keeping the session alive.
 
 server
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 client
 SETUP
@@ -1444,7 +1474,7 @@ a=control:rtsp://example.com/onvif_camera/metadata
 a=recvonly
 a=rtpmap:107 vnd.onvif.metadata/90000
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 5.2.2.5 Multicast streaming
 A device shall include a valid multicast address in the "c=" field of a DESCRIBE response according to RFC
@@ -1458,7 +1488,8 @@ nor its AutoStart flag has been set.
 
 5.2.2.6 RTSP message example
 This example shows the message transfer between an RTSP client (client) and an RTSP server (server).
-The client requests one audio and one video stream from the device. The Stream Uri “rtsp://example.com/onvif_camera” can be retrieved using the GetStreamUri command. Refer to Section „Stream URI“ of the ONVIF
+The client requests one audio and one video stream from the device. The Stream Uri “rtsp://example.com/
+onvif_camera” can be retrieved using the GetStreamUri command. Refer to Section „Stream URI“ of the ONVIF
 Media Service Specification.
 Client->server:
 Cseq: 1
@@ -1496,7 +1527,7 @@ a=control:rtsp://example.com/onvif_camera/video
 
 – 22 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 client->server:
 
@@ -1552,7 +1583,8 @@ This section describes how a bidirectional connection can be established between
 backchannel connection handling is done using RTSP [RFC 2326]. Therefore a mechanism is introduced which
 indicates that a client wants to establish a backchannel connection. RTSP provides feature-tags to deal with
 such functionality additions.
-A device that supports bi-directional connections (e.g audio or metadata connections) shall support the introduced RTSP extensions.
+A device that supports bi-directional connections (e.g audio or metadata connections) shall support the
+introduced RTSP extensions.
 
 5.3.1 RTSP Require tag
 The RTSP standard [RFC 2326] can be extended by using additional headers objects. For that purpose a
@@ -1569,7 +1601,7 @@ understand the backchannel tag:
 
 – 23 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 www.onvif.org/ver20/backchannel
 
@@ -1584,7 +1616,8 @@ in its Media Profile.
 An RTSP server that does not understand the backchannel feature tag or does not support bidirectional data
 connections shall respond with an error code 551 Option not supported according to the RTSP standard. The
 client can then try to establish an RTSP connection without backchannel.
-A SDP file is used to describe the session. To indicated the direction of the media data the server shall include the a=sendonly in each media section representing media being sent from the client to the server and
+A SDP file is used to describe the session. To indicated the direction of the media data the server shall
+include the a=sendonly in each media section representing media being sent from the client to the server and
 a=recvonly attributes in each media section representing media being sent from the server to the client.
 The server shall list all supported decoding codecs as own media section and the client chooses which one is
 used. The payload type and the encoded bitstream shall be matched with one of the a=rtpmap fields provided
@@ -1633,7 +1666,7 @@ the streams.
 
 – 24 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 In the next step the client can setup the sessions:
 Client – Server:
@@ -1708,7 +1741,7 @@ Session: 123124
 
 – 25 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 5.3.2.3 Describe example in case of backchannel support with multiple decoding
 capability
@@ -1772,13 +1805,14 @@ following ABNF:
 
 – 26 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 group-attribute = "a=group:" semantics
 *(SP identification-tag)
 semantics = "LS" / "FID" / semantics-extension
 semantics-extension = token; token is defined in [RFC 4566]
-This section defines one standard semantics named llp synchronization (LS). Note, that audio video synchronization is out of scope of this section, but theis reused for multitrack streaming.
+This section defines one standard semantics named llp synchronization (LS). Note, that audio video
+synchronization is out of scope of this section, but theis reused for multitrack streaming.
 
 5.4.2 Media Stream Identification Attribute
 The media attribute "media stream identification" is defined in this section, which is used to identify media
@@ -1825,7 +1859,7 @@ m=video 0 RTP/AVP 98
 
 – 27 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 a=control:rtsp://192.168.0.1/video/trackID=2
 a=ssrc:2345
@@ -1884,7 +1918,7 @@ o= 2890842807 IN IP4 192.168.0.1
 
 – 28 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 m=video 0 RTP/AVP 26
 a=control:rtsp://192.168.0.1/video
@@ -1976,7 +2010,7 @@ The replay header extension shall be present in the first packet of every access
 
 – 29 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 6.3.1 NTP Timestamps
 The NTP timestamps in the RTP extension header shall correspond to the wallclock time as measured at the
@@ -2023,12 +2057,14 @@ padding
 
 jpeglength=N
 
-extension payload: sequence of additional JPEG marker segments padded with 0xFF to the total extension length
+extension payload: sequence of additional JPEG marker
+segments padded with 0xFF to the total extension length
 payload…
 
 6.4 RTSP Feature Tag
-The Replay Service uses the “onvif-replay” feature tag to indicate that it supports the RTSP extensions described in this standard. This allows clients to query the server’s support for these extensions using the Require
-header as described in [RFC 2326] section 5.3.1 .
+The Replay Service uses the “onvif-replay” feature tag to indicate that it supports the RTSP extensions
+described in this standard. This allows clients to query the server’s support for these extensions using the
+Require header as described in [RFC 2326] section 5.3.1 .
 Example:
 C->S:
 
@@ -2051,7 +2087,7 @@ Playback is initiated by means of the RTSP PLAY method. For example:
 
 – 30 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 PLAY rtsp://192.168.0.1/path/to/recording RTSP/1.0
 Cseq: 123
@@ -2105,7 +2141,7 @@ Session: 12345678
 
 – 31 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 Require: onvif-replay
 Range: clock=20090615T115000.440Z-20090615T114900Z
@@ -2158,7 +2194,7 @@ different server implementations, as stated by [RFC 2326].
 
 – 32 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 An ONVIF compliant RTSP server shall support the Frames parameters “intra” and “all” for playback.
 
@@ -2187,8 +2223,8 @@ start time.
 Reverse replay is initiated using the Scale header field with a negative value as described above.
 
 6.6.1 Packet transmission order
-The example in Figure 9 shows how frames are transmitted during normal forward playback for a recording with
-two short video clips each consisting of two GOPs. As shown all packets are transmitted in recording order.
+The example in Figure 9 shows how frames are transmitted during normal forward playback for a recording
+with two short video clips each consisting of two GOPs. As shown all packets are transmitted in recording order.
 The last frame before a gap is marked with the E flag to signal a gap in the recording.
 
 Figure 9: Packet transmission during forward playback
@@ -2203,7 +2239,7 @@ in its RTP extension header.
 
 – 33 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 When transmitting only key frames, or when the codec is not motion-based (e.g. JPEG), a GOP is considered
 to consist of a single frame, but may still be composed of multiple packets. In this case the packets within each
@@ -2211,7 +2247,8 @@ frame shall be again sent in forward order, while the frames themselves shall be
 Audio and metadata streams MAY be transmitted in an order mirroring that of the video stream. Thus packets
 from these streams are sent in forward playback order until the occurrence of a packet (generally a video packet)
 with the D bit set in the extension header, at which point they jump back to a point before the discontinuity.
-Note that reverse playback of Audio packet isn’t useful. Threfore Audio packets should generally not be transmitted during reverse playback.
+Note that reverse playback of Audio packet isn’t useful. Threfore Audio packets should generally not be
+transmitted during reverse playback.
 The example of Figure 10 shows for the same recording as depicted in Figure 9 how packets are transmitted
 during reverse forward playback. As shown all packets are transmitted in recording order.
 
@@ -2240,7 +2277,7 @@ times at which each frame should be rendered at the client. Thus successive pack
 
 – 34 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 decreasing RTP timestamps (since the first one delivered should be played last), and the timestamps on index
 frames will increase. In this mode the interval between successive timestamps depends on the values of the
@@ -2294,11 +2331,12 @@ set to zero.
 
 – 35 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 7 WebSocket transport for RTP/RTSP/TCP
-WebSocket protocol basically provides bidirectional communication between Client and Server for web application. This section describes how a WebSocket connection can be established between a client and a server.
-The connection handling is done using WebSocket [RFC 6455].
+WebSocket protocol basically provides bidirectional communication between Client and Server for web
+application. This section describes how a WebSocket connection can be established between a client and a
+server. The connection handling is done using WebSocket [RFC 6455].
 The WebSocket transport mechanism explained in the Figure 11 is common for live streaming and playback.
 The RTP/RTSP/TCP data transmitted by the device over the WebSocket shall follow the device requirements
 as explained in Section 5 Live Streaming and Section 6 Playback.
@@ -2346,7 +2384,7 @@ The Device shall support WebSocket protocol version 13.
 
 – 36 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
 
 7.2 Authentication
 The device shall follow RTSP authentication requirements as explained in Section 5.12.1 Authentication of
@@ -2360,7 +2398,8 @@ The initial connection setup is done in two steps:
 7.3.1 Handshake
 7.3.1.1 WebSocket Subprotocol
 The device shall support the WebSocket subprotocol as defined in Section 1.9 of [RFC 6455]. The websocket
-sub protocol defined by this specification is identified with 'rtsp.onvif.org'. A device shall support the 'rtsp.onvif.org' sub protocol.
+sub protocol defined by this specification is identified with 'rtsp.onvif.org'. A device shall support the
+'rtsp.onvif.org' sub protocol.
 
 7.3.1.2 Example: WebSocket Handshake
 This example shows the message transfer between an Web client (client) and an Web server (server). The
@@ -2385,7 +2424,8 @@ Sec-WebSocket-Protocol: rtsp.onvif.org
 7.3.2 Data Transfer
 After a successful handshake, client and server can transfer bidirectional data over WebSocket connection.
 Device supporting live streaming and playback streaming over WebSocket provides the WebSocket streaming
-URI in the GetServiceCapabilities of Media2 Service Section 5.11 and Replay Service Section 5.4.1 respectively.
+URI in the GetServiceCapabilities of Media2 Service Section 5.11 and Replay Service Section 5.4.1
+respectively.
 
 7.3.2.1 WebSocket Message Frame Format
 The basic units of data transmitted over WebSocket connection are referred as “messages” in the RFC 6455.
@@ -2393,11 +2433,28 @@ The messages are composed of one or more frames and each frame has an associated
 different type of frames like text frames and data frames.
 The device shall only use data frames for transmitting the RTP/RTSP/TCP data over the WebSocket.
 
+8 MulticastAudioDecoder SRTP Packet Format
+The following diagram illustrates the structure of an SRTP packet used by the MulticastAudioDecoder.
+It includes the RTP header, a header extension carrying the Roll-Over Counter (ROC), the encrypted
+
 ONVIF™
 
 – 37 –
 
-Streaming – Ver. 23.06
+Streaming – Ver. 25.12
+
+RTP payload, and the SRTP authentication tag. The header extension format adheres to the one-byte
+extension mechanism defined in RFC 8285. Encryption and authentication are handled via SRTP, as
+specified in RFC 3711 for AES_CM_128_HMAC_SHA1_80, and in RFC 7714 for AEAD_AES_128_GCM and
+AEAD_AES_256_GCM modes.
+
+Figure 12: Diagram of SRTP packet format with ROC extension
+
+ONVIF™
+
+– 38 –
+
+Streaming – Ver. 25.12
 
 Annex A.
 Revision History
@@ -2531,7 +2588,7 @@ Change Request 2229, 2247, 2254, 2275, 2284, 2285
 
 Jun-2019
 
-Hiroyujki Sano
+Hiroyuki Sano
 
 Change Request 2446, 2464
 
@@ -2575,5 +2632,13 @@ Hans Busch
 
 Update description and figure to remove emphasis on
 SET_PARAMETER.
+
+25.12
+
+Dec-2025
+
+Sujith Raman
+
+Add support for multicast audio decoder.
 
 

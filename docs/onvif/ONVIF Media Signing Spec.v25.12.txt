@@ -2,20 +2,20 @@ ONVIF™
 
 –1–
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 ONVIF™
 Media Signing Specification
-Version 24.12
-December, 2024
+Version 25.12
+December, 2025
 
 ONVIF™
 
 –2–
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
-Copyright © 2022-2024 ONVIF™ All rights reserved.
+Copyright © 2022-2025 ONVIF™ All rights reserved.
 Recipients of this document may copy, distribute, publish, or display this document so long as this copyright notice, license and disclaimer
 are retained with all copies of the document. No license is granted to modify this document.
 THIS DOCUMENT IS PROVIDED "AS IS," AND THE CORPORATION AND ITS MEMBERS AND THEIR AFFILIATES, MAKE
@@ -36,7 +36,7 @@ CORPORATION.
 
 –3–
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 CONTENTS
 1
@@ -69,7 +69,7 @@ Abbreviations ..................................................................
 
 Overview
 
-4
+5
 
 5
 
@@ -99,24 +99,24 @@ Detailed description on how the device generates SEI frames including signatures
 5.7.1 The reserved byte ........................................................................................................... 16
 5.7.2 Start of stream ................................................................................................................ 16
 5.7.3 TLV tags .......................................................................................................................... 16
-5.7.4 General GOP information ................................................................................................. 16
-5.7.5 Cryptographic information ................................................................................................. 17
+5.7.4 General GOP information ................................................................................................. 17
+5.7.5 Cryptographic information ................................................................................................. 18
 5.7.6 ONVIF vendor info ........................................................................................................... 18
-5.7.7 Hash list .......................................................................................................................... 18
-5.7.8 Signature ......................................................................................................................... 18
+5.7.7 Hash list .......................................................................................................................... 19
+5.7.8 Signature ......................................................................................................................... 19
 5.7.9 Certificate chain ............................................................................................................... 19
 5.7.10 Arbitrary data ................................................................................................................. 19
 5.8
 
-Low Bitrate Mode ................................................................................................................... 19
+Low Bitrate Mode ................................................................................................................... 20
 
 5.9
 
-How to generate the first certificate SEI ................................................................................... 19
+How to generate the first certificate SEI ................................................................................... 20
 
 5.10
 
-How to generate a SEI signing a GOP .................................................................................. 20
+How to generate a SEI signing a GOP .................................................................................. 21
 
 5.11
 
@@ -130,45 +130,45 @@ Annex A
 
 Revision History
 
-22
+23
 
 Annex B
 
 Client considerations (informative)
 
-23
+24
 
 B.1
 
-Minimum requirements for client handling of a signed video stream .......................................... 23
+Minimum requirements for client handling of a signed video stream .......................................... 24
 
 B.2
 
-Client side validation .............................................................................................................. 23
+Client side validation .............................................................................................................. 24
 
 B.3
 
-Certificate validation ............................................................................................................... 24
+Certificate validation ............................................................................................................... 25
 
 B.4
 
-Exporting a Signed Media ...................................................................................................... 24
+Exporting a Signed Media ...................................................................................................... 25
 
 B.5
 
-Dangling End ......................................................................................................................... 24
+Dangling End ......................................................................................................................... 25
 
 Annex C
 
 Bibliography
 
-25
+26
 
 ONVIF™
 
 –4–
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 1 Scope
 This specification defines how media from ONVIF devices is signed to give a guarantee that the media has not
@@ -181,19 +181,23 @@ ITU-T Recommendation, H.264: Advanced video coding for generic audiovisual servi
 <https://www.itu.int/rec/T-REC-H.264>
 ITU-T Recommendation, H.265: High effiency video coding
 <https://www.itu.int/rec/T-REC-H.265>
-ITU-T Recommendation X.660 (2011) | ISO/IEC 9834-1:2012, Information technology — Procedures for the
-operation of object identifier registration authorities — Part 1: General procedures and top arcs of the international object identifier tree
+ITU-T Recommendation X.660 (2011) | ISO/IEC 9834-1:2012, Information technology — Procedures for
+the operation of object identifier registration authorities — Part 1: General procedures and top arcs of the
+international object identifier tree
 <https://www.itu.int/rec/T-REC-X.660-201107-I/en>
 Global OID reference database
 <http://oid-info.com/>
 IETF RFC 6234 - US Secure Hash Algorithms (SHA and SHA-based HMAC and HKDF)
 <http://tools.ietf.org/html/rfc6234>
+Reference implementation of this specification
+<https://github.com/onvif/signed-media-framework>
 
 3 Terms and Definitions
 3.1 Definitions
 Document
 
-A document in this specification refers to a codec specific document that includes hashes of all media frames since previous signing occasion together
+A document in this specification refers to a codec specific document that
+includes hashes of all media frames since previous signing occasion together
 with other metadata. For H.264 and H.265 a document is encoded into a SEI
 frame.
 
@@ -234,17 +238,16 @@ TLV
 
 Type-Length-Value
 
-4 Overview
-Media Signing is the process of adding cryptographic signatures to captured media as part of the codec format.
-By adding these signatures, the media can be protected against manipulation (tampering) and the authenticity
-can be validated.
-
 ONVIF™
 
 –5–
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
+4 Overview
+Media Signing is the process of adding cryptographic signatures to captured media as part of the codec format.
+By adding these signatures, the media can be protected against manipulation (tampering) and the authenticity
+can be validated.
 The public key, that is used to verify the signatures, is also included in the media, as well as certificates to verify
 the public key. The CA certificate necessary to verify the certificates is not included and has to be acquired
 from an external trusted source.
@@ -343,18 +346,18 @@ signatures within the video format. There exists other codec standards where the
 applied though, but the specification considers H.264 and H.265.
 Signing frequency. Signing is done upon transition between two Group of Pictures (GOPs), that is, triggered
 by an IDR frame. For short GOP lengths, the time between two GOP transitions may be shorter than the time
-it takes to perform the signing. The standard allows the device to sign multiple GOPs if necessary. This is
-described in Section 5.5. For very long, or infinite, GOPs the duration between signatures can be too long for
-practical usage. Therefore, the device is recommended to sign partial GOPs; See Section 5.6.
-Frame drops and packet losses. Adding a list of hashes of each NAL Unit combats the problem of lost
-frames, but cannot solve packet losses unless the affected NAL Unit is completely removed from the stream.
 
 ONVIF™
 
 –6–
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
+it takes to perform the signing. The standard allows the device to sign multiple GOPs if necessary. This is
+described in Section 5.5. For very long, or infinite, GOPs the duration between signatures can be too long for
+practical usage. Therefore, the device is recommended to sign partial GOPs; See Section 5.6.
+Frame drops and packet losses. Adding a list of hashes of each NAL Unit combats the problem of lost
+frames, but cannot solve packet losses unless the affected NAL Unit is completely removed from the stream.
 To lower the risk of losing packets within a SEI frame, the specification allows the device to add redundancy
 by transmitting the same SEI multiple times; See Section 5.11 below.
 Hashing algorithms. Hashing algorithms, for example those specififed in RFC 6234, are generally used to
@@ -395,6 +398,10 @@ Every partial GOP must be signed
 Every SEI must be linked with the first picture NAL Unit of the previous partial or complete GOP.
 This is necessary to secure the order of frames from tampering.
 
+•
+
+The generated SEIs shall be added to the stream in sequence order.
+
 5.3 Detailed description on how the device generates SEI frames including signatures
 The H.264 and H.265 codec formats, as specified in referenced documents, allows the user to add arbitrary
 data to a stream through SEI frames of type user data unregistered. Signed Video puts the produced signatures
@@ -406,26 +413,27 @@ to protect against lost SEI frames. Validating a video where SEIs have been lost
 marked as not authentic, or unsigned (if no SEIs are present).
 All operations are done on the encoded video stream. Each picture frame is split into NAL Units and Signed
 Video operates on these NAL Units. Note that it is not necessarily a one-to-one correspondance between
-frames and NAL Units. A frame split into slices (multiple NAL Units) will generate multiple hashes. In this
-specification, unless explicitly stated, hashing a frame means hashing a NAL Unit.
-All picture NAL Units should be hashed. In addition, all SEI frames, generated by ONVIF Media Signing should
-also be hashed accordingly, unless the SEI includes a signature.
 
 ONVIF™
 
 –7–
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
+frames and NAL Units. A frame split into slices (multiple NAL Units) will generate multiple hashes. In this
+specification, unless explicitly stated, hashing a frame means hashing a NAL Unit.
+All picture NAL Units shall be hashed. In addition, all SEI frames, generated by ONVIF Media Signing shall
+also be hashed accordingly, unless the SEI includes a signature.
 Some NAL Units have no or limited impact on the visual video and are ignored:
 
 •
 
 SPS/PPS/VPS
-The presence of these NAL Units are not consistant. They can for example be sent once in the beginning of a stream and stored at client side to add back when exporting to file. This is a correct process,
-but affects the authenticity since Signed Video requires the order to be preserved, unless handled
-separately. There are parts in these NAL Units that can change the video behavior, but not to question
-its authenticity.
+The presence of these NAL Units are not consistant. They can for example be sent once in the
+beginning of a stream and stored at client side to add back when exporting to file. This is a correct
+process, but affects the authenticity since Signed Video requires the order to be preserved, unless
+handled separately. There are parts in these NAL Units that can change the video behavior, but not
+to question its authenticity.
 
 •
 
@@ -472,7 +480,7 @@ P
 
 P
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 P
 
@@ -518,7 +526,7 @@ PP
 
 PP
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 PP
 
@@ -545,29 +553,29 @@ hash 4
 Figure 3: Linked hashes, multiple NAL Units per frame
 Let H(F) denote the hash of a NAL Unit F, and h_anch = H(I) is the hash of the leading I-frame in a GOP
 and used as anchor (linked hash). Then each frame in a GOP is hashed according to hash(F) = H(h_anch,
-H(F)), where h_anch and H(F) should be hashed as if they were aligned in memory. All hashes are collected
-in a list and together with some metadata forms a document, which later will be signed.
-All NAL Unit data, from the NAL Unit header to the last byte, including the stop bit, should be hashed. The
-start code is excluded when hashing.
-If the I-frame is sliced into multiple NAL Units, the hash of the primary slice should be used as h_anch =
+H(F)), where h_anch and H(F) shall be hashed as if they were aligned in memory. All hashes are collected in
+a list and together with some metadata forms a document, which later will be signed.
+All NAL Unit data, from the NAL Unit header to the last byte, including the stop bit, shall be hashed. The start
+code is excluded when hashing.
+If the I-frame is sliced into multiple NAL Units, the hash of the primary slice shall be used as h_anch =
 H(Iprimaryslice). The other NAL Units of the I-frame are hashed in the linked manner described above.
-The NAL Units should be hashed in the same order as the encoder emits them, that is, in decoding order. For
+The NAL Units shall be hashed in the same order as the encoder emits them, that is, in decoding order. For
 example, consider 4 consecutive images with data D1, D2, D3, D4. Let the encoder use a GOP structure with
-two B-frames, which in presentation order would be I-B-B-P. The order out from the encoder becomes I1-P4B2-B3, which also is the order of which they should be hashed and put in the list of hashes [h_ach, hash(P4),
+two B-frames, which in presentation order would be I-B-B-P. The order out from the encoder becomes I1-P4B2-B3, which also is the order of which they shall be hashed and put in the list of hashes [h_ach, hash(P4),
 hash(B2), hash(B3)].
 A hash (gophash) of the list of hashes is added to metadata, gophash = H(h_anch, hash(NALUnit1),
 hash(NALUnit2), ..., hash(NALUnitN)). The gophash simplifies validation, since verifying each hash in
 the list of hashes is only necessary when verification of the gophash fails. Another benefit is that the bytestream
 is prepared for the future, where a low-bitrate alternative can be added by omitting the list of hashes.
-To preserve the order of GOPs the hash of the I-frame of the previous GOP is also added to metadata, that
-is, hash(Iprevious) = h_anch_previous. For the very first GOP a static and pre-defined hash should be
-used; See the TLV section below.
+To preserve the order of GOPs the hash of the I-frame of the previous GOP is also added to metadata, that is,
+hash(Iprevious) = h_anch_previous. For the very first GOP a static and pre-defined hash shall be used;
+See the TLV section below.
 
 ONVIF™
 
 – 10 –
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 This document is then signed to produce a signature as signature = sign(H(document)) and together with
 the document itself added to the stream in a SEI, that is, SEI = document + signature. The next GOP is
@@ -620,12 +628,13 @@ Figure 4: Signing Flow Chart
 
 5.4.1 Example
 The following figures show a typical example where each GOP is signed. In this example the GOP is 8 frames
-long where each I-frame (grey box with letter 'I') marks the start of a GOP, followed by 7 P-frames (white box
-with letter 'P'). Each I-frame triggers a signing procedure by generating a SEI (Supplemant Enhancement Information) frame of type "user data unregistered". Information, such as hashes from the frames, of the previous
-GOP is put in this SEI. The SEIs are colored yellow before being signed and green afterwards. SEIs (yellow)
-are hashed and sent to the signing hardware and added to the stream after signing (now green). The solid lines
-mark the frames that are signed/secured and the dashed line which frame the GOP is linked with to secure
-the order of GOPs.
+long where each I-frame (grey box with letter 'I') marks the start of a GOP, followed by 7 P-frames (white
+box with letter 'P'). Each I-frame triggers a signing procedure by generating a SEI (Supplemant Enhancement
+Information) frame of type "user data unregistered". Information, such as hashes from the frames, of the
+previous GOP is put in this SEI. The SEIs are colored yellow before being signed and green afterwards. SEIs
+(yellow) are hashed and sent to the signing hardware and added to the stream after signing (now green). The
+solid lines mark the frames that are signed/secured and the dashed line which frame the GOP is linked with
+to secure the order of GOPs.
 I
 
 P
@@ -656,7 +665,7 @@ t
 
 – 11 –
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 Signing generally takes time. When ready, the signature is added to the SEI and injected attached to a frame
 into the stream.
@@ -870,14 +879,18 @@ As mentioned in the Limitation Section above, there are situations when signing 
 real-time. The device has an option to decide to sign every X:th GOP to keep the stream signed.
 Generate a SEI for every GOP according to the Section above, but sign only every X:th GOP. That is, every
 X:th SEI includes a Signature TLV.
-All, by this specification, generated SEI frames without a signature must be hashed and added to the list of
-NAL Unit hashes. Note that they have to be hashed in the same order as they appear in the stream.
 
 ONVIF™
 
 – 12 –
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
+
+All, by this specification, generated SEI frames without a signature must be hashed and added to the list of
+NAL Unit hashes. Note that they have to be hashed in the same order as they appear in the stream.
+The SEI frames shall be added in the exact order they are generated, regardless of their readiness. For
+example, a SEI frame without a signature that is ready before the previous signed SEI is, cannot be added
+until the signed SEI is completed.
 
 5.5.1 Example
 The following example figures show how multiple short GOPs can be signed. The yellow boxes are used to
@@ -932,8 +945,8 @@ S
 Signing hardware
 
 Figure 12: Signing SEI of GOP 3.
-While the third SEI is being signed a SEI representing GOP 4 is generated and injected to the stream as shown
-in Figure 13.
+While the third SEI is being signed, a SEI representing GOP 4 is generated and waiting to be injected to the
+stream as shown in Figure 13.
 I
 
 P
@@ -961,45 +974,63 @@ S
 S
 Signing hardware
 
-Figure 13: Injection of SEI representing GOP 4.
+Figure 13: Pending injection of SEI representing GOP 4.
 When the signature is ready it is added to the corresponding SEI and injected to the stream as shown in Figure
 14.
-I
-
-P
-
-S
-
-I
-
-P
-
-S
-
-I
-
-P
-
-I
-
-P
-
-S
-
-I
-
-P
-
-S
-Signing hardware
-
-Figure 14: Out of order injection of signed SEI.
 
 ONVIF™
 I
 
 – 13 –
+P
+
 S
+
+I
+
+P
+
+S
+
+I
+
+P
+
+I
+
+P
+
+I
+
+Media Signing – Ver. 25.12
+
+P
+
+S
+
+S
+Signing hardware
+
+Figure 14: In order injection of signed SEI.
+
+I
+
+P
+
+S
+
+I
+
+P
+
+S
+
+S
+I
+
+P
+
+I
 
 P
 
@@ -1008,24 +1039,6 @@ I
 S
 
 P
-
-I
-
-P
-
-I
-
-P
-
-S
-
-S
-
-I
-
-P
-
-Media Signing – Ver. 24.12
 
 I
 
@@ -1040,25 +1053,7 @@ Figure 16 the SEIs have been prepended to the same frame that triggered the SEI 
 
 I
 
-S
-
 P
-
-I
-
-S
-
-P
-
-I
-
-P
-
-I
-
-P
-
-S
 
 S
 
@@ -1076,12 +1071,9 @@ I
 
 P
 
-S
-
-S
-
 I
 
+SS
 P
 
 S
@@ -1094,18 +1086,32 @@ I
 
 P
 
+I
+
+SS
+P
+
+S
+
+I
+
 P
 
 I
 
 P
 
-S
+I
 
-S
+P
 
 I
 
+P
+
+I
+
+SS
 P
 
 Figure 16: Overview when SEIs are prepended.
@@ -1114,23 +1120,6 @@ I
 
 P
 
-S
-
-I
-
-P
-
-S
-
-I
-
-S
-P
-
-I
-
-P
-
 I
 
 S
@@ -1159,7 +1148,23 @@ I
 S
 
 S
+P
+
 I
+
+P
+
+I
+
+S
+
+P
+
+I
+
+S
+
+S
 
 S
 
@@ -1178,6 +1183,13 @@ upon an IDR, that is, when there is a new GOP.
 
 5.6.1 Example
 The following example figures shows how long GOPs can be signed by using multiple SEIs.
+
+ONVIF™
+
+– 14 –
+
+Media Signing – Ver. 25.12
+
 In Figure 18 the number of NAL Units since the I-frame reached 7 which generates a first SEI that is hashed
 and sent to the signing hardware. SEI of partial GOP 1
 I
@@ -1199,13 +1211,6 @@ S
 Signing Hardware
 
 Figure 18: First SEI of partial GOP
-
-ONVIF™
-
-– 14 –
-
-Media Signing – Ver. 24.12
-
 In Figure 19 the signature is ready and added to the SEI (green) which is injected to the stream.
 I
 
@@ -1312,6 +1317,13 @@ S
 Signing Hardware
 
 Figure 21: I-Frame triggers SEI signing
+
+ONVIF™
+
+– 15 –
+
+Media Signing – Ver. 25.12
+
 When the signature of the second SEI is ready, it is added to the corresponding SEI (green) and injected to
 the stream as shown in Figure 22.
 I
@@ -1359,13 +1371,6 @@ S
 Signing Hardware
 
 Figure 22: SEI of partial GOP 2 is injected to the stream.
-
-ONVIF™
-
-– 15 –
-
-Media Signing – Ver. 24.12
-
 Figure 21 shows that the signature of the third SEI is now ready. It is added to the corresponding SEI (green)
 and injected to the stream.
 I
@@ -1546,6 +1551,12 @@ payload
 
 stop bit
 
+ONVIF™
+
+– 16 –
+
+Media Signing – Ver. 25.12
+
 The UUID is used to put an ONVIF Signed Video identity to the SEI. UUID for Signed Video is
 005bc93f-2d71-5e95-ada4-796f90877a6f. The payload includes the metadata, the list of hashes and the
 signature, and is serialized in a TLV structure. The order of the added TLV tags is arbitrary except the signature
@@ -1556,42 +1567,41 @@ document
 NAL Unit
 header
 
-payload size
+payload
+size
 
 UUID
 
 reserved
 byte
 
-metadata TLVs
+metadata
+TLVs
 
 list of
-hashes TLV
+hashes
+TLV
 
-signature TLV
+signature
+TLV
 
 stop bit
-
-ONVIF™
-
-– 16 –
-
-Media Signing – Ver. 24.12
 
 5.7.1 The reserved byte
 Right after the UUID, and before the TLV data, is a reserved byte. This byte represents bit flags of information
 that cannot be put in the TLV structure.
-The first bit should be set to 1 if this is a certificate SEI.
-The second bit should be set to 1 if emulation prevention was applied before this SEI (the document) was
-hashed for signing.
-The last bit should be set to 0. If, in the future, 7 bits is not enough to signal settings outside the TLV structure,
+The first bit shall be set to 1 if this is a certificate SEI.
+The second bit shall be set to 1 if emulation prevention was applied before this SEI (the document) was hashed
+for signing.
+The last bit shall be set to 0. If, in the future, 7 bits is not enough to signal settings outside the TLV structure,
 this bit will be used to signal more reserved bytes.
 
 5.7.2 Start of stream
 Large data blobs like certificates are preferably sent only once. This "only need once" information can be put in
 a separate certificate SEI, with the corresponding bit in the reserved byte set to 1, and signed. This self-signed
 SEI separates the certificate SEI from the video stream and can be copied and added to any exported material.
-If the video is signed with a user provisioned signing key, this certificate SEI should be signed with the manifacturer provisioned signing key. Note that both certificates of Public keys have to be included in the certificate SEI.
+If the video is signed with a user provisioned signing key, this certificate SEI shall be signed with the manifacturer
+provisioned signing key. Note that both certificates of Public keys have to be included in the certificate SEI.
 
 5.7.3 TLV tags
 Following is a list of possible TLV tags that can be part of a SEI payload. The length field of some of these tags
@@ -1605,7 +1615,8 @@ Freq
 
 Description
 
-General GOP information
+General GOP
+information
 
 1
 
@@ -1632,31 +1643,52 @@ document
 
 The signature of the document
 
-Cryptographic information
+Cryptographic
+information
 
 4
 
 Once or
-every document
+every
+document
 
 Cryptographic information such as hashing and signing
 algorithms
 
-ONVIF vendor information
+ONVIF vendor
+information
 
 5
 
 Once or
-at any arbitrary cadence
+at any
+arbitrary
+cadence
 
 Information about the device and vendor
+
+ONVIF™
+
+– 17 –
+
+Media Signing – Ver. 25.12
+
+Tag
+
+#
+
+Freq
+
+Description
 
 Certificate chain
 
 6
 
 Once or
-at any arbitrary cadence
+at any
+arbitrary
+cadence
 
 The device video signing key certificate chain.
 
@@ -1679,20 +1711,14 @@ the GOP-hash. If this TLV is in a SEI associated with a partial GOP, the timesta
 •
 
 Tag version (1 byte)
-
-ONVIF™
-
-– 17 –
-
-Media Signing – Ver. 24.12
-
-Version = 1
+Version = 2
 
 •
 
-Software version (3 byte)
-If applicable write the software version used by the device in major, minor, patch form. For example,
-software version "v2.35.215" is written to three bytes as [2, 35, 215].
+Specification version (3 byte)
+The major and minor bytes shall be set to the specification revision, e.g., [25, 12].
+The patch byte is reserved by the open-source reference implementation code (github.com/onvif/
+media-signing-framework). Should be set to 0 if not using media-signing-framework.
 
 •
 
@@ -1704,25 +1730,42 @@ signings, the first two SEIs will have this byte set to 1 and the last SEI has t
 •
 
 The UTC (8 bytes) based time represented by the number of 100-nanosecond intervals since January
-1, 1601 of the I-frame leading the GOP.
-The timestamp value is a 64 bit parameter and the 8 bytes should be written with little endian.
+1, 1601 of the frame leading the (partial) GOP.
+The start timestamp value is a 64 bit parameter and the 8 bytes shall be written with little endian.
+
+•
+
+Only present from tag version 2.
+The UTC (8 bytes) based time represented by the number of 100-nanosecond intervals since January
+1, 1601 of the frame leading the upcoming (partial) GOP.
+The end timestamp value is a 64 bit parameter and the 8 bytes shall be written with little endian.
+The duration of the signed (partial) GOP can now be calculated as duration = "end timestamp" - "start
+timestamp". Note that the end timestamp is exclusive.
 
 •
 
 GOP counter (4 bytes)
-A running counter that should increment by 1 for each GOP. This counter is a helper during validation
+A running counter that shall increment by 1 for each GOP. This counter is a helper during validation
 when detecting lost SEIs and syncing SEIs with the associated GOP.
-The counter value is a 32 bit parameter and the 4 bytes should be written with little endian.
+The counter value is a 32 bit parameter and the 4 bytes shall be written with little endian.
 Note that the counter is only incremented upon transition to a new GOP and not for each partial-GOP.
 
 •
 
 Number of NAL Units represented by partial-GOP hash (2 bytes)
-The GOP-hash added below is by definition a hash of NAL Unit hashes. For simplified validation knowledge of the number of NAL Units used should be added, represented by an unsigned 16 bit value.
+The GOP-hash added below is by definition a hash of NAL Unit hashes. For simplified validation
+knowledge of the number of NAL Units used shall be added, represented by an unsigned 16 bit value.
 
 •
 
 (Partial) GOP hash (gophash) (h bytes)
+
+ONVIF™
+
+– 18 –
+
+Media Signing – Ver. 25.12
+
 The hash of the list of NAL Unit hashes. This hash is used to verify the entire GOP in one operation.
 Upon failure, the list of hashes, if present, is used to detect missing NAL Units. Number of bytes
 depends on the hash function used.
@@ -1732,7 +1775,7 @@ depends on the hash function used.
 Hash of the first hashable NAL Unit in the previous (partial) GOP (h bytes)
 In most cases this is the hash of the linked I-frame, that is, the I-frame leading the previously signed
 GOP (h_anch_previous). Number of bytes depends on the hash function used.
-For the first signed GOP these h bytes should be set to 0x00.
+For the first signed GOP these h bytes shall be set to 0x00.
 
 It is not necessary to specify h in this tag. The validation side can compute h since the total tag length is known.
 h = (length - 13) / 2
@@ -1756,13 +1799,6 @@ The OID, in serialized format of the hash algorithm used to hash NAL Units (vari
 •
 
 Signing algorithm defined by its OID and specified here in its serialized form (variable byte)
-
-ONVIF™
-
-– 18 –
-
-Media Signing – Ver. 24.12
-
 Not needed for EC and can therefore be excluded.
 
 •
@@ -1795,7 +1831,8 @@ Firmware version
 •
 
 Size of Serial Number (1 byte)
-The size of the Serial Number as a character string, excluding termination character. If no Serial Number is written, set size to 0.
+The size of the Serial Number as a character string, excluding termination character. If no Serial
+Number is written, set size to 0.
 
 •
 
@@ -1804,6 +1841,13 @@ Serial Number or similar
 •
 
 Size of Manufacturer (1 byte)
+
+ONVIF™
+
+– 19 –
+
+Media Signing – Ver. 25.12
+
 The size of the Manufacturer as a character string, excluding termination character. If no Manufacturer
 is written, set size to 0.
 
@@ -1835,13 +1879,6 @@ Version = 1
 •
 
 Actual size of signature (2 bytes)
-
-ONVIF™
-
-– 19 –
-
-Media Signing – Ver. 24.12
-
 This is the written size, since not all signing algorithms generate a fixed size.
 
 •
@@ -1876,6 +1913,13 @@ The certificate chain in PEM format (variable bytes)
 5.7.10 Arbitrary data
 This optional field contains Abritrary data that the device vendor want to be included. There is no guarantee
 that the data is reasonable or readable by anyone not previously knowledgeable in the area.
+
+ONVIF™
+
+– 20 –
+
+Media Signing – Ver. 25.12
+
 The data tag can be added to any SEI described in this specification or to a SEI of its own.
 This tag can be useful to add vendor or device specific information and get it signed.
 
@@ -1901,13 +1945,7 @@ H.265: 0x4e 0x01 0x05
 Determine the total payload size, excluding potential emulation prevention bytes. The total payload
 includes the UUID (16 bytes) and all TLV data. The final stop-bit byte is excluded from the payload size.
 
-ONVIF™
-
 •
-
-– 20 –
-
-Media Signing – Ver. 24.12
 
 Write the payload size according to the codec standard.
 while (payload_size >= 0xff) {
@@ -1924,7 +1962,8 @@ Write the UUID
 •
 
 Write the reserved byte with the certificate SEI flag set; 0x80.
-If emulation prevention will be applied before hashing the SEI for signing, also set the emulation prevention bit; 0xc0.
+If emulation prevention will be applied before hashing the SEI for signing, also set the emulation
+prevention bit; 0xc0.
 
 •
 
@@ -1954,6 +1993,12 @@ Write the signature data to the Signature tag when signing has been completed.
 •
 
 Write a stop bit byte; 0x80.
+
+ONVIF™
+
+– 21 –
+
+Media Signing – Ver. 25.12
 
 5.10 How to generate a SEI signing a GOP
 
@@ -1985,13 +2030,6 @@ Write the UUID
 •
 
 Write the reserved byte without the certificate SEI flag set; 0x00.
-
-ONVIF™
-
-– 21 –
-
-Media Signing – Ver. 24.12
-
 If emulation prevention will be applied before hashing the SEI for signing, set the emulation prevention
 bit; 0x40.
 
@@ -2034,12 +2072,21 @@ IPSSPPPISSPPPPIPPSSPP.
 5.12 Handling SetSynchronizationPoint
 When the device recieves a SetSynchronizationPoint command, as specified in the media2 specification, the
 device shall transmit a new instance of the certificate SEI (if the device apply the principle of certificate SEIs).
+
+ONVIF™
+
+– 22 –
+
+Media Signing – Ver. 25.12
+
 Further, the device should start a new SEI signing segment in order for the video to be authenticatable from
 the synchronization point forward.
 
 ONVIF™
 
-– 22 –
+– 23 –
+
+Media Signing – Ver. 25.12
 
 Annex A.
 Revision History
@@ -2053,7 +2100,7 @@ Changes
 
 24.12
 
-Dec 2024
+Dec-2024
 
 Björn Völcker,
 Fredrik Svensson,
@@ -2061,13 +2108,30 @@ Axel Keskikangas
 
 First release
 
-Media Signing – Ver. 24.12
+25.06
+
+Jun-2025
+
+Björn Völcker
+
+Clarify the difference between Firmware and Software
+version.
+
+25.12
+
+Dec-2025
+
+Björn Völcker
+
+Added a second timestamp to bitstream and removed
+specification version. Requires SEIs to be added in
+sequential order.
 
 ONVIF™
 
-– 23 –
+– 24 –
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 Annex B.
 Client considerations (informative)
@@ -2109,7 +2173,8 @@ Extract the user provisioned Certificate from the SEI.
 Verify the extracted user provisioned certificates with the CA certificate.
 Extract the user provisioned Public Key from the SEI.
 Verify the signature of the SEI with the extracted user provisioned Public Key.
-If the SEI is a certificate SEI, instead verify the signature of the certificate SEI with the extracted manufacturer Public Key.
+If the SEI is a certificate SEI, instead verify the signature of the certificate SEI with the extracted
+manufacturer Public Key.
 
 •
 
@@ -2132,17 +2197,18 @@ SEI.
 
 •
 
-The client should signal AUTHENTIC if all computed hashes are verified successfully against the hashes in the SEI, and the order is preserved and no NAL Units are missing.
-If any missing NAL Unit is detected the client should signal AUTHENTIC WITH MISSING NAL UNITS.
-If no SEIs are present the client should signal NOT SIGNED.
+The client shall signal AUTHENTIC if all computed hashes are verified successfully against the hashes
+in the SEI, and the order is preserved and no NAL Units are missing.
+If any missing NAL Unit is detected the client shall signal AUTHENTIC WITH MISSING NAL UNITS.
+If no SEIs are present the client shall signal NOT SIGNED.
 
 ONVIF™
 
-– 24 –
+– 25 –
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
-If none of the above applies the video is not authentic and the client should signal NOT AUTHENTIC.
+If none of the above applies the video is not authentic and the client shall signal NOT AUTHENTIC.
 
 B.3 Certificate validation
 In order to validate the certificate, one follows the certificate chain from the leaf certificate to the root certificate
@@ -2181,9 +2247,9 @@ may not be covered by the verification information in the current segment.
 
 ONVIF™
 
-– 25 –
+– 26 –
 
-Media Signing – Ver. 24.12
+Media Signing – Ver. 25.12
 
 Annex C.
 Bibliography

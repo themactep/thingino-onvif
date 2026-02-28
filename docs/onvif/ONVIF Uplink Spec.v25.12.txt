@@ -4,16 +4,16 @@ ONVIF™
 
 ONVIF™
 Uplink Specification
-Version 25.06
-June 2025
+Version 25.12
+December, 2025
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 ONVIF™
 
 –2–
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 Copyright © 2008-2025 ONVIF™ All rights reserved.
 Recipients of this document may copy, distribute, publish, or display this document so long as this copyright notice, license and disclaimer
@@ -36,7 +36,7 @@ CORPORATION.
 
 –3–
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 CONTENTS
 1
@@ -130,7 +130,7 @@ Revision History
 
 –4–
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 1 Scope
 This document defines the connection protocol for connecting a web service behind a firewall to a client
@@ -190,7 +190,7 @@ Transport Layer Security
 
 –5–
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 4 Overview
 The ONVIF connection protocols base on the standard web service model where the client initiates a connection
@@ -200,12 +200,12 @@ Client
 
 Figure 1: Standard connection initiated from the client
 
-Remote Client
+Rem o t e Clien t
 
-Cloud
+Clou d
 Service
 
-Local Service
+Lo cal Ser v ice
 Figure 2: Connection initiation from the device
 This document specifies a solution that allows a camera to use an uplink to facilitate existing web server and
 RTSP server functionality using the http/2 protocol.
@@ -230,7 +230,7 @@ packets.
 
 –6–
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 Device
 
@@ -292,7 +292,7 @@ RFC 7540 so that the uplink can be used to exchange frames between the remote cl
 
 –7–
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 5.1.1.4 HTTP Transactions
 The uplink shall be used in reverse direction for http requests and responses. The remote client shall send
@@ -344,15 +344,15 @@ to uniquely identify the local service.
 Device signaling support for access token based authentication shall include AccessToken in the list
 of AuthorizationModes of GetServiceCapabilities response. Device shall signal value greater than 0 for
 AuthorizationServer.MaxConfigurations in GetServiceCapabilities response from the Security service.
+To authenticate with the remote client or service, the local service shall include the access token retrieved from
+the configured AuthorizationServer in the Authorization header when sending the upgrade request.
 
 ONVIF™
 
 –8–
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
-To authenticate with the remote client or service, the local service shall include the access token retrieved from
-the configured AuthorizationServer in the Authorization header when sending the upgrade request.
 The remote client shall validate the access token.
 
 5.4 Media Streaming
@@ -402,6 +402,8 @@ shall use mTLS authentication mechanism.
 UserLevel
 
 Authorization level that will be assigned to the uplink connection.
+In case the device signals support for user roles through the MaxUserRoles
+capability, UserLevel may contain a list of acceptable user roles.
 
 Status
 
@@ -418,7 +420,7 @@ validation at all.
 
 –9–
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 Parameter
 
@@ -507,7 +509,7 @@ CertificateID and AuthorizationServerConfigurationToken are mutually exclusive.
 
 – 10 –
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 env:Sender - ter:InvalidArgs - ter:ProtocolNotSupported
 The provided protocol is not supported by the device.
@@ -557,7 +559,7 @@ Signals support for media streaming over uplink
 
 – 11 –
 
-Uplink – Ver. 25.06
+Uplink – Ver. 25.12
 
 Annex A.
 Revision History
@@ -631,5 +633,13 @@ Bhetanabottla
 
 Clarify misuse of JWT in Uplink and WebRTC specs. Make
 uplink streaming not mandatory
+
+25.12
+
+Dec 2025
+
+Ottavio Campana
+
+Add support for user roles.
 
 

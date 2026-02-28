@@ -2,18 +2,18 @@ ONVIF™
 
 –1–
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 ONVIF™
 ONVIF Recording Control Service Specification
-Version 25.06
-June, 2025
+Version 25.12
+December, 2025
 
 ONVIF™
 
 –2–
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 Copyright © 2008-2025 ONVIF™ All rights reserved.
 Recipients of this document may copy, distribute, publish, or display this document so long as this copyright notice, license and disclaimer
@@ -36,7 +36,7 @@ CORPORATION.
 
 –3–
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 CONTENTS
 1
@@ -64,12 +64,12 @@ Definitions ....................................................................
 
 Overview
 
-5
+6
 
-4.1 Storage .................................................................................................................................... 5
+4.1 Storage .................................................................................................................................... 6
 4.1.1 Storage Model ................................................................................................................... 6
 4.1.2 Recording .......................................................................................................................... 7
-4.1.3 External targets ................................................................................................................. 7
+4.1.3 External targets ................................................................................................................. 8
 5
 
 Recording control
@@ -91,7 +91,7 @@ General Requirements ...........................................................
 5.3.4 Event recording ............................................................................................................... 11
 5.4
 
-CreateRecording ..................................................................................................................... 11
+CreateRecording ..................................................................................................................... 12
 
 5.5
 
@@ -135,7 +135,7 @@ DeleteRecordingJob .............................................................
 
 5.15
 
-GetRecordingJobs ................................................................................................................ 17
+GetRecordingJobs ................................................................................................................ 18
 
 5.16
 
@@ -143,7 +143,7 @@ SetRecordingJobConfiguration ...................................................
 
 5.17
 
-GetRecordingJobConfiguration .............................................................................................. 18
+GetRecordingJobConfiguration .............................................................................................. 19
 
 5.18
 
@@ -181,7 +181,7 @@ GetServiceCapabilities .........................................................
 
 –4–
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 5.26 Events .................................................................................................................................. 25
 5.26.1 Recording job state changes .......................................................................................... 25
@@ -231,29 +231,31 @@ B.7
 
 Recording format CMAF ......................................................................................................... 32
 
-B.8
-
-Encryption .............................................................................................................................. 33
-
-B.9
-
-Object attributes ..................................................................................................................... 33
-
+B.8 Encryption .............................................................................................................................. 33
+B.8.1 CENC Initialization Data Format ....................................................................................... 33
+B.8.1.1 Syntax ...................................................................................................................... 33
+B.8.1.2 Semantics ................................................................................................................ 33
+B.8.2 Asymmetric key system ................................................................................................... 34
+B.8.2.1 Syntax ...................................................................................................................... 34
+B.8.2.2 Semantics ................................................................................................................ 34
+B.8.2.3 Encryption Version 1 ................................................................................................. 35
+B.8.2.4 Encryption Version 2 ................................................................................................. 35
+B.9 Object attributes ..................................................................................................................... 36
+B.9.1 Timescale Attribute .......................................................................................................... 37
+B.9.2 SeekTable Attribute ......................................................................................................... 37
 B.10
-
-Examples ............................................................................................................................. 34
-
 Annex C
 
+Examples ............................................................................................................................. 38
 Revision History
 
-36
+40
 
 ONVIF™
 
 –5–
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 1 Scope
 This document defines the web service interface for the configuration of recording of Video, Audio and
@@ -263,6 +265,8 @@ related services.
 Web service usage is outside of the scope of this document. Please refer to the ONVIF core specification.
 
 2 Normative references
+IANA Algorithm registry for Hybrid Public Key Encryption (HPKE) <https://www.iana.org/assignments/hpke/
+hpke.xhtml>
 ISO/IEC 14496-12:2022 — Information technology — Coding of audio-visual objects — Part 12: ISO base
 media file format <https://www.iso.org/standard/83102.html>
 ISO/IEC 14496-14:2020 — Information technology — Coding of audio-visual objects — Part 14: MP4 file format
@@ -276,8 +280,10 @@ ISO 8601-1:2019 — Date and time — Representations for information interchang
 RFC 5234 — Augmented BNF for Syntax Specifications: ABNF <https://www.ietf.org/rfc/rfc5234.txt>
 RFC 6381 — The 'Codecs' and 'Profiles' Parameters for "Bucket" Media Types <https://www.ietf.org/rfc/
 rfc6381.txt>
+RFC 9180 — Hybrid Public Key Encryption (HPKE) <https://www.rfc-editor.org/rfc/rfc9180.html>
 ONVIF Core Specification <http://www.onvif.org/specs/core/ONVIF-Core-Specification.pdf>
 ONVIF Schedule Service Specification <https://www.onvif.org/specs/srv/sched/ONVIF-Scheduler-ServiceSpec.pdf>
+W3C "cenc" Initialization Data Format <https://www.w3.org/TR/2016/NOTE-eme-initdata-cenc-20160915/>
 
 3 Terms and Definitions
 3.1 Definitions
@@ -313,15 +319,17 @@ Video Analytics
 Algorithms or programs used to analyze video data and to generate data
 describing object location and behaviour.
 
+ONVIF™
+
+–6–
+
+RecordingControl – Ver. 25.12
+
 4 Overview
 4.1 Storage
 This standard provides a set of interfaces that enable the support of interoperable network storage devices,
 such as network video recorders (NVR), digital video recorders (DVR) and cameras with embedded storage.
 The following functions are supported:
-
-ONVIF™
-
-–6–
 
 •
 
@@ -334,8 +342,6 @@ Search
 •
 
 Replay
-
-RecordingControl – Ver. 25.06
 
 These functions are provided by three interrelated services:
 Recording service enables a client to manage recordings, and to configure the transfer of data from data
@@ -383,6 +389,13 @@ At a minimum, a recording is capable of holding three tracks, one for audio, one
 Some implementations of the recording service may support multiple tracks of each type. For example the
 same recording could hold two video tracks, one containing a low resolution or low frame rate stream and one
 containing a high resolution or high frame rate stream.
+
+ONVIF™
+
+–7–
+
+RecordingControl – Ver. 25.12
+
 Past
 
 Now
@@ -393,27 +406,20 @@ Recording 2
 
 Recording 3
 
+Video
+Audio
+Metadata
+Audio backchannel
+Video
+Audio
+Metadata
+Audio backchannel
+Video
+Audio
+Metadata
+Audio backchannel
+
 Figure 1: Storage Model with Tracks
-
-Video
-Audio
-Metadata
-Audio backchannel
-Video
-Audio
-Metadata
-Audio backchannel
-Video
-Audio
-Metadata
-Audio backchannel
-
-ONVIF™
-
-–7–
-
-RecordingControl – Ver. 25.06
-
 It is important to note that the storage interfaces do not expose the internal storage structures on the device.
 In particular, a recording is not intended to represent a single file on disk although in many storage device
 implementations a recording is physically stored in a series of files. For instance, some camera implementations
@@ -451,6 +457,12 @@ that they only record events. To provide some context time intervals before and 
 The recording job relies on the receiver service for receiving the data from other devices through receiver
 objects identified by ReceiverTokens
 
+ONVIF™
+
+–8–
+
+RecordingControl – Ver. 25.12
+
 4.1.3 External targets
 The target interface allows configuration for devices that support recording to external storage targets. For
 authentication configuration see the related storage configuration APIs of the core specification.
@@ -460,13 +472,7 @@ defines a date and time based index. Indexing according to events and video cont
 of this specification.
 An encryption configuration interface allows to encrypt the content according to well defined standards.
 
-ONVIF™
-
 5
-
-–8–
-
-RecordingControl – Ver. 25.06
 
 Recording control
 
@@ -517,6 +523,13 @@ active, the device uses a priority scheme to select between the tracks defined i
 may change the mode of recording jobs at any time, thereby providing means to implement features like alarm
 recording or manual recording. A recording job with schedule token shall only be recording when the associated
 schedule is active.
+
+ONVIF™
+
+–9–
+
+RecordingControl – Ver. 25.12
+
 For the cases where media attributes of a source are changed for an active recording job, the recording state
 is outside the scope of this specification.
 The recording job relies on the receiver service for receiving the data from other devices through receiver
@@ -526,13 +539,6 @@ auto create and auto delete receiver objects. Autocreation is signalled with the
 recording job configuration structure. Receiver objects created this way shall be automatically deleted when
 no recording job uses them anymore. A receiver object that is automatically created shall have all its fields set
 to empty values. The client should configure the receiver object after it has created the recording job.
-
-ONVIF™
-
-–9–
-
-RecordingControl – Ver. 25.06
-
 The ONVIF view of recordings is a logical one which is independent of the way recordings are physically stored
 on disk. For instance, some camera implementations realise alarm recording by creating a distinct file on a FAT
 file system for each alarm that occurs. Although each file could be represented as a different ONVIF recording,
@@ -574,6 +580,10 @@ Storage
 
 Token of a storage configuration.
 
+ONVIF™
+
+– 10 –
+
 Format
 
 Format of the recording. Examples are MP4 and CMAF.
@@ -598,11 +608,7 @@ Encryption
 
 Optional encryption configuration.
 
-ONVIF™
-
-– 10 –
-
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 See Annex B for ONVIF defined recording formats.
 
@@ -642,6 +648,13 @@ RecordingToken: Identifies the recording to which this job shall store the recei
 Mode: If it is idle, nothing shall happen. If it is active and the recording job has the highest priority, the device
 shall try to obtain data from the receivers. A client shall use GetRecordingJobState to determine if data transfer
 is really taking place. The only valid values for Mode shall be “Idle” and “Active”.
+
+ONVIF™
+
+– 11 –
+
+RecordingControl – Ver. 25.12
+
 Priority: This shall be a non-negative number. If there are multiple recording jobs that store data to the same
 track, the device shall only store data for the recording job with the highest priority. The priority is specified per
 recording job, but the device shall determine the priority of each track individually. If there are multiple recording
@@ -649,13 +662,6 @@ jobs with the same highest priority it is undefind which of them is activated.
 The value 0 indicates the lowest priority. Higher values shall indicate a higher priority.
 ScheduleToken: This attribute adds an additional requirement for activating the recording job. If this optional
 field is provided the job shall only record if the schedule exists and is active.
-
-ONVIF™
-
-– 11 –
-
-RecordingControl – Ver. 25.06
-
 EventFilter: This set of parameters allows to control recording depending on a given set of event condititions.
 SourceToken: This field shall be a reference to the source of the data. The type of the source is determined
 by the attribute Type in the SourceToken structure. If Type is http://www.onvif.org/ver10/schema/Receiver, the
@@ -701,19 +707,19 @@ A device shall at least record the event duration and the specified before and a
 nature of GOP structures it may record more.
 Note that non-property events result in an infinite short timespan. In such cases at least one I-Frame shall be
 recorded, optionally extended by before and after timespans.
+
+ONVIF™
+
+– 12 –
+
+RecordingControl – Ver. 25.12
+
 A recording job of a device supporting both EventFilter and ScheduledRecording shall become active if both
 conditions are met.
 
 5.4 CreateRecording
 CreateRecording shall create a new recording.
 This method is optional. It shall be available if the Recording/DynamicRecordings capability is TRUE.
-
-ONVIF™
-
-– 12 –
-
-RecordingControl – Ver. 25.06
-
 REQUEST:
 
 •
@@ -778,6 +784,13 @@ that are automatically created using the AutoCreateReceiver field of the recordi
 and are not used in any other recording job.
 This method is optional. It shall be available if the Recording/DynamicRecordings capability is TRUE.
 This method has no effect on the data stored in external targets for e.g. Object Storage S3.
+
+ONVIF™
+
+– 13 –
+
+RecordingControl – Ver. 25.12
+
 REQUEST:
 
 •
@@ -787,13 +800,6 @@ Identifies the recording that shall be deleted.
 
 RESPONSE:
 This is an empty message.
-
-ONVIF™
-
-– 13 –
-
-RecordingControl – Ver. 25.06
-
 FAULTS:
 
 •
@@ -833,11 +839,13 @@ READ_MEDIA
 
 5.7 SetRecordingConfiguration
 SetRecordingConfiguration shall change the configuration of a recording
+Key/KID and AsymmetricEncryption elements of the encryption entry shall be mutually exclusive.
+
 REQUEST:
 
 •
 
-RecordingToken [RecordingToken ]
+RecordingToken [RecordingToken]
 Identifies the recording that shall be changed.
 
 •
@@ -847,6 +855,13 @@ The new configuration for the recording.
 
 RESPONSE:
 This is an empty message.
+
+ONVIF™
+
+– 14 –
+
+RecordingControl – Ver. 25.12
+
 FAULTS:
 
 •
@@ -859,14 +874,13 @@ The configuration is invalid.
 env:Sender - ter:InvalidArgVal - ter:NoRecording
 The RecordingToken does not reference an existing recording.
 
+•
+
+env:Sender - ter:InvalidArgVal - ter:AmbiguousConfiguration
+Key/KID and AsymmetricEncryption are mutually exclusive configuration parameters
+
 ACCESS CLASS:
 ACTUATE
-
-ONVIF™
-
-– 14 –
-
-RecordingControl – Ver. 25.06
 
 5.8 GetRecordingConfiguration
 GetRecordingConfiguration shall retrieve the recording configuration for a recording
@@ -925,6 +939,12 @@ FAULTS:
 env:Sender - ter:InvalidArgVal - ter:NoRecording
 The RecordingToken does not reference an existing recording.
 
+ONVIF™
+
+– 15 –
+
+RecordingControl – Ver. 25.12
+
 •
 
 env:Receiver - ter:Action - ter:MaxTracks
@@ -943,13 +963,6 @@ This optional method is not implemented.
 
 ACCESS CLASS:
 ACTUATE
-
-ONVIF™
-
-– 15 –
-
-RecordingControl – Ver. 25.06
-
 A TrackToken in itself does not uniquely identify a specific track. Tracks within different recordings may have
 the same TrackToken.
 
@@ -1005,7 +1018,13 @@ REQUEST:
 RecordingToken [tt:RecordingReference ]
 Identifies the recording.
 
+ONVIF™
+
 •
+
+– 16 –
+
+RecordingControl – Ver. 25.12
 
 TrackToken [tt:TrackReference]
 Identifies the track within the recording from which to get the track configuration
@@ -1024,13 +1043,7 @@ FAULTS:
 env:Sender - ter:InvalidArgVal - ter:NoRecording
 The RecordingToken does not reference an existing recording.
 
-ONVIF™
-
 •
-
-– 16 –
-
-RecordingControl – Ver. 25.06
 
 env:Sender - ter:InvalidArgVal - ter:NoTrack
 The TrackToken does not reference an existing track of the recording.
@@ -1085,6 +1098,13 @@ CreateRecordingJob shall create a new recording job. A device shall support addi
 recording for which it signals Spare jobs via GetRecordingOptions.
 A device should reject a configuration that neither includes a source with a source token nor
 AutoCreateReceiver set to true.
+
+ONVIF™
+
+– 17 –
+
+RecordingControl – Ver. 25.12
+
 If the configuration doesn not include any tracks a device should assign all tracks of the corresponding
 recording.
 REQUEST:
@@ -1101,13 +1121,7 @@ RESPONSE:
 JobToken [tt:RecordingJobReference ]
 Identifies the created recording job.
 
-ONVIF™
-
 •
-
-– 17 –
-
-RecordingControl – Ver. 25.06
 
 JobConfiguration [tt:RecordingJobConfiguration]
 The configuration as it used by the device. This may be different from the JobConfiguration passed
@@ -1166,6 +1180,12 @@ The JobToken does not reference an existing job.
 ACCESS CLASS:
 ACTUATE
 
+ONVIF™
+
+– 18 –
+
+RecordingControl – Ver. 25.12
+
 5.15 GetRecordingJobs
 GetRecordingJobs shall return a list of all the recording jobs in the device.
 REQUEST:
@@ -1176,12 +1196,6 @@ RESPONSE:
 
 JobItem– optional, unbounded [tt:GetRecordingJobsResponseItem]
 Identifies a job in the device and holds its current configuration.
-
-ONVIF™
-
-– 18 –
-
-RecordingControl – Ver. 25.06
 
 FAULTS:
 None
@@ -1238,6 +1252,12 @@ ACTUATE
 SetRecordingJobConfiguration shall implicitly delete any receiver objects that were created automatically if
 they are no longer used as a result of changing the recording job configuration.
 
+ONVIF™
+
+– 19 –
+
+RecordingControl – Ver. 25.12
+
 5.17 GetRecordingJobConfiguration
 GetRecordingJobConfiguration shall return the current configuration for a recording job.
 REQUEST:
@@ -1253,12 +1273,6 @@ RESPONSE:
 
 JobConfiguration [tt:RecordingJobConfiguration}
 The current configuration of the recording job.
-
-ONVIF™
-
-– 19 –
-
-RecordingControl – Ver. 25.06
 
 FAULTS:
 
@@ -1316,7 +1330,13 @@ calls that effect the RecordingJobMode, e.g. SetRecordingJobMode,
 
 internal recording engine state changes,
 
+ONVIF™
+
 •
+
+– 20 –
+
+RecordingControl – Ver. 25.12
 
 changes in the recorded local media profile or
 ○
@@ -1336,12 +1356,6 @@ RESPONSE:
 
 State [tt:RecordingJobReference]
 The state of the recording job.
-
-ONVIF™
-
-– 20 –
-
-RecordingControl – Ver. 25.06
 
 FAULTS:
 
@@ -1383,6 +1397,13 @@ Destination shall indicate the destination track
 State (as part of RecordingJobTrackState) shall provide the job state of the track. The valid values of state
 shall be “Idle”, “Active” and “Error”. If state equals “Error”, the Error field may be filled in with an implementation
 defined value.
+
+ONVIF™
+
+– 21 –
+
+RecordingControl – Ver. 25.12
+
 Error, optional string describing the error state. The string should be in English. The following values are
 predefined:
 “Incompatible Stream” – The stream cannot be recorded because the encoding does not match to previously
@@ -1397,10 +1418,6 @@ PartiallyActive
 
 The state of some sub-nodes are “active” and some sub-nodes are “idle”
 
-ONVIF™
-
-– 21 –
-
 Active
 
 The state of all sub-nodes is “Active”
@@ -1408,8 +1425,6 @@ The state of all sub-nodes is “Active”
 Error
 
 At least one of the sub-nodes has state “Error”
-
-RecordingControl – Ver. 25.06
 
 5.20 GetRecordingOptions
 GetRecordingOptions returns information for a recording identified by the RecordingToken. The information
@@ -1458,6 +1473,13 @@ READ_MEDIA
 
 5.21 ExportRecordedData
 ExportRecordedData exports the selected recordings to the given storage target.
+
+ONVIF™
+
+– 22 –
+
+RecordingControl – Ver. 25.12
+
 A device that indicates a capability of SupportedExportFileFormats shall support this command. For the
 parameter FileFormat it shall accept any format that it advertises via the SupportedExportFileFormats
 capability.
@@ -1473,10 +1495,6 @@ Specifies start time for the exporting.
 EndPoint – optional [xs:dateTime]
 Specifies end time for the exporting.
 
-ONVIF™
-
-– 22 –
-
 •
 
 SearchScope [tt:SearchScope]
@@ -1491,8 +1509,6 @@ Indicates which export file format to be used.
 
 StorageDestination [tt:StorageReferencePath]
 Indicates the target storage and relative directory path.
-
-RecordingControl – Ver. 25.06
 
 RESPONSE:
 
@@ -1539,6 +1555,12 @@ REQUEST:
 OperationToken [tt:ReferenceToken]
 Identifies the ExportRecordedData operation to stop.
 
+ONVIF™
+
+– 23 –
+
+RecordingControl – Ver. 25.12
+
 RESPONSE:
 
 •
@@ -1552,12 +1574,6 @@ percentage is normalized between 0.0 and 1.0 where 1.0 indicates 100% completion
 FileProgressStatus [tt:ArrayOfFileProgress]
 An array of file names and an individual progress for each file. The value of completion percentage is
 normalized between 0.0 and 1.0 where 1.0 indicates 100% completion of the file upload.
-
-ONVIF™
-
-– 23 –
-
-RecordingControl – Ver. 25.06
 
 FAULTS:
 env:Sender - ter:InvalidArgVal - ter:BadConfiguration
@@ -1604,19 +1620,19 @@ When the temporary override is active, the device should attempt to close its cu
 then shall record further segments with the new duration provided in this command. The override shall be active
 for the duration specified in the command, once the command expires the device shall resume recording with
 the original segment duration on its next segment. The override duration shall not exceed 1 hour.
+
+ONVIF™
+
+– 24 –
+
+RecordingControl – Ver. 25.12
+
 When a new override request is sent before the previous override has expired, the new override shall replace
 the previous override and the new expiration shall apply.
 The active override value, if any exists, shall be shown in the corresponding RecordingConfiguration and
 may not persist after a device restart. If the recording configuration is modified while an override is active, the
 override shall be removed.
 A device that indicates support for OverrideSegmentDuration shall support this command.
-
-ONVIF™
-
-– 24 –
-
-RecordingControl – Ver. 25.06
-
 REQUEST:
 
 •
@@ -1678,6 +1694,12 @@ DynamicRecordings
 Indication if the device supports dynamic creation and deletion of
 recordings.
 
+ONVIF™
+
+– 25 –
+
+RecordingControl – Ver. 25.12
+
 DynamicTracks
 
 Indication if the device supports dynamic creation and deletion of tracks.
@@ -1688,15 +1710,9 @@ Indication which encodings are supported for recording. The list
 may contain one or more enumeration values of tt:VideoEncoding
 and tt:AudioEncoding. For encodings that are neither defined
 in tt:VideoEncoding nor tt:AudioEncoding the device shall use
-
-ONVIF™
-
-– 25 –
-
-RecordingControl – Ver. 25.06
-
 the IANA defintions http://www.iana.org/assignments/media-types/mediatypes.xhtml. Note, that a device without audio support shall not return audio
 encodings.
+
 MaxRate
 
 Maximum supported bit rate for all tracks of a recording in kBit/s.
@@ -1761,7 +1777,8 @@ SupportedEncryptionModes
 
 Supported encryption modes. See tt:EncryptionMode for a list of definitions.
 
-OverrideSegmentDurationSupported
+OverrideSegmentDuration
+
 Indicates that the device supports the OverrideSegmentDuration command.
 
 5.26 Events
@@ -1774,18 +1791,19 @@ event:
 Topic: tns1:RecordingConfig/JobState
 <tt:MessageDescription IsProperty="true">
 <tt:Source>
-<tt:SimpleItemDescription Name="RecordingJobToken" Type="tt:RecordingJobReference"/>
-</tt:Source>
-<tt:Data>
-<tt:SimpleItemDescription Name="State" Type="xs:String"/>
-<tt:ElementItemDescription Name="Information" Type="tt:RecordingJobStateInformation"/>
 
 ONVIF™
 
 – 26 –
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
+<tt:SimpleItemDescription Name="RecordingJobToken" Type="tt:RecordingJobReference"/>
+</tt:Source>
+<tt:Data>
+<tt:SimpleItemDescription Name="State" Type="xs:String"/>
+<tt:ElementItemDescription Name="Information"
+Type="tt:RecordingJobStateInformation"/>
 </tt:Data>
 </tt:MessageDescription>
 
@@ -1835,17 +1853,20 @@ Topic: tns1:RecordingConfig/DeleteTrackData
 <tt:SimpleItemDescription Name="RecordingToken" Type="tt:RecordingReference"/>
 <tt:SimpleItemDescription Name="TrackToken" Type="tt:TrackReference"/>
 </tt:Source>
+
+ONVIF™
+
+– 27 –
+
+RecordingControl – Ver. 25.12
+
 <tt:Data>
 <tt:SimpleItemDescription Name="StartTime" Type="xsDateTime"/>
 <tt:SimpleItemDescription Name="EndTime" Type="xsDateTime"/>
 </tt:Data>
 </tt:MessageDescription>
 
-ONVIF™
-
-– 27 –
-
-RecordingControl – Ver. 25.06
+This event is not applicable for data removal from object storage targets for e.g. Object Storage S3.
 
 5.26.4 Recording and track creation and deletion
 Whenever a recording is created, a device shall provide the following event:
@@ -1893,18 +1914,18 @@ Topic: tns1:RecordingConfig/DeleteTrack
 5.27 Examples
 5.27.1 Example 1: setup recording of a single camera
 There are two steps involved. The first step is to configure the NVS
-; Create recording (this implicitly creates an A, V and M track)
-RecordToken = CreateRecording(RecordConfiguration)
-; The tracktokens are predefined. We don’t have to find them on the device
-TrackToken1 = “VIDEO001”
-TrackToken2 = “AUDIO001”
 
 ONVIF™
 
 – 28 –
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
+; Create recording (this implicitly creates an A, V and M track)
+RecordToken = CreateRecording(RecordConfiguration)
+; The tracktokens are predefined. We don’t have to find them on the device
+TrackToken1 = “VIDEO001”
+TrackToken2 = “AUDIO001”
 TrackToken3 = “META001”
 ; Create a recording job, assume that we set mode to idle, auto create receiver
 JobToken, ActualJobConfig = CreateRecordingJob(JobConfiguration)
@@ -1948,7 +1969,7 @@ SetRecordingJobMode(JobToken, Active)
 
 – 29 –
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 Annex A.
 Example scenario for Recording Job Priority (Informative)
@@ -1989,7 +2010,7 @@ Recording Job ‘J2’ = IDLE
 
 – 30 –
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 Annex B.
 Object storage recording format (Normative)
@@ -2058,7 +2079,7 @@ spans according to the rules of the configured Format.
 
 – 31 –
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 B.3 Segments
 When a span is opened, the device shall also open a new segment for this span. Inversely, when a span is
@@ -2067,7 +2088,9 @@ segment of this span reaches the SegmentDuration configured for the recording, t
 open segment of this span and open a new segment for this span. When closing the open segment of a span
 and opening a new segment for this span, there shall be no time gap between the two segments. Note that
 the actual segment duration may vary and can be plus or minus one GOP size from the configured duration
-because a segment must start with an I-Frame.
+because a segment shall start with an I-Frame. Depending on resource constraints, the device may close the
+segment earlier than the configured SegmentDuration if the requested length cannot be achieved. This might
+happen, for example, if the device runs out of available memory to generate the segment.
 The device shall generate each segment as a fragmented MP4 file according to ISO/IEC 14496-12, the ISO
 base media file format. A segment shall contain recorded media for the time it was open. The recording formats
 provide specification about segment types, their contents, and restrictions on the ISO base media file format
@@ -2135,14 +2158,15 @@ secfrac represents the optional fractional seconds with a precision of up to 6 d
 The device shall replace counter with a span-dependant counter set to 0 for a new span and incremented by
 1 when closing a segment of this span. The device shall replace extension with the extension defined by the
 type of span the segment belongs to.
-Note: date is conformant to the extended date format defined in ISO 8601-1. time is not conformant to the
-extended time format defined in ISO 8601-1.
 
 ONVIF™
 
 – 32 –
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
+
+Note: date is conformant to the extended date format defined in ISO 8601-1. time is not conformant to the
+extended time format defined in ISO 8601-1.
 
 B.5 Span end objects
 To store the end time of a span, the device should store an additional empty object when closing a span. The
@@ -2156,11 +2180,12 @@ extension = span-extension "_end"
 The device shall replace span-extension with the extension defined by the span type.
 
 B.6 Recording format MP4
-If the Format configured for a recording is MP4, the device shall follow the rules given in this section.
+If the Format configured for a recording is multiplexed MP4, the device shall follow the rules given in this section.
 The device shall open a single span for an active recording containing all tracks of the recording. The device
 shall use mp4 as the extension for this span type. The device shall upload each segment object belonging to
-a span of this type with the content type video/mp4. The device should include the codecs parameter in the
-content type according to RFC 6381.
+a span of this type with the content type video/mp4. This content type is also used for audio-only recordings
+or metadata-only recordings. The device should include the codecs parameter in the content type according
+to RFC 6381.
 The MovieBox contained in a segment shall not reference any samples. A segment shall contain a
 MovieFragmentRandomAccessBox as the last box. The MovieFragmentRandomAccessBox shall provide
 references for all tracks and their applicable MovieFragmentBox instances.
@@ -2192,13 +2217,11 @@ illustrated in Figure B.3.
 – 33 –
 
 Video segment
-
-RecordingControl – Ver. 25.06
-
-Video segment
-
 Audio segment
 
+RecordingControl – Ver. 25.12
+
+Video segment
 Audio segment
 
 ...
@@ -2208,20 +2231,224 @@ Metadata segment Metadata segment ...
 Figure B.3: Alignment of different segment types
 
 B.8 Encryption
-A device signaling support for recording to an external target with encryption shall support writing encrypted
-files according to ISO/IEC 23001-7 (common encryption in ISO base media file format files). Each Encryption
-entry configured for a recording covers a distinct set of tracks for which to apply the encryption, identified by
-the Track element. If an encryption entry contains no Track elements, it covers all tracks of the recording. If
-an encryption entry contains one or more Track elements, it covers the tracks indicated by the track tokens
-contained in these elements. The device shall encrypt the covered tracks with the scheme given by the Mode
-configured for the encryption entry:
+A device signaling support for encrypted recording via SupportedEncryptionModes shall support creating
+encrypted segments according to [ISO/IEC 23001-7]. Each Encryption entry configured for a recording covers
+a distinct set of tracks for which to apply the encryption, identified by the Track element. If an encryption entry
+does not contain any Track element, all tracks of the recording shall be encrypted using the same encryption
+entry. If an encryption entry contains one or more Track elements, specified tracks indicated by the track tokens
+of the recording shall be encrypted using the encryption entry. The device shall encrypt the tracks with the
+scheme given by the Mode configured for the encryption entry:
 CENC AES-CTR mode full sample and video NAL Subsample encryption, defined in ISO/IEC 23001-7.
 CBCS AES-CBC mode partial video NAL pattern encryption, defined in ISO/IEC 23001-7.
-The device shall create an individual initialization vector for each segment. The device shall encrypt with the
-Key configured for the encryption entry as the encryption key. The device shall interpret the KID configured for
-the encryption entry as a 16-byte hexadecimal value and use this value as the key identifier.
-If an encryption entry is reconfigured for an active recording, the device shall continue to use the old
-configuration for any open segments and shall start to use the new configuration for new segments.
+The device shall create a unique initialization vector for each fragment present in a segment. Each encrypted
+segment shall include the moov box containing the required PSSH box(es) according to the encryption entry
+configuration. If an encryption entry is reconfigured for an active recording, the device shall continue to use the
+old configuration for any open segments and shall start to use the new configuration for new segments.
+
+B.8.1 CENC Initialization Data Format
+All encrypted segments shall include one PSSH box following the [W3C 'cenc' Initialization Data Format].
+Additional types of 'PSSH' boxes may be present to support alternative DRM systems.
+
+B.8.1.1 Syntax
+aligned(8) class ProtectionSystemSpecificHeaderBox extends FullBox('pssh', version=1,
+flags=0)
+{
+unsigned int(8)[16] SystemID;
+unsigned int(32) KID_count;
+for (i=1; i <= KID_count; i++) {
+unsigned int(8)[16] KID;
+}
+unsigned int(32) DataSize = 0;
+}
+
+See W3C "cenc" Initialization Data Format [https://www.w3.org/TR/eme-initdata-cenc] for an example of this
+box.
+
+B.8.1.2 Semantics
+Version shall be '1'.
+Flags shall be '0'.
+SystemID shall be '1077efec-c0b2-4d02-ace3-3c1e52e2fb4b'.
+KID_count be equal to the number of different keys used in the segment.
+
+ONVIF™
+
+– 34 –
+
+RecordingControl – Ver. 25.12
+
+KID, one for each RecordingEncryption.
+DataSize shall be '0'.
+
+B.8.2 Asymmetric key system
+When AsymmetricEncryption is set, the device shall generate its own key and encrypt each segment with it.
+A KID shall also be generated for use in the PSSH boxes. If the KeyRotationDuration is set, then the device
+shall generate a new Key and KID at the specified time interval, but still use the current key until the segment
+is finished. New segments shall use the latest generated Key for its encryption.
+The device shall also include in each segment an AsymmetricKeySystemHeaderBox PSSH box containing the
+information needed to play the segment. This box contains the KID, the encrypted symmetric key and the list of
+certificates that can be used to decrypt it. The symmetric key is encrypted once for each configured certificate
+using their public key. The client needs access to at least one of the certificates' private key to decrypt it, either
+directly or through a key server. The client can then decrypt the frames using this symmetric key. If tracks are
+encrypted using different keys, then one AsymmetricKeySystemHeaderBox shall be present per KID.
+Additional 'PSSH' boxes may be present to support alternative DRM systems. Note that DRM systems and
+client implementations are outside the scope of this specification.
+
+B.8.2.1 Syntax
+aligned(8) class AsymmetricKeySystemHeaderBox extends FullBox('pssh', version=1, flags=0)
+{
+unsigned int(8)[16] SystemID;
+unsigned int(32) KID_count = 1;
+unsigned int(8)[16] KID;
+unsigned int(32) DataSize;
+unsigned int(32) EncryptedKeyEntryCount;
+for (i=1; i <= EncryptedKeyEntryCount; i++) {
+unsigned int(16) CertificateThumbprintAlgorithm;
+unsigned int(32) CertificateThumbprintSize;
+unsigned int(8)[CertificateThumbprintSize] CertificateThumbprint;
+unsigned int(8) EncryptionVersion;
+if (EncryptionVersion == 1) {
+unsigned int(16) EncryptedSymmetricKeySize;
+unsigned int(8)[EncryptedSymmetricKeySize] EncryptedSymmetricKey;
+} else if (EncryptionVersion == 2) {
+unsigned int(16) HpkeKem;
+unsigned int(16) HpkeKdf;
+unsigned int(16) HpkeAead;
+unsigned int(8)[EncapsulatedSharedSecretSize] EncapsulatedSharedSecret;
+unsigned int(16) EncryptedSymmetricKeySize;
+unsigned int(8)[EncryptedSymmetricKeySize] EncryptedSymmetricKey;
+}
+}
+}
+
+B.8.2.2 Semantics
+Version shall be '1'.
+Flags shall be '0'.
+SystemID shall be 'a4852bd0-80fc-484e-b9e1-78a74d49f5ce'.
+KID_count shall be '1'.
+KID is the generated UUID by the device. This KID should be the same in all segments until the symmetric
+
+key changes.
+
+ONVIF™
+
+– 35 –
+
+RecordingControl – Ver. 25.12
+
+DataSize is the size in bytes of all the other fields present in this box following this field.
+EncryptedKeyEntryCount Number of entries containing encryption information required to decrypt the
+
+symmetric key. Shall be 1 or more.
+
+CertificateThumbprintAlgorithm defines the algorithm identifier used to compute the certificate thumbprint.
+The valid identifiers are 1 for SHA-1, 2 for SHA-256.
+CertificateThumbprintSize Size of the CertificateThumbprint field.
+CertificateThumbprint Thumbprint of the certificate used to encrypted the symmetric key.
+EncryptionVersion defines the encryption strategy used to encrypt the symmetric key for this certificate.
+HpkeKem defines the KEM algorithm identifier according to IANA used to encrypt the key with the current
+
+certificate.
+
+HpkeHkdf defines the HKDF algorithm identifier according to IANA used to encrypt the key with the current
+
+certificate.
+
+HpkeAead defines the AEAD algorithm identifier according to IANA used to encrypt the key with the current
+
+certificate.
+
+EncapsulatedSharedSecretSize is implicitly defined to the Nenc parameter of the HpkeKem algorithm.
+EncapsulatedSharedSecret is the HPKE shared secret value necessary to decrypt the encrypted key
+
+according to RFC 9180.
+
+EncryptedSymmetricKeySize Size of the EncryptedSymmetricKey field. Valid values depend on the
+
+encryption algorithm used by the certificate.
+
+EncryptedSymmetricKey The symmetric key (identified by KID) used for frame encryption, encrypted using
+
+the public key of the certificate according to the encryption version.
+
+B.8.2.3 Encryption Version 1
+This version is defined for use when the certificate contains an RSA public key. When using this version, the
+symmetric key is directly encrypted using the public key of the certificate and the RSA-OEAP padding scheme
+as defined in [RFC 5652].
+
+B.8.2.4 Encryption Version 2
+This version is defined for the use of the HPKE algorithm as defined in [RFC 9180]. It is used when the
+certificate contains an EC public key. Using the public key of the certificate and the algorithms defined in the
+HpkeKem, HpkeHkdf, and HpkeAead fields, the EncapsulatedSharedSecret field is derived using the Base
+mode of HPKE.
+
+ONVIF™
+
+– 36 –
+
+RecordingControl – Ver. 25.12
+
+Encryption
+Inputs
+
+Decryption
+
+Certificate
+Public Key
+
+Intermediates
+
+Private
+Key
+
+Encapsulated
+Shared Secret
+
+Outputs
+
+KEM
+
+KEM
+
+Shared Secret
+
+Shared Secret
+
+Encapsulated
+Shared Secret
+
+KDF
+
+KDF
+
+Key Encryption
+Key
+
+Base Nonce
+
+Symmetric
+Key
+
+Encrypted
+Symmetric
+Key
+
+AEAD
+
+Key Encryption
+Key
+
+Base Nonce
+
+Encrypted
+Symmetric
+Key
+
+AEAD
+
+Symmetric
+Key
+
+Figure B.4: Encryption (Left) and Decryption (Right) using the HPKE algorithm
 
 B.9 Object attributes
 The device may store additional attributes defined in Table B.1 as object metadata when uploading segment
@@ -2250,26 +2477,37 @@ Identifier of the physical device
 
 String
 
-EventTopic
-
-Topic of the event that triggered the recording job
+Topic of the event that triggered the
+recording job
 
 String
 
-Duration
-
-Duration of the segment
+Exact duration of the segment. Sum of
+the duration of each frame in the file, if
 
 ISO 8601-1
 
-FullContentType
-Combined content type of all media types
+EventTopic
 
-contained in the recording
+Duration
+
+ONVIF™
+Key
+
+– 37 –
+
+RecordingControl – Ver. 25.12
+
+Value
+
+Format
+
+there are multiple tracks the video track
+shall be used if present.
+Combined content type of all media
+types contained in the recording
 
 video/mp4 content type with codecs
-
-parameter according to RFC 6381
 
 VideoChannel
 
@@ -2285,29 +2523,41 @@ Integer
 
 VideoWidth
 
-Video width in pixels from VisualSampleEntry
+Video
+
+FullContentType
+
+width
+
+in
+
+parameter according to RFC 6381
+
+pixels
+
+from
 
 Integer
 
-ONVIF™
+pixels
 
-– 34 –
+from
 
-RecordingControl – Ver. 25.06
+Integer
 
-Key
-
-Value
-
-Format
-
+VisualSampleEntry
 VideoHeight
 
-Video height in pixels from VisualSampleEntry
+Video
 
-Integer
+height
 
-VideoFramerateAverage video framerate in frames per second
+in
+
+VisualSampleEntry
+
+Average video framerate in frames per
+second
 
 Float
 
@@ -2324,13 +2574,96 @@ Audio bitrate in kilobits per second
 Integer
 
 AudioSampleRate
+
 Audio sample rate in kilohertz
 
 Integer
 
+The timescale (or clock) from the
+segment in hertz
+
+Integer (See B.9.1)
+
+Seek table to efficiently locate file
+fragments and seek in the file
+
+String (See B.9.2)
+
+VideoFramerate
+
+Timescale
+
+SeekTable
+
 For storage target systems that do not allow attribute changes during write the attribute Duration should be
 omitted when the total duration of the file may change while it is written e.g. due to an override segment duration
 request.
+
+B.9.1 Timescale Attribute
+The value of the timescale property of the MediaHeaderBox in the segment as defined in ISO/IEC
+14496-12:2012 section 8.4.2. If there are multiple tracks in the segment each of these boxes shall all have the
+same timescale value. The MovieHeaderBox shall also have the same timescale value.
+
+B.9.2 SeekTable Attribute
+This seek table attribute is a string that contains the 'mfra' (Movie Fragment Random Access) box corresponding
+to the associated ISO file. It is encoded in base64 with padding according to RFC 4658. The binary format of
+the box is defined in ISO/IEC 14496-12:2012 section 8.8.9. This optional box has to be the last one at the end
+of the file. The optionally condensed copy allows the receiver to efficiently locate file fragments and seek in
+the file without the need to access the file itself.
+The size of the SeekTable should be limited to a reasonable access precision in the order of single digit seconds.
+Additionally the SeekTable should contain no more than twenty entries. When the SeekTable attribute is present
+it shall contain at least one entry for the very first sample of each track. The mfro box may be omitted in the
+SeekTable as it doesn't add any value, but the mfra length shall be updated accordingly.
+
+ONVIF™
+
+– 38 –
+
+'mfra' header
+
+'tfra' header
+
+RecordingControl – Ver. 25.12
+
+Entry count
+
+Entry[N]
+
+'mfro' bod
+
+4 bytes
+
+N x 12 bytes
+
+16 bytes
+
+8 bytes
+
+20 bytes
+
+time
+
+'moof' offset
+
+'traf' number
+
+'trun' number
+
+Sample number
+
+4 bytes
+
+4 bytes
+
+1 byte
+
+1 byte
+
+2 bytes
+
+Figure B.5: Typical structure of a Movie Fragment Random Access ('mfra') box
+The Timescale attribute shall be provided if the SeekTable attribute is present, as it is necessary to interpret
+the SeekTable.
 
 B.10 Examples
 Given the following storage configuration in a recording configuration:
@@ -2370,16 +2703,16 @@ site-2/2022-11-08/camera-5/15/08-23.989Z.0.m4a
 
 The key of a span end object for an audio span consisting of 1020 segments and ending on 2022-11-08 at
 16:34:11.779 (UTC) is:
-site-2/2022-11-08/camera-5/16/34-11.779Z.1020.m4a_end
-
-The key of a metadata segment object starting on 2022-11-08 at 15:08:23.692 (UTC) is:
 
 ONVIF™
 
-– 35 –
+– 39 –
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
+site-2/2022-11-08/camera-5/16/34-11.779Z.1020.m4a_end
+
+The key of a metadata segment object starting on 2022-11-08 at 15:08:23.692 (UTC) is:
 site-2/2022-11-08/camera-5/15/08-23.692Z.0.m4m
 
 The key of a span end object for a metadata span consisting of 1020 segments and ending on 2022-11-08
@@ -2388,9 +2721,9 @@ site-2/2022-11-08/camera-5/16/34-11.871Z.1020.m4m_end
 
 ONVIF™
 
-– 36 –
+– 40 –
 
-RecordingControl – Ver. 25.06
+RecordingControl – Ver. 25.12
 
 Annex C.
 Revision History
@@ -2565,5 +2898,18 @@ Melancon
 
 Add the possibility to temporary override of segment
 duration for Cloud Recording.
+
+25.12
+
+Dec-2025
+
+Maxime
+Bédard, Jose
+Melancon, Hans
+Busch, Sriram
+Bhetanabottla
+
+Add seektable and timescale attributes in cloud object
+metadata. Add frame Encryption for cloud recording.
 
 

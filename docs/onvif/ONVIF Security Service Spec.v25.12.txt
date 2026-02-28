@@ -2,18 +2,18 @@ ONVIF™
 
 –1–
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 ONVIF™
 Security Service Specification
-Version 25.06
-June 2025
+Version 25.12
+December, 2025
 
 ONVIF™
 
 –2–
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Copyright © 2008-2025 ONVIF™ All rights reserved.
 Recipients of this document may copy, distribute, publish, or display this document so long as this copyright notice, license and disclaimer
@@ -36,7 +36,7 @@ CORPORATION.
 
 –3–
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 CONTENTS
 1
@@ -124,140 +124,144 @@ General Structure ..............................................................
 5.2.6 Keystore Operations ........................................................................................................ 19
 5.2.6.1 Passphrase Management .......................................................................................... 19
 5.2.6.2 Key Management ...................................................................................................... 21
-5.2.6.3 Certificate Management ............................................................................................. 26
-5.2.6.4 CRL Management ..................................................................................................... 39
-5.2.6.5 Certification Path Validation Policy Management ......................................................... 41
-5.3 TLS Server ............................................................................................................................. 44
-5.3.1 Elements of the TLS Server ............................................................................................. 44
-5.3.2 Authorization of TLS authenticated connections ................................................................ 44
-5.3.3 TLS Server Operations .................................................................................................... 45
-5.3.3.1 AddServerCertificateAssignment ................................................................................ 45
+5.2.6.3 Certificate Management ............................................................................................. 25
+5.2.6.4 CRL Management ..................................................................................................... 38
+5.2.6.5 Certification Path Validation Policy Management ......................................................... 40
+5.3 TLS Server ............................................................................................................................. 43
+5.3.1 Elements of the TLS Server ............................................................................................. 43
+5.3.2 Authorization of TLS authenticated connections ................................................................ 43
+5.3.3 TLS Server Operations .................................................................................................... 44
+5.3.3.1 AddServerCertificateAssignment ................................................................................ 44
 
 ONVIF™
 
 –4–
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
-5.3.3.2 RemoveServerCertificateAssignment .......................................................................... 46
-5.3.3.3 ReplaceServerCertificateAssignment .......................................................................... 47
-5.3.3.4 GetAssignedServerCertificates ................................................................................... 48
-5.3.3.5 SetClientAuthenticationRequired ................................................................................ 48
-5.3.3.6 GetClientAuthenticationRequired ................................................................................ 48
-5.3.3.7 SetCnMapsToUser .................................................................................................... 49
-5.3.3.8 GetCnMapsToUser .................................................................................................... 49
-5.3.3.9 AddCertPathValidationPolicyAssignment .................................................................... 49
-5.3.3.10 RemoveCertPathValidationPolicyAssignment ............................................................ 50
-5.3.3.11 ReplaceCertPathValidationPolicyAssignment ............................................................. 50
-5.3.3.12 GetAssignedCertPathValidationPolicies .................................................................... 51
-5.3.3.13 SetEnabledTLSVersions .......................................................................................... 51
-5.3.3.14 GetEnabledTLSVersions .......................................................................................... 52
-5.4 IEEE 802.1X .......................................................................................................................... 52
-5.4.1 AddDot1XConfiguration .................................................................................................... 52
-5.4.2 GetAllDot1XConfigurations ............................................................................................... 54
-5.4.3 GetDot1XConfiguration ..................................................................................................... 54
-5.4.4 DeleteDot1XConfiguration ................................................................................................ 54
-5.4.5 SetNetworkInterfaceDot1XConfiguration ............................................................................ 55
-5.4.6 GetNetworkInterfaceDot1XConfiguration ........................................................................... 56
-5.4.7 DeleteNetworkInterfaceDot1XConfiguration ....................................................................... 56
-5.5 Media Signing ........................................................................................................................ 57
-5.5.1 Overview ......................................................................................................................... 57
-5.5.2 AddMediaSigningCertificateAssignment ............................................................................. 57
-5.5.3 RemoveMediaSigningCertificateAssignment ...................................................................... 58
-5.5.4 GetAssignedMediaSigningCertificates ............................................................................... 58
-5.6 Autorization Server Configuration ............................................................................................ 59
-5.6.1 GetAuthorizationServerConfigurations ............................................................................... 59
-5.6.2 CreateAuthorizationServerConfiguration ............................................................................ 59
+5.3.3.2 RemoveServerCertificateAssignment .......................................................................... 45
+5.3.3.3 ReplaceServerCertificateAssignment .......................................................................... 46
+5.3.3.4 GetAssignedServerCertificates ................................................................................... 47
+5.3.3.5 SetClientAuthenticationRequired ................................................................................ 47
+5.3.3.6 GetClientAuthenticationRequired ................................................................................ 47
+5.3.3.7 SetCnMapsToUser .................................................................................................... 48
+5.3.3.8 GetCnMapsToUser .................................................................................................... 48
+5.3.3.9 AddCertPathValidationPolicyAssignment .................................................................... 48
+5.3.3.10 RemoveCertPathValidationPolicyAssignment ............................................................ 49
+5.3.3.11 ReplaceCertPathValidationPolicyAssignment ............................................................. 49
+5.3.3.12 GetAssignedCertPathValidationPolicies .................................................................... 50
+5.3.3.13 SetEnabledTLSVersions .......................................................................................... 50
+5.3.3.14 GetEnabledTLSVersions .......................................................................................... 51
+5.4 IEEE 802.1X .......................................................................................................................... 51
+5.4.1 AddDot1XConfiguration .................................................................................................... 51
+5.4.2 GetAllDot1XConfigurations ............................................................................................... 53
+5.4.3 GetDot1XConfiguration ..................................................................................................... 53
+5.4.4 DeleteDot1XConfiguration ................................................................................................ 53
+5.4.5 SetNetworkInterfaceDot1XConfiguration ............................................................................ 54
+5.4.6 GetNetworkInterfaceDot1XConfiguration ........................................................................... 55
+5.4.7 DeleteNetworkInterfaceDot1XConfiguration ....................................................................... 55
+5.5 Media Signing ........................................................................................................................ 56
+5.5.1 Overview ......................................................................................................................... 56
+5.5.2 AddMediaSigningCertificateAssignment ............................................................................. 56
+5.5.3 RemoveMediaSigningCertificateAssignment ...................................................................... 57
+5.5.4 GetAssignedMediaSigningCertificates ............................................................................... 57
+5.6 Autorization Server Configuration ............................................................................................ 58
+5.6.1 GetAuthorizationServerConfigurations ............................................................................... 58
+5.6.2 CreateAuthorizationServerConfiguration ............................................................................ 58
 5.6.3 SetAuthorizationServerConfiguration ................................................................................. 59
-5.6.4 DeleteAuthorizationServerConfiguration ............................................................................ 60
-5.7 JWT-based authentication ....................................................................................................... 60
-5.7.1 GetJWTConfiguration ....................................................................................................... 60
-5.7.2 SetJWTConfiguration ....................................................................................................... 61
-5.8 Capabilities ............................................................................................................................. 61
-5.8.1 GetServiceCapabilities ..................................................................................................... 61
-5.8.2 Keystore Capabilities ....................................................................................................... 62
-5.8.3 TLS Server Capabilities ................................................................................................... 63
-5.8.4 IEEE 802.1X Capabilities ................................................................................................. 64
-5.8.5 Media Signing Capabilities ............................................................................................... 64
-5.8.6 Authorization Server Capabilities ...................................................................................... 64
-5.8.7 Capability-implied Requirements ....................................................................................... 65
-5.9 Events .................................................................................................................................... 70
-5.9.1 Key Status ....................................................................................................................... 70
+5.6.4 DeleteAuthorizationServerConfiguration ............................................................................ 59
+5.7 JWT-based authentication ....................................................................................................... 59
+5.7.1 GetJWTConfiguration ....................................................................................................... 59
+5.7.2 SetJWTConfiguration ....................................................................................................... 60
+5.8 Capabilities ............................................................................................................................. 60
+5.8.1 GetServiceCapabilities ..................................................................................................... 60
+5.8.2 Keystore Capabilities ....................................................................................................... 61
+5.8.3 TLS Server Capabilities ................................................................................................... 62
+5.8.4 IEEE 802.1X Capabilities ................................................................................................. 63
+5.8.5 Media Signing Capabilities ............................................................................................... 63
+5.8.6 Authorization Server Capabilities ...................................................................................... 63
+5.8.7 Capability-implied Requirements ....................................................................................... 64
+5.9 Events .................................................................................................................................... 67
+5.9.1 Key Status ....................................................................................................................... 67
 5.10
 
-Service specific data types .................................................................................................... 70
+Service specific data types .................................................................................................... 68
 
 6
 
 Security Considerations
 
-70
+68
 
 7
 
 Design Rationale
 
-72
+69
 
 7.1
 
-General Design Goals ............................................................................................................ 72
+General Design Goals ............................................................................................................ 69
 
 7.2
 
-Keystore ................................................................................................................................. 72
+Keystore ................................................................................................................................. 69
 
 7.3
 
-TLS Server ............................................................................................................................. 73
+TLS Server ............................................................................................................................. 70
 
 Annex A
 
 JWT Content example
 
-74
+71
 
 ONVIF™
 
 –5–
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Annex B
 
 JWT over SCTP example
 
-75
+72
 
 Annex C
 
 JWT over HTTPS example
 
-76
+73
 
 Annex D
 
 JWT over RTSPS example
 
-77
+74
 
 Annex E
 
-Cipher Reference (Informative)
+Deprecated Capabilities
 
-78
+75
+
+E.1
+
+Keystore ................................................................................................................................ 75
 
 Annex F
 
 Revision History
 
-79
+76
 
 ONVIF™
 
 –6–
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 1 Scope
 This document defines the web service interface for ONVIF security configuration features such as a keystore
@@ -299,7 +303,7 @@ v1.2
 
 –7–
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 <http://www.ietf.org/rfc/rfc5208.txt>
 IETF RFC 5246 The Transport Layer Security (TLS) Protocol Version 1.2
@@ -309,14 +313,12 @@ IETF RFC 8422 Elliptic Curve Cryptography (ECC) Cipher Suites for Transport Laye
 <https://www.ietf.org/rfc/rfc8422.txt>
 IETF RFC 5280 Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile
 <http://www.ietf.org/rfc/rfc5280.txt>
-IETF RFC 5958 Asymmetric Key Packages
-<http://www.ietf.org/rfc/rfc5958.txt>
-IETF RFC 5959 Algorithms for Asymmetric Key Package Content Type
-<http://www.ietf.org/rfc/rfc5959.txt>
 IETF RFC 6749 The OAuth 2.0 Authorization Framework
 <http://www.ietf.org/rfc/rfc6749.txt>
 IETF RFC 6750 The OAuth 2.0 Authorization Framework: Bearer Token Usage
 <http://www.ietf.org/rfc/rfc6750.txt>
+RFC 7292 - PKCS #12: Personal Information Exchange Syntax v1.1
+<https://datatracker.ietf.org/doc/html/rfc7292>
 IETF RFC 7517 JSON Web Key (JWK)
 <http://www.ietf.org/rfc/rfc7517.txt>
 IETF RFC 7518 JSON Web Algorithms (JWA)
@@ -332,15 +334,15 @@ IETF RFC 8705 OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound A
 Unified Modeling Language (UML)
 <http://www.omg.org/spec/UML>
 OpenID Connect Core
+<https://openid.net/specs/openid-connect-core-1_0.html>
+OpenID Connect Discovery
 
 ONVIF™
 
 –8–
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
-<https://openid.net/specs/openid-connect-core-1_0.html>
-OpenID Connect Discovery
 <https://openid.net/specs/openid-connect-discovery-1_0.html>
 PKCS#5 Password-based Encryption Standard v1.5, RSA Laboratories, 1993
 PKCS#12: Personal Information Exchange Syntax v1.0, RSA Laboratories, 1999
@@ -437,10 +439,6 @@ CSR
 
 Certificate Signing Request (also called Certification Request)
 
-ONVIF™
-
-–9–
-
 EAP
 
 Extensible Authentication Protocol
@@ -448,6 +446,10 @@ Extensible Authentication Protocol
 ECC
 
 Elliptic Curve Cryptography
+
+ONVIF™
+
+–9–
 
 HTTP
 
@@ -473,7 +475,7 @@ MD5
 
 Message Digest Algorithm 5
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 MSCHAPv2 Microsoft’s Challenge Handshake Authentication Protocol version 2
 PEAP
@@ -547,15 +549,16 @@ TLS server configuration interface
 
 IEEE 802.1X
 
+Basic security features such as user authentication based on WS UsernameToken and HTTP Authentication as
+well as a default access policy are specified in the ONVIF Core Specification as part of the device management
+service.
+
 ONVIF™
 
 – 10 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
-Basic security features such as user authentication based on WS UsernameToken and HTTP Authentication as
-well as a default access policy are specified in the ONVIF Core Specification as part of the device management
-service.
 WSDL for the Security Configuration Service is specified in <http://www.onvif.org/ver10/advancedsecurity/wsdl/
 security.wsdl>.
 All sections in this specification are normative unless explicitly marked as informative.
@@ -651,16 +654,16 @@ revoked for any reason defined in RFC 5280.
 
 By default, a device shall consider all trusted sources of revocation information that it has access to when
 determining the revocation status of a certificate. The device shall consider the certificate in question revoked
+if and only if at least one such source indicates that the certificate in question is revoked. If one such source is
+unavailable, the device shall behave as if this source had provided the reply UNDETERMINED.
+A device shall consider at least the CRLs that are present in the keystore of the device.
 
 ONVIF™
 
 – 11 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
-if and only if at least one such source indicates that the certificate in question is revoked. If one such source is
-unavailable, the device shall behave as if this source had provided the reply UNDETERMINED.
-A device shall consider at least the CRLs that are present in the keystore of the device.
 By default, certificates that are considered revoked shall not be included in prospective certification paths.
 
 4.3.3 Trust Anchors
@@ -724,16 +727,17 @@ The JWT payload shall include the following standard claims:
 
 iss: Issuer, the URI of the server that generated the JWT.
 
-ONVIF™
-
-– 12 –
-
-Security Configuration – Ver. 25.06
-
 •
 
 aud: Audience, a list of strings representing the recipients that the JWT is intended for. Each principal
 intended to process the JWT shall identify itself with a value in the audience claim. If the principal
+
+ONVIF™
+
+– 12 –
+
+Security Configuration – Ver. 25.12
+
 processing the claim does not identify itself with a value in the audience claim when this claim is
 present, then the JWT shall be rejected.
 
@@ -751,9 +755,10 @@ The JWT payload shall include the roles claim, as defined within RFC 7643:
 
 •
 
-roles: Access class. One of the authenticated classes of the default access policy prefixed with the
-string onvif:, i.e. "onvif:Administrator", "onvif:Operator" or "onvif:User" as defined also within the ONVIF
-Core Specification. This access level will be used to authorize access to the required function.
+roles: Access role. One or more user roles, either pre-defined ones or prefixed with the string onvif:
+.i.e. "onvif:Administrator", "onvif:Operator" or "onvif:User" as defined also within the ONVIF Core
+Specification, or custom ones defined on the device. These access roles will be used to authorize
+access to the required function.
 
 The signature is evaluated by applying ECDSA using secp256r1 and SHA-256 hashing to the base64urlencoded header and payload, concatenated by a '.'
 ECDSA-SHA256 (base64UrlEncode(header) + "." +
@@ -805,7 +810,7 @@ error codes specified by RFC 6750.
 
 – 13 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 4.4.5 Usage of JWT-based client authentication over SCTP
 In scenarios where a SCTP channel is used to exchange commands and responses between the device and
@@ -860,7 +865,7 @@ request with an access token that authorizes access to the actual resource.
 
 – 14 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 The Client Credentials Flow is summarized in Figure 1.
 
@@ -881,7 +886,7 @@ Figure 2: OpenID Connect authorization code flow for users
 
 – 15 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 A device can be setup to use JWTs obtained with this flow to allow access to its web interface for externally
 authenticated users. In that case an authorization server configuration with type OAuthAuthorizationCode or
@@ -899,7 +904,9 @@ Description
 
 ServerUri
 
-Authorization server address
+Authorization server metadata endpoint conforming to RFC8414,
+such as "https://your.domain/.well-known/openid-configuration", that
+is used to retrieve endpoint URIs for authorization, token or JWKS.
 
 ClientId
 
@@ -919,8 +926,8 @@ Key identifier for the private_key_jwt authentication method
 
 CertificateID
 
-Certificate identifier for
-authentication methods.
+Certificate identifier for the self_signed_tls_client_auth
+tls_client_auth authentication methods.
 
 Type
 
@@ -928,21 +935,19 @@ The type of configuration, see Table 6 for possible values.
 
 ClientAuth
 
-The type of client authentication method to use, see Table 7 for possible values.
+The type of client authentication method to use, see Table 7 for
+possible values.
 
-the
+CertPathValidationPolicyID
 
-self_signed_tls_client_auth
+The unique identifier of the certification path validation policy to be
+used for validating the server certificate. If not configured, server
+certificate validation behavior is undefined and the device may either
+apply a vendor specific default validation policy or skip validation at
+all.
 
 and
 
-tls_client_auth
-
-CertPathValidationPolicyID
-The unique identifier of the certification path validation policy to be used for validating
-the server certificate. If not configured, server certificate validation behavior is
-undefined and the device may either apply a vendor specific default validation policy
-or skip validation at all.
 The following types of authorization server configurations are defined.
 Table 6: Authorization server configuration types
 Method
@@ -973,6 +978,16 @@ client_secret_basic
 
 Use HTTP Authorization header to specify client_secret, see RFC 6749
 
+ONVIF™
+
+– 16 –
+
+Security Configuration – Ver. 25.12
+
+Method
+
+Description
+
 client_secret_post
 
 Use HTTP POST body to specify client_secret, see RFC 6749
@@ -981,16 +996,6 @@ client_secret_jwt
 
 Use a HMAC signed JWT using client_secret as shared secret during client
 registration, see OpenID Connect Core
-
-ONVIF™
-
-– 16 –
-
-Security Configuration – Ver. 25.06
-
-Method
-
-Description
 
 private_key_jwt
 
@@ -1026,7 +1031,7 @@ signal
 
 support
 
-A device signaling support for private_key_jwt shall signal support for ECCKeyPairGeneration.
+A device signaling support for private_key_jwt shall signal support for KeyPairGeneration for ECC keys.
 
 5 Security Configuration Service
 5.1 General Structure
@@ -1052,7 +1057,7 @@ for
 
 – 17 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Figure 3: ONVIF Security Configuration Service UML Class Diagram
 
@@ -1079,7 +1084,7 @@ uniquely identified by certification path IDs, certificate revocation lists shal
 
 – 18 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 revocation list IDs, certification path validation policies shall be uniquely identified by certification path validation
 policy IDs, and IEEE 802.1X configurations shall be uniquely identified by IEEE 802.1X configuration IDs.
@@ -1101,7 +1106,6 @@ A device shall allow multiple copies of the same certification path validation p
 under different IDs, respectively.
 A device shall allow multiple copies of the same IEEE 802.1X configuration to be present in the keystore under
 different IDs simultaneously.
-A device shall not allow multiple copies of the same key to be present in the keystore simultaneously.
 
 5.2.4 Referential Integrity
 The keystore design relies on associations between
@@ -1165,7 +1169,7 @@ a certification path validation policy, or a security feature.
 
 – 19 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 •
 
@@ -1251,7 +1255,7 @@ for the uploaded passphrase.
 
 – 20 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 If the command was successful, the device shall return the ID of the uploaded passphrase.
 If the device does not have enough storage capacity for storing the passphrase to be uploaded, the device
@@ -1319,7 +1323,7 @@ passphrase ID in the keystore, a device shall produce an invalid passphrase ID f
 
 – 21 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 under the requested passphrase ID stored in the keystore and the passphrase could not be deleted, a device
 shall produce a passphrase deletion failed fault.
@@ -1357,7 +1361,7 @@ If the device does not have enough storage capacity for storing the key pair to 
 of keys reached fault shall be produced and no key pair shall be generated. Otherwise, the operation generates
 a keyID for the new key and associates the generating status to it. Immediately after key generation has started,
 the device shall return the keyID to the client and continue to generate the key pair. The client may query the
-device with the GetKeyStatus operation (see Sect. 5.2.6.2.4) whether the generation has finished. The client
+device with the GetKeyStatus operation (see Sect. 5.2.6.2.3) whether the generation has finished. The client
 may also subscribe to Key Status events (see Sect. 5.9.1) to be notified about key status changes.
 1
 
@@ -1395,7 +1399,7 @@ operations for this key length.
 
 – 22 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 EstimatedCreationTime - [xs:duration]
 Best-effort estimation of how long the key generation will take.
@@ -1423,7 +1427,7 @@ If the device does not have enough storage capacity for storing the key pair to 
 of keys reached fault shall be produced and no key pair shall be generated. Otherwise, the operation generates
 a keyID for the new key and associates the generating status to it. Immediately after key generation has started,
 the device shall return the keyID to the client and continue to generate the key pair. The client may query the
-device with the GetKeyStatus operation (see Sect. 5.2.6.2.4) whether the generation has finished. The client
+device with the GetKeyStatus operation (see Sect. 5.2.6.2.3) whether the generation has finished. The client
 may also subscribe to Key Status events (see Sect. 5.9.1) to be notified about key status changes.
 2
 
@@ -1478,122 +1482,14 @@ operations for this key length.
 
 – 23 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 ACCESS CLASS:
 WRITE_SYSTEM
 
-5.2.6.2.3 UploadKeyPairInPKCS8
-This operation uploads a key pair in a PKCS#8 data structure as specified in [RFC 5958, RFC 5959].
-If a passphrase is either directly provided or as ID reference to a previously uploaded passphrase, the
-device shall assume that the KeyPair parameter contains an EncryptedPrivateKeyInfo ASN.1 structure that is
-encrypted with the given passphrase. In case neither a passphrase nor a passphrase ID is provided the device
-shall assume that the KeyPair parameter contains a OneAsymmetricKey ASN.1 structure which contains both
-the private key and the corresponding public key.
-If the supplied key pair cannot be processed by the device, the device shall produce an
-UnsupportedPublicKeyAlgorithm fault and shall not store the uploaded key pair in the keystore.
-Key pairs are uniquely identified using key IDs. If a key pair exists in the keystore with the public key equal to
-the public key in the request and this key pair does not contain a private key, the device shall add the supplied
-private key to the existing key pair and return the ID of this key pair.
-If a key pair exists in the keystore with the public key equal to the public key in the request and this key pair
-contains a private key, the device shall leave the key pair unchanged and return the ID of this key pair.
-If the existing key pair does not have status ok, the device shall produce an InvalidKeyStatus fault and shall
-not modify the existing key pair.
-If no key pair exists in the keystore with the public key equal to the public key in the request, the device shall
-generate a new key pair with the supplied private key and the supplied public key, status ok and the externally
-generated attribute set to true. Furthermore, the device shall return the ID of this key pair.
-If a new key pair is created, the device shall assign the supplied alias to it. Otherwise, the device shall ignore
-an eventually supplied alias.
-If decryption of the EncryptedPrivateKeyInfo failed, the device shall produce a DecryptionFailed fault and shall
-not store the uploaded key pair in the keystore.
-If the device does not have enough storage capacity for storing the key pair that eventually has to be created,
-the device shall generate a maximum number of keys reached fault. Furthermore the device shall not generate
-a key pair.
-If no passphrase exists under the ID specified by EncryptionPassphraseID, the device shall produce an invalid
-passphrase ID fault and shall not store the uploaded key pair in the keystore.
-If the supplied PKCS#8 data structure cannot be processed by the device, the device shall produce a
-BadPKCS8File fault and shall not store the uploaded key pair in the keystore.
-If the public key in the uploaded key pair does not match the uploaded private key, the device shall produce a
-PublicPrivateKeyMismatch fault and shall not store the uploaded key pair in the keystore.
-If the command was successful, the device shall return the ID of the key pair in the keystore that contains the
-supplied public and private key.
-REQUEST:
-
-•
-
-KeyPair - [tas:Base64DERencodedASN1Value]
-The key pair to be uploaded in a PKCS#8 data structure.
-
-•
-
-Alias - optional [xs:string]
-The client-defined alias of the key pair.
-
-•
-
-EncryptionPassphraseID - optional [tas:PassphraseID]
-The ID of the passphrase to use for decrypting the uploaded key pair.
-
-ONVIF™
-
-•
-
-– 24 –
-
-Security Configuration – Ver. 25.06
-
-EncryptionPassphrase - optional [xs:string]
-The passphrase to use for decrypting the uploaded key pair.
-
-RESPONSE:
-
-•
-
-KeyID - [tas:KeyID]
-The key ID of the uploaded key pair.
-
-FAULTS:
-
-•
-
-env:Receiver - ter:Action - ter:MaximumNumberOfKeysReached
-The device does not have enough storage space to store the key pair to be uploaded.
-
-•
-
-env:Sender - ter:InvalidArgVal - ter:PassphraseID
-No passphrase is stored under the requested PassphraseID.
-
-•
-
-env:Sender - ter:InvalidArgVal - ter:DecryptionFailed
-The given date could not be decrypted.
-
-•
-
-env:Sender - ter:InvalidArgVal - ter:UnsupportedPublicKeyAlgorithm
-The public key algorithm of the supplied key pair is not supported by the device.
-
-•
-
-env:Sender - ter:InvalidArgVal - ter:InvalidKeyStatus
-The key with the requested KeyID has an inappropriate status.
-
-•
-
-env:Sender - ter:InvalidArgVal - ter:BadPKCS8File
-The PKCS#8 data structure cannot be processed by the device.
-
-•
-
-env:Sender - ter:InvalidArgVal - ter:PublicPrivateKeyMismatch
-The supplied private key does not match the supplied public key.
-
-ACCESS CLASS:
-WRITE_SYSTEM
-
-5.2.6.2.4 GetKeyStatus
+5.2.6.2.3 GetKeyStatus
 This operation returns the status of a key as defined in Sect. 5.2.5.
+An ONVIF conformant device shall support this command.
 Keys are uniquely identified using key IDs. If no key is stored under the requested key ID in the keystore, an
 InvalidKeyID fault is produced. Otherwise, the status of the key is returned.
 REQUEST:
@@ -1620,21 +1516,14 @@ No key is stored under the requested KeyID.
 ACCESS CLASS:
 READ_SYSTEM_SECRET
 
-5.2.6.2.5 GetPrivateKeyStatus (deprecated)
+5.2.6.2.4 GetPrivateKeyStatus (deprecated)
 This operation returns whether a key pair contains a private key.
-
-ONVIF™
-
-– 25 –
-
-Security Configuration – Ver. 25.06
-
 Keys are uniquely identified using key IDs. If no key is stored under the requested key ID in the keystore, an
 invalid key ID fault shall be produced. If a key is stored under the requested key ID in the keystore, but this key
 is not a key pair, an invalid key type fault shall be produced.
 Otherwise, this operation returns true if the key pair identified by the key ID contains a private key, and false
 otherwise.
-This command is deprecated. Use GetAllKeys (see Sect. 5.2.6.2.6) instead.
+This command is deprecated. Use GetAllKeys (see Sect. 5.2.6.2.5) instead.
 REQUEST:
 
 •
@@ -1661,13 +1550,20 @@ No key is stored under the requested KeyID.
 ter:Sender - ter:InvalidArgVal - ter:InvalidKeyType
 The key stored in the keystore under the requested KeyID is of an invalid type.
 
+ONVIF™
+
+– 24 –
+
+Security Configuration – Ver. 25.12
+
 ACCESS CLASS:
 READ_SYSTEM_SECRET
 
-5.2.6.2.6 GetAllKeys
+5.2.6.2.5 GetAllKeys
 This operation returns information about all keys that are stored in the device’s keystore.
 This operation may be used, e.g., if a client lost track of which keys are present on the device.
-If no key is stored on the device, an empty list is returned.
+If no key is stored on the device, an empty list is returned. An ONVIF conformant device shall support this
+command.
 REQUEST:
 This message is empty.
 RESPONSE:
@@ -1682,21 +1578,15 @@ None
 ACCESS CLASS:
 READ_SYSTEM_SECRET
 
-5.2.6.2.7 DeleteKey
-This operation deletes a key from the device’s keystore.
-Keys are uniquely identified using key IDs. If no key is stored under the requested key ID in the keystore, a
-device shall produce an InvalidArgVal fault. If a reference exists for the specified key, a device shall produce
-the corresponding fault and shall not delete the key. If there is a key under the requested key ID stored in the
-keystore and the key could not be deleted, a device shall produce a KeyDeletion fault. If the key has the status
-
-ONVIF™
-
-– 26 –
-
-Security Configuration – Ver. 25.06
-
-generating, a device shall abort the generation of the key and delete from the keystore all data generated for
-this key.
+5.2.6.2.6 DeleteKey
+This operation deletes a key from the device’s keystore. An ONVIF conformant device shall support this
+command.
+If no key is stored under the requested key ID in the keystore and AutoDeleteKey is signaled a device shall
+signal no fault. Otherwise it may produce an InvalidArgVal fault.
+If a reference exists for the specified key, a device shall produce the corresponding fault and shall not delete the
+key. If there is a key under the requested key ID stored in the keystore and the key could not be deleted, a device
+shall produce a KeyDeletion fault. If the key has the status generating, a device shall abort the generation of
+the key and delete from the keystore all data generated for this key.
 After a key is successfully deleted, the device may assign its former ID to other keys.
 REQUEST:
 
@@ -1719,7 +1609,13 @@ Deleting the key with the requested KeyID failed.
 ter:Sender - ter:InvalidArgVal - ter:KeyID
 No key is stored under the requested KeyID.
 
+ONVIF™
+
 •
+
+– 25 –
+
+Security Configuration – Ver. 25.12
 
 ter:Sender - ter:InvalidArgVal - ter:ReferenceExists
 A reference exists for the object that is to be deleted.
@@ -1752,13 +1648,6 @@ specified subject is invalid or incomplete, a Subject invalid fault shall be pro
 If an attribute is invalid or incomplete, an Attribute invalid fault shall be produced and no CSR shall be generated.
 If the key pair does not have status ok, a device shall produce an InvalidKeyStatus fault and no CSR shall
 be generated.
-
-ONVIF™
-
-– 27 –
-
-Security Configuration – Ver. 25.06
-
 REQUEST:
 
 •
@@ -1787,6 +1676,12 @@ RESPONSE:
 
 PKCS10CSR - [tas:Base64DERencodedASN1Value]
 The DER encoded PKCS#10 certification request.
+
+ONVIF™
+
+– 26 –
+
+Security Configuration – Ver. 25.12
 
 FAULTS:
 
@@ -1829,25 +1724,18 @@ ACCESS CLASS:
 READ_SYSTEM
 
 5.2.6.3.2 CreateSelfSignedCertificate
-This operation generates for a public key on the device a self-signed X.509 certificate that complies to RFC
-5280.
+This operation generates for a key on the device a self-signed X.509 certificate that complies to RFC 5280.
 The X509Version parameter specifies the version of X.509 that the generated certificate shall comply to. A
-device that supports this command shall support the generation of X.509v3 certificates as specified in RFC
-5280 and may additionally be able to handle other X.509 certificate formats as indicated by the X.509Versions
-capability. If no X509Version is specified in the request, the device shall produce an X.509v3 certificate.
+device that supports this command shall support the generation of certificates as defined in the security baseline
+and may additionally be able to handle other X.509 certificate formats as indicated by the X.509Versions
+capability. If no X509Version is specified in the request, the device shall produce a certificate accordinting to
+the baseline.
 The key pair that contains the public key for which a self-signed certificate shall be produced is specified by its
 key pair ID. The subject parameter describes the entity that the public key belongs to.
 If the key pair does not have status ok, a device shall produce an InvalidKeyStatus fault and no certificate
 shall be generated.
 If the specified subject is invalid or incomplete, an InvalidSubject fault shall be produced and no certificate
 shall be created.
-
-ONVIF™
-
-– 28 –
-
-Security Configuration – Ver. 25.06
-
 The notValidBefore parameter specifies at which point in time the validity period of the generated certificate
 shall begin. If this parameter is not specified in the request, the device shall use its current time or a time
 before its current time as starting point of the validity period. The notValidAfter parameter specifies at which
@@ -1859,8 +1747,15 @@ fault shall be produced and no certificate shall be generated.
 The signature algorithm parameter determines which signature algorithm shall be used for signing the
 certification request with the public key specified by the key ID parameter.
 The Extensions parameter specifies potential X509v3 extensions that shall be contained in the certificate. A
-device that supports this command shall support the extensions that are defined in RFC5280, Sect. 4.2 as
-mandatory for CAs that issue self-signed certificates.
+device that supports this command shall support the extensions that are defined in the security baseline, Sect.
+4.2 as mandatory for CAs that issue self-signed certificates.
+
+ONVIF™
+
+– 27 –
+
+Security Configuration – Ver. 25.12
+
 Distinguished name attribute values shall be supplied either in UTF-8 or in hexadecimal form as specified in
 RFC 4514.
 If the distinguished name attribute value is supplied in hexadecimal form, the device shall encode the attribute
@@ -1916,13 +1811,7 @@ The X.509 not valid after information to be included in the certificate. Default
 SignatureAlgorithm - [tas:AlgorithmIdentifier]
 The signature algorithm to be used for signing the certificate.
 
-ONVIF™
-
 •
-
-– 29 –
-
-Security Configuration – Ver. 25.06
 
 Extension - optional, unbounded [tas:X509v3Extension]
 List of X.509v3 extensions to be included in the certificate.
@@ -1945,6 +1834,12 @@ The generation of the self-signed certificate failed.
 
 ter:Receiver - ter:Action - ter:MaximumNumberOfCertificatesReached
 The device does not have enough storage space to store the certificate to be created.
+
+ONVIF™
+
+– 28 –
+
+Security Configuration – Ver. 25.12
 
 •
 
@@ -1994,6 +1889,7 @@ This operation uploads an X.509 certificate as specified by RFC 5280 in DER enco
 the certificate to a device’s keystore. A device that supports this command shall be able to handle X.509v3
 certificates as specified in RFC 5280 and may additionally be able to handle other X.509 certificate formats
 as indicated by the X.509Versions capability.
+An ONVIF compliant device supporting the security service shall support this command.
 Certificates are uniquely identified using certificate IDs, and key pairs are uniquely identified using key IDs.
 The device shall generate a new certificate ID for the uploaded certificate.
 Certain certificate usages, e.g. TLS server authentication, require the private key that corresponds to the public
@@ -2004,13 +1900,6 @@ The uploaded certificate has to be linked to a key pair in the keystore.
 If no private key is required for the public key in the certificate and a key pair exists in the keystore with a public
 key equal to the public key in the certificate, the uploaded certificate is linked to the key pair identified by the
 supplied key ID by adding a reference from the certificate to the key pair.
-
-ONVIF™
-
-– 30 –
-
-Security Configuration – Ver. 25.06
-
 If no private key is required for the public key in the certificate and no key pair exists with the public key equal to
 the public key in the certificate, a new key pair with status ok is created with the public key from the certificate,
 and this key pair is linked to the uploaded certificate by adding a reference from the certificate to the key pair.
@@ -2020,9 +1909,17 @@ adding a reference from the certificate to the key pair. If a private key is req
 keypair exists in the keystore, then NoMatchingPrivateKey fault shall be produced and the certificate shall not
 be stored in the keystore.
 The device shall assign the supplied Alias to the uploaded certificate.
+
+ONVIF™
+
+– 29 –
+
+Security Configuration – Ver. 25.12
+
 If a new key pair is generated, the device shall assign the supplied KeyAlias to it. Otherwise, the device shall
 ignore an eventually supplied KeyAlias.
 How the link between the uploaded certificate and a key pair is established is illustrated in Figure 4.
+An ONVIF compliant device shall support this command.
 
 Figure 4: Link establishment between certificate and key pair for Upload Certificate
 If the key pair that the certificate shall be linked to does not have status ok, an InvalidKeyStatus fault is produced,
@@ -2040,13 +1937,6 @@ number of certificates reached fault shall be produced and no certificate shall 
 If the device does not have enough storage capacity for storing the key pair that eventually has to be created,
 the device shall generate a maximum number of keys reached fault. Furthermore the device shall not generate
 a key pair and no certificate shall be stored.
-
-ONVIF™
-
-– 31 –
-
-Security Configuration – Ver. 25.06
-
 If the command was successful, the device returns the ID of the uploaded certificate and the ID of the key pair
 that contains the public key in the certificate.
 REQUEST:
@@ -2055,6 +1945,12 @@ REQUEST:
 
 Certificate - [tas:Base64DERencodedASN1Value]
 The base64-encoded DER representation of the X.509 certificate to be uploaded.
+
+ONVIF™
+
+– 30 –
+
+Security Configuration – Ver. 25.12
 
 •
 
@@ -2131,46 +2027,26 @@ WRITE_SYSTEM
 
 5.2.6.3.4 UploadCertificateWithPrivateKeyInPKCS12
 This operation uploads a certification path consisting of X.509 certificates as specified by RFC 5280 in DER
-encoding along with a private key to a device’s keystore. Certificates and private key are supplied in the form
-of a PKCS#12 file as specified in PKCS#12.
-The device shall support PKCS#12 files that contain the following safe bags:
+encoding along with a private key to a device’s keystore.
+A device signaling support for PKCS12 shall support uploading of PKCS12 files according to RFC 7292.
+If the IgnoreAdditionalCertificates parameter has the value true, the device shall behave as if the client had
+supplied only the first CertBag in the sequence of CertBag instances.
+If an integrity passphrase ID is supplied, the device shall use the corresponding passphrase in the keystore
+to decrypt check the integrity of the supplied PKCS#12 PFX. If an integrity passphrase ID is supplied, but the
+supplied PKCS#12 PFX has no integrity protection, the device shall produce a BadPKCS12File fault and shall
+not store the uploaded certificates nor the uploaded key pair in the keystore.
 
 ONVIF™
 
-– 32 –
+– 31 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
-•
-
-one or more instances of CertBag PKCS#12, Sect. 4.2.3
-
-•
-
-either exactly one instance of KeyBag PKCS#12, Sect. 4.3.1 or exactly one instance of
-PKCS8ShroudedKeyBag PKCS#12, Sect. 4.2.2.
-
-If the IgnoreAdditionalCertificates parameter has the value true, the device shall behave as if the client had
-supplied only the first CertBag in the sequence of CertBag instances.
-The device shall support PKCS#12 passphrase integrity mode for integrity protection of the PKCS#12 PFX as
-specified in PKCS#12, Sect. 4. The device shall support PKCS8ShroudedKeyBags that are encrypted with the
-same passphrase as the CertBag instances.
-If an integrity passphrase ID is supplied, the device shall use the corresponding passphrase in the keystore to
-check the integrity of the supplied PKCS#12 PFX. If an integrity passphrase ID is supplied, but the supplied
-PKCS#12 PFX has no integrity protection, the device shall produce a BadPKCS12File fault and shall not store
-the uploaded certificates nor the uploaded key pair in the keystore.
 If an encryption passphrase ID is supplied, the device shall use the corresponding passphrase in the keystore
-to decrypt the PKCS8ShroudedKeyBag and the CertBag instances.
-If an EncryptionPassphraseID is supplied, but a CertBag is not encrypted, the device shall ignore the
-supplied EncryptionPassphraseID when processing this CertBag. If an EncryptionPassphraseID is supplied,
-but a KeyBag is provided instead of a PKCS8ShroudedKeyBag, the device shall ignore the supplied
-EncryptionPassphraseID when processing the KeyBag.
-If a passphrase is supplied, the device shall ignore an eventually supplied integrity passphrase ID and
-an eventually supplied encryption passphrase ID, and the device shall use the supplied passphrase to
-check the integrity of the PKCS#12 PFX and to decrypt the PKCS8ShroudedKeyBag and the CertBag
-instances. If a passphrase is supplied, but a CertBag is not encrypted, the device shall ignore the supplied
-passphrase when processing this CertBag. If a passphrase is supplied, but a KeyBag is supplied instead of a
-PKCS8ShroudedKeyBag, the device shall ignore the supplied passphrase when processing the KeyBag.
+to decrypt any encrypted content.
+If a passphrase is supplied, the device shall ignore an eventually supplied integrity passphrase ID and an
+eventually supplied encryption passphrase ID, and the device shall use the supplied passphrase to check the
+integrity and to decrypt the encrypted content.
 If decryption of either the PKCS8ShroudedKeyBag or an encrypted CertBag failed, the device shall produce a
 DecryptionFailed fault and shall not store the uploaded certificates nor key pair in the keystore.
 If the signature algorithm of a supplied certificate is not supported by the device, the device shall produce an
@@ -2193,13 +2069,6 @@ If the device cannot process one of the uploaded certificates, it shall produce 
 store the uploaded certificates nor private key in the keystore. The BadCertificate fault shall not be produced
 based on the mere fact that the device’s current time lies outside the interval defined by the notBefore and
 notAfter fields as specified by RFC 5280, Sect. 4.1.
-
-ONVIF™
-
-– 33 –
-
-Security Configuration – Ver. 25.06
-
 The device shall not mark the uploaded certificates as trusted.
 The uploaded certificates have to be linked to key pairs in the keystore. Key pairs are uniquely identified using
 key IDs.
@@ -2216,6 +2085,12 @@ If a new key pair is created for the uploaded private key, the device shall assi
 Otherwise, the device shall ignore an eventually supplied KeyAlias.
 How the link between an uploaded certificate and a key pair is established is illustrated in Figure 5.
 
+ONVIF™
+
+– 32 –
+
+Security Configuration – Ver. 25.12
+
 Figure 5: Link establishment between certificates and key
 pair for Upload Certificate with Private Key in PKCS#12
 If the key pair that a certificate shall be linked to does not have status ok, the device shall produce an invalid
@@ -2229,13 +2104,6 @@ key pair and shall not store the uploaded certificates in the keystore.
 If the device does not have enough storage capacity for storing the certification path to be created, the
 device shall produce a maximum number of certification paths reached fault and shall not store the uploaded
 certificates nor the uploaded key pair in the keystore.
-
-ONVIF™
-
-– 34 –
-
-Security Configuration – Ver. 25.06
-
 If no passphrase exists under the ID specified by IntegrityPassphraseID, the device shall produce an invalid
 passphrase ID fault and shall not store the uploaded certificates nor the uploaded key pair in the keystore.
 If no passphrase exists under the ID specified by EncryptionPassphraseID, the device shall produce an invalid
@@ -2253,6 +2121,12 @@ REQUEST:
 
 CertWithPrivateKey - [tas:Base64DERencodedASN1Value]
 The certifcates and key pair to be uploaded in a PKCS#12 data structure.
+
+ONVIF™
+
+– 33 –
+
+Security Configuration – Ver. 25.12
 
 •
 
@@ -2322,12 +2196,6 @@ to store the certification path to be uploaded.
 ter:Sender - ter:InvalidArgVal - ter:PassphraseID
 No passphrase is stored under the requested PassphraseID.
 
-ONVIF™
-
-– 35 –
-
-Security Configuration – Ver. 25.06
-
 •
 
 env:Sender - ter:InvalidArgVal - ter:DecryptionFailed
@@ -2359,6 +2227,12 @@ The key with the requested KeyID has an inappropriate status.
 env:Sender - ter:InvalidArgVal - ter:BadPKCS12File
 The PKCS#12 data structure cannot be processed by the device.
 
+ONVIF™
+
+– 34 –
+
+Security Configuration – Ver. 25.12
+
 •
 
 env:Sender - ter:InvalidArgVal - ter:PublicPrivateKeyMismatch
@@ -2374,7 +2248,8 @@ ACCESS CLASS:
 WRITE_SYSTEM
 
 5.2.6.3.5 GetCertificate
-This operation returns a specific certificate from the device’s keystore.
+This operation returns a specific certificate from the device’s keystore. An ONVIF compliant device supporting
+the security service shall support this command.
 Certificates are uniquely identified using certificate IDs. If no certificate is stored under the requested certificate
 ID in the keystore, an InvalidArgVal fault is produced.
 The certificate shall be returned in DER encoding.
@@ -2405,14 +2280,8 @@ ACCESS CLASS:
 READ_SYSTEM_SECRET
 
 5.2.6.3.6 GetAllCertificates
-This operation returns all certificates that are stored in the device’s keystore.
-
-ONVIF™
-
-– 36 –
-
-Security Configuration – Ver. 25.06
-
+This operation returns all certificates that are stored in the device’s keystore. An ONVIF compliant device shall
+support this command. An ONVIF compliant device supporting the security service shall support this command.
 This operation may be used, e.g., if a client lost track of which certificates are present on the device.
 The certificates shall be returned in DER encoding.
 If no certificate is stored in the device’s keystore, an empty list is returned.
@@ -2425,14 +2294,22 @@ RESPONSE:
 Certificate - optional, unbounded [tas:X509Certificate]
 List of DER representation of certificates stored in the keystore.
 
+ONVIF™
+
+– 35 –
+
+Security Configuration – Ver. 25.12
+
 FAULTS:
 None
 ACCESS CLASS:
 READ_SYSTEM_SECRET
 
 5.2.6.3.7 DeleteCertificate
-This operation deletes a certificate from the device’s keystore.
-The operation shall not delete the public key that is contained in the certificate from the keystore.
+This operation deletes a certificate from the device’s keystore. An ONVIF compliant device shall support this
+command.
+If the device signals AutoDeleteKey the associated key shall be deleted when no more references to it exist.
+Otherwise the operation shall not delete the associated key.
 Certificates are uniquely identified using certificate IDs. If no certificate is stored under the requested certificate
 ID in the keystore, an InvalidArgVal fault is produced. If there is a certificate under the requested certificate ID
 stored in the keystore and the certificate could not be deleted, a CertificateDeletion fault is produced.
@@ -2471,13 +2348,6 @@ UNRECOVERABLE
 5.2.6.3.8 CreateCertificationPath
 This operation creates a sequence of certificates that may be used, e.g., for certification path validation or for
 TLS server authentication.
-
-ONVIF™
-
-– 37 –
-
-Security Configuration – Ver. 25.06
-
 Certification paths are uniquely identified using certification path IDs. Certificates are uniquely identified using
 certificate IDs. A certification path contains a sequence of certificate IDs.
 If there is a certificate ID in the sequence of supplied certificate IDs for which no certificate exists in the device’s
@@ -2486,6 +2356,13 @@ The signature of each certificate in the certification path except for the last 
 key contained in the next certificate in the path. If there is a certificate ID in the request other than the last ID
 for which the corresponding certificate cannot be verified with the public key in the certificate identified by the
 next certificate ID, an InvalidCertificateChain fault shall be produced and no certification path shall be created.
+
+ONVIF™
+
+– 36 –
+
+Security Configuration – Ver. 25.12
+
 REQUEST:
 
 •
@@ -2551,12 +2428,6 @@ RESPONSE:
 CertificationPath - [tas:CertificationPath]
 The certification path that is stored under the given ID in the keystore.
 
-ONVIF™
-
-– 38 –
-
-Security Configuration – Ver. 25.06
-
 FAULTS:
 
 •
@@ -2569,6 +2440,13 @@ READ_SYSTEM_SECRET
 
 5.2.6.3.10 GetAllCertificationPaths
 This operation returns the IDs of all certification paths that are stored in the device’s keystore.
+
+ONVIF™
+
+– 37 –
+
+Security Configuration – Ver. 25.12
+
 This operation may be used, e.g., if a client lost track of which certificates are present on the device.
 If no certification path is stored on the device, an empty list is returned.
 REQUEST:
@@ -2620,13 +2498,7 @@ No certification path is stored under the requested certification path ID.
 env:Sender - ter:InvalidArgVal - ter:CertificateID
 No certificate is stored under the requested CertificateID.
 
-ONVIF™
-
 •
-
-– 39 –
-
-Security Configuration – Ver. 25.06
 
 env:Sender - ter:InvalidArgVal - ter:InvalidCertificationPath
 At least one certificate in the certification path is not correctly signed with the public key in the next
@@ -2638,6 +2510,13 @@ WRITE_SYSTEM
 5.2.6.3.12 DeleteCertificationPath
 This operation deletes a certification path from the device’s keystore.
 This operation shall not delete the certificates that are referenced by the certification path.
+
+ONVIF™
+
+– 38 –
+
+Security Configuration – Ver. 25.12
+
 Certification paths are uniquely identified using certification path IDs. If no certification path is stored under the
 requested certification path ID in the keystore, an InvalidArgVal fault is produced. If there is a certification path
 under the requested certification path ID stored in the keystore and the certification path could not be deleted,
@@ -2683,13 +2562,6 @@ If the device is not able to process the supplied CRL, the device shall produce 
 store the supplied CRL.
 If the device does not support the signature algorithm that was used to sign the supplied CRL, the device shall
 produce an UnsupportedSignatureAlgorithm fault and shall not store the supplied CRL.
-
-ONVIF™
-
-– 40 –
-
-Security Configuration – Ver. 25.06
-
 REQUEST:
 
 •
@@ -2712,6 +2584,12 @@ RESPONSE:
 
 CrlID - [tas:CRLID]
 The ID of the uploaded CRL.
+
+ONVIF™
+
+– 39 –
+
+Security Configuration – Ver. 25.12
 
 FAULTS:
 
@@ -2766,13 +2644,6 @@ This operation returns all certificate revocation lists (CRLs) that are stored i
 If no certificate revocation list is stored in the device’s keystore, an empty list is returned.
 REQUEST:
 This message is empty.
-
-ONVIF™
-
-– 41 –
-
-Security Configuration – Ver. 25.06
-
 RESPONSE:
 
 •
@@ -2784,6 +2655,12 @@ FAULTS:
 None
 ACCESS CLASS:
 READ_SYSTEM_SECRET
+
+ONVIF™
+
+– 40 –
+
+Security Configuration – Ver. 25.12
 
 5.2.6.4.4 DeleteCRL
 This operation deletes a certificate revocation list (CRL) from the keystore on the device.
@@ -2818,7 +2695,8 @@ UNRECOVERABLE
 
 5.2.6.5 Certification Path Validation Policy Management
 5.2.6.5.1 CreateCertPathValidationPolicy
-This operation creates a certification path validation policy.
+This operation creates a certification path validation policy. An ONVIF compliant device shall support this
+command.
 Certification path validation policies are uniquely identified using certification path validation policy IDs. The
 device shall generate a new certification path validation policy ID for the created certification path validation
 policy.
@@ -2827,13 +2705,6 @@ created, the device shall produce a maximum number of certification path validat
 shall not create a certification path validation policy.
 If there is at least one trust anchor certificate ID in the request for which there exists no certificate in the device’s
 keystore, the device shall produce a CertificateID fault and shall not create a certification path validation policy.
-
-ONVIF™
-
-– 42 –
-
-Security Configuration – Ver. 25.06
-
 If the device cannot process the supplied certification path validation parameters, the device shall produce a
 CertPathValidationParameters fault and shall not create a certification path validation policy.
 REQUEST:
@@ -2847,6 +2718,12 @@ The alias to assign to the created certification path validation policy.
 
 Parameters - [tas:CertPathValidationParameters]
 The parameters of the certification path validation policy to be created.
+
+ONVIF™
+
+– 41 –
+
+Security Configuration – Ver. 25.12
 
 •
 
@@ -2885,7 +2762,8 @@ ACCESS CLASS:
 WRITE_SYSTEM
 
 5.2.6.5.2 GetCertPathValidationPolicy
-This operation returns a certification path validation policy from the keystore on the device.
+This operation returns a certification path validation policy from the keystore on the device. An ONVIF compliant
+device shall support this command.
 Certification path validation policies are uniquely identified using certification path validation policy IDs. If no
 certification path validation policy is stored under the requested certification path validation policy ID, the device
 shall produce a CertPathValidationPolicyID fault.
@@ -2914,17 +2792,19 @@ ID.
 ACCESS CLASS:
 READ_SYSTEM_SECRET
 
-ONVIF™
-
-– 43 –
-
-Security Configuration – Ver. 25.06
-
 5.2.6.5.3 GetAllCertPathValidationPolicies
-This operation returns all certification path validation policies that are stored in the keystore on the device.
+This operation returns all certification path validation policies that are stored in the keystore on the device. An
+ONVIF compliant device shall support this command.
 If no certification path validation policy is stored in the device’s keystore, an empty list is returned.
 REQUEST:
 This message is empty.
+
+ONVIF™
+
+– 42 –
+
+Security Configuration – Ver. 25.12
+
 RESPONSE:
 
 •
@@ -2939,23 +2819,20 @@ READ_SYSTEM_SECRET
 
 5.2.6.5.4 SetCertPathValidationPolicy
 This operation allows to modify a certification path validation policy in the keystore on the device. A device
-shall support this method if support for SetCertPath is signaled via its capabilities.
+shall support this method if support for SetCertPath is signaled via its capabilities. A device signaling support
+via the SetCertPathPolicy shall support this command.
 REQUEST:
 
 •
 
 CertPathValidationPolicyID - [tas:CertPathValidationPolicyID]
-The ID of the certification path validation policy to be modified.
+This element is deprecated and ignored; the ID of the certification path validation policy being modified
+must be specified in the CertPathValidationPolicy structure.
 
 •
 
-Parameters - [tas:CertPathValidationParameters]
-The parameters of the certification path validation policy.
-
-•
-
-TrustAnchor - unbounded [tas:TrustAnchor]
-The trust anchors of the certification path validation policy.
+CertPathValidationPolicy - [tas:CertPathValidationPolicy]
+The updated certification path validation policy to be stored.
 
 RESPONSE:
 This message is empty.
@@ -2985,17 +2862,17 @@ This operation deletes a certification path validation policy from the keystore 
 Certification path validation policies are uniquely identified using certification path validation policy IDs. If no
 certification path validation policy is stored under the requested certification path validation policy ID, the device
 shall produce an CertPathValidationPolicyID fault.
-
-ONVIF™
-
-– 44 –
-
-Security Configuration – Ver. 25.06
-
 If a reference exists for the requested certification path validation policy, the device shall produce a
 ReferenceExists fault and shall not delete the certification path validation policy.
 After the certification path validation policy has been deleted, the device may assign its former ID to other
 certification path validation policies.
+
+ONVIF™
+
+– 43 –
+
+Security Configuration – Ver. 25.12
+
 REQUEST:
 
 •
@@ -3048,11 +2925,11 @@ in Figure 6.
 
 ONVIF™
 
-– 45 –
+– 44 –
 
 No
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 ClientAuthentication
 Required ?
@@ -3106,9 +2983,9 @@ clients as-is, i.e., the device shall not check conformance of the certification
 
 ONVIF™
 
-– 46 –
+– 45 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 In order to use the server certificate during the TLS handshake, the corresponding private key is required.
 Therefore, if the key pair that is associated with the server certificate, i.e., the first certificate in the certification
@@ -3179,9 +3056,9 @@ No certification path under the given certification path ID is associated with t
 
 •
 
-– 47 –
+– 46 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 env:Sender - ter:InvalidArgVal - ter:ReferenceExists
 A reference exists for the object that is to be deleted.
@@ -3248,9 +3125,9 @@ WRITE_SYSTEM
 
 ONVIF™
 
-– 48 –
+– 47 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 5.3.3.4 GetAssignedServerCertificates
 This operation returns the IDs of all certification paths that are assigned to the TLS server on the device.
@@ -3306,9 +3183,9 @@ This message is empty.
 
 ONVIF™
 
-– 49 –
+– 48 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 RESPONSE:
 
@@ -3373,9 +3250,9 @@ Validation according to section 6 of RFC 5280 succeeds.
 
 ONVIF™
 
-– 50 –
+– 49 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 If no certification path validation policy is stored under the requested CertPathValidationPolicyID, the device
 shall produce a CertPathValidationPolicyID fault.
@@ -3440,9 +3317,9 @@ associated to the TLS server, the device shall produce an OldCertPathValidationP
 
 ONVIF™
 
-– 51 –
+– 50 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 associate the certification path validation policy identified by the NewCertPathValidationPolicyID to the TLS
 server.
@@ -3511,9 +3388,9 @@ proceed with TLS 1.0 or TLS 1.1.
 
 ONVIF™
 
-– 52 –
+– 51 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 In the event that an ONVIF installation wishes to disable certain version(s) of TLS, it may do so with this
 operation. For example, to disable TLS 1.0 on a device signaling support for TLS versions 1.0, 1.1, and 1.2, the
@@ -3574,9 +3451,9 @@ in the request, if present, and shall generate a unique configuration ID for the
 
 ONVIF™
 
-– 53 –
+– 52 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 If the command was successful, the device shall return the ID of the configuration.
 If the device does not have capacity for the configuration, the device shall
@@ -3669,9 +3546,9 @@ by
 
 ONVIF™
 
-– 54 –
+– 53 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 5.4.2 GetAllDot1XConfigurations
 This operation returns details of all IEEE 802.1X configurations that are on the device. This operation may be
@@ -3730,9 +3607,9 @@ Dot1XConfigurationID fault.
 
 ONVIF™
 
-– 55 –
+– 54 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 If a reference exists for the specified IEEE 802.1X configuration, the device shall produce a ReferenceExists
 fault and shall not delete the configuration.
@@ -3797,9 +3674,9 @@ The unique identifier of the 802.1X configuration to be set.
 
 ONVIF™
 
-– 56 –
+– 55 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 RESPONSE:
 
@@ -3871,9 +3748,9 @@ still be used. But there is no ability for SetNetworkInterface to unbind an IEEE
 
 ONVIF™
 
-– 57 –
+– 56 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 hardwired interface. This operation is provided to unbind an IEEE 802.1X configuration from either type of
 interface.
@@ -3938,9 +3815,9 @@ This message is empty.
 
 ONVIF™
 
-– 58 –
+– 57 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 FAULTS:
 
@@ -4003,14 +3880,15 @@ the factory provisioned one. At most two certification paths will be returned.
 
 FAULTS:
 None
-ACCESS CLASS:
-READ_SYSTEM_SECRET
 
 ONVIF™
 
-– 59 –
+– 58 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
+
+ACCESS CLASS:
+READ_SYSTEM_SECRET
 
 5.6 Autorization Server Configuration
 This chapter describes configuration of external authorization servers. For an overview of this see 4.6.
@@ -4077,16 +3955,15 @@ The configuration parameters are not possible to set.
 ACCESS CLASS:
 WRITE_SYSTEM
 
+ONVIF™
+
+– 59 –
+
+Security Configuration – Ver. 25.12
+
 5.6.3 SetAuthorizationServerConfiguration
 This operation modifies an existing authorization server configuration. The device shall support this command
 if MaxConfigurations capability is greater than zero.
-
-ONVIF™
-
-– 60 –
-
-Security Configuration – Ver. 25.06
-
 REQUEST:
 
 •
@@ -4114,6 +3991,8 @@ WRITE_SYSTEM
 5.6.4 DeleteAuthorizationServerConfiguration
 This operation deletes the given authorization server configuration and configuration change shall always be
 persistent. The device shall support this command if MaxConfigurations capability is greater than zero.
+If a reference exists for the specified configuration, the device shall produce a ReferenceExists fault and shall
+not delete it.
 REQUEST:
 
 •
@@ -4130,6 +4009,11 @@ FAULTS:
 env:Sender - ter:InvalidArgVal - ter:NoConfig
 The requested configuration does not exist.
 
+•
+
+env:Sender - ter:InvalidArgVal - ter:ReferenceExists
+A reference exists for the configuration that is to be deleted.
+
 ACCESS CLASS:
 WRITE_SYSTEM
 
@@ -4139,6 +4023,13 @@ The following functions are defined to control the set of accepted aud claims. S
 5.7.1 GetJWTConfiguration
 This operation returns the parameters of the JWT authorization used by the device. A device shall support this
 command if the capability JsonWebToken in the device service capabilities is set.
+
+ONVIF™
+
+– 60 –
+
+Security Configuration – Ver. 25.12
+
 REQUEST:
 This is an empty message.
 RESPONSE:
@@ -4150,13 +4041,6 @@ The configuration parameters for JWT authorization used by the device.
 
 FAULTS:
 None
-
-ONVIF™
-
-– 61 –
-
-Security Configuration – Ver. 25.06
-
 ACCESS CLASS:
 READ_SYSTEM_SECRET
 
@@ -4206,6 +4090,13 @@ two trusted issuers.
 The capabilities reflect optional functions and functionality of the different features in the security configuration
 service. The service capabilities consist of keystore capabilities and TLS server capabilities. The information
 is static and does not change during device operation.
+
+ONVIF™
+
+– 61 –
+
+Security Configuration – Ver. 25.12
+
 A device shall support this command.
 REQUEST:
 This is an empty message.
@@ -4218,13 +4109,6 @@ The capabilities for the security configuration service.
 
 FAULTS:
 None
-
-ONVIF™
-
-– 62 –
-
-Security Configuration – Ver. 25.06
-
 ACCESS CLASS:
 PRE_AUTH
 
@@ -4266,78 +4150,48 @@ Indicates support for modifying an existing
 certification path or certification path
 validation policy.
 
-RSAKeyPairGeneration
+KeyPairGeneration
 
-Indicates support for on-board RSA key
-pair generation.
-
-ECCKeyPairGeneration
-
-Indicates support for on-board ECC key
-pair generation.
+List of supported allgorithm for on-board
+key pair generation.
 
 RSAKeyLengths
 
 Indicates which RSA key lengths are
-supported by the device.
+supported by the device for private and
+public key usage. Note that a device may
+support additional key length for public key
+usages.
 
 EllipticCurves
 
-Indicates which elliptic
-supported by the device.
-
-PKCS8RSAKeyPairUpload
-
-Indicates support for uploading an RSA
-key pair in a PKCS#8 data structure.
-
-PKCS8
-
-Indicates support for uploading supported
-key pair in a PKCS#8 data structure.
-
-PKCS12CertificateWithRSAPrivateKeyUpload
-
-Indicates support for uploading a
-certificate along with an RSA private key in
-a PKCS#12 data structure.
-
-PKCS12
-
-Indicates support for uploading a
-certificate along with a private key in a
-PKCS#12 data structure.
-
-PKCS10ExternalCertificationWithRSA
-
-Indicates support for creating PKCS#10
-requests for RSA keys and uploading the
-certificate obtained from a CA.
+Indicates which elliptic curves are
+supported by the device. Supported curve
+names can be found in the IANA TLS
+Supported Groups section, under the
+Description field.
 
 PKCS10
 
 Indicates support for creating PKCS#10
 requests for asymetric key pair and
 
-curves
-
-are
-
 ONVIF™
 
-– 63 –
+– 62 –
 
 Capability Name
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 Capability Semantics
 uploading the certificate obtained from a
 CA.
 
-SelfSignedCertificateCreationWithRSA
+PKCS12
 
-Indicates support for creating self-signed
-certificates for RSA keys.
+Indicates support for uploading a
+certificate along with a private key in a
+PKCS#12 data structure.
 
 SelfSignedCertificateCreation
 
@@ -4357,10 +4211,11 @@ password-based
 encryption algorithms are supported by the
 device.
 
-PasswordBasedMACAlgorithms
+SymmetricEncryptionAlgorithms
 
-Indicates which password-based MAC
-algorithms are supported by the device.
+List of symmetric encryption alogrithm
+supported by the device (AES128-GCMSHA256,
+AEAD_AES256_GCM_SHA_384, ...).
 
 X.509Versions
 
@@ -4395,6 +4250,12 @@ Indicates the device requires that each
 certificate with private key has its own
 unique key.
 
+AutoDeleteKey
+
+DeleteCertificate automatically deletes the
+referenced key when there are no more
+references.
+
 SetCertPath
 
 The device supports modification of
@@ -4413,6 +4274,12 @@ TLSServerSupported
 
 Indicates which TLS server versions
 are supported by the device. Server
+
+ONVIF™
+
+– 63 –
+
+Security Configuration – Ver. 25.12
 versions shall be encoded as version
 numbers, e.g., “1.0 1.1 1.2”.
 
@@ -4422,12 +4289,6 @@ Indicates the maximum number
 of certification paths that may
 be assigned to the TLS server
 simultaneously.
-
-ONVIF™
-
-– 64 –
-
-Security Configuration – Ver. 25.06
 
 TLSClientAuthSupported
 
@@ -4496,6 +4357,13 @@ media using a user provisioned key.
 5.8.6 Authorization Server Capabilities
 The authorization server capabilities reflect optional functionality regarding configuration of external
 authorization servers. The following capabilities are defined:
+
+ONVIF™
+
+– 64 –
+
+Security Configuration – Ver. 25.12
+
 Table 12: Authorization Server Configuration Capabilities
 Capability Name
 
@@ -4506,16 +4374,6 @@ MaxConfigurations
 Indicates the maximum number of authorization
 server configurations that the device is able to
 configure simultaneously.
-
-ONVIF™
-
-– 65 –
-
-Security Configuration – Ver. 25.06
-
-Capability Name
-
-Capability Semantics
 
 ConfigurationTypesSupported
 
@@ -4536,7 +4394,10 @@ Capability
 
 Implied Requirements
 
-MaximumNumberOfPassphrases If greater than zero, the following commands shall be supported:
+MaximumNumberOfPassphrases
+
+If greater than zero, the following commands shall
+be supported:
 
 •
 
@@ -4550,88 +4411,75 @@ GetAllPassphrases
 
 DeletePassphrase
 
-If greater than zero, the device shall support passphrases that consist
-of characters from the ASCII character set and that have a length of up
-to 40 characters.
+If greater than zero, the device shall support
+passphrases that consist of characters from the
+ASCII character set and that have a length of up to
+40 characters.
 MaximumNumberOfKeys
+
+Shall be at least four
 
 MaximumNumberOfCertificates
 
-If greater than zero, then the following commands shall be supported:
-
-•
-
-GetKeyStatus
-
-•
-
-GetAllKeys
-
-•
-
-DeleteKey
-
-If greater than zero, then MaximumNumberOfKeys>0 shall hold.
+Shall be at least four
 
 MaximumNumberOfCertificationPaths
-If greater than zero, MaximumNumberOfCertificates>=2 shall hold.
-RSAKeyPairGeneration
 
-If true, the following commands shall be supported:
+Shall be at least two
+
+MaximumNumberOfCertificationPathValidationPoliciesShall be at least two
+KeyPairGeneration
+
+If it contains RSA, then the list of supported RSA
+key length shall not be empty and the device shall
+support the command:
 
 •
 
 CreateRSAKeyPair
 
-If true, the list of supported RSA key lengths as indicated by the
-RSAKeyLengths capability shall not be empty.
-If true, MaximumNumberOfKeys>0 shall hold.
-ECCKeyPairGeneration
-
-If true, the following commands shall be supported:
+If it contains ECC, then the list of supported elliptic
+curves indicated by the EllipticCurves capability shall
+not be empty and the device shall support the
+commands:
 
 •
 
 CreateECCKeyPair
 
-If true, the list of supported elliptic curves indicated by the EllipticCurves
-capability shall not be empty.
 If true, MaximumNumberOfKeys>0 shall hold.
-PKCS8
+PKCS10
 
-If true, the following commands shall be supported:
-
-•
-
-UploadKeyPairInPKCS8
+If true, the following operations shall be supported:
 
 ONVIF™
 Capability
 
-– 66 –
+– 65 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Implied Requirements
-If true, MaximumNumberOfKeys > 0 shall hold.
-If true, the list of supported password-based encryption algorithms as
-indicated by the PasswordBasedEncryptionAlgorithms capability shall
-contain at least the algorithm pbeWithSHAAnd3-KeyTripleDES-CBC.
-If true, at least one capability
-RSAKeyLengths shall be specified.
 
-PKCS8RSAKeyPairUpload
+•
 
-between
+Creating
+a
+CSR
+with
+CreatePKCS10CSR command.
 
-EllipticCurves
+•
 
-and
+Uploading the certificate created for the
+CSR as well as the certificate of
+the created certificate’s signer with the
+UploadCertificate command.
 
-If true, the conditions of PKCS8 shall be supported:
-If true, the list of supported RSA key lengths as indicated by the
-RSAKeyLengths capability shall not be empty.
+the
 
+If true, the capability KeyPairGeneration shall not be
+empty.
 PKCS12
 
 If true, the following commands shall be supported:
@@ -4639,18 +4487,6 @@ If true, the following commands shall be supported:
 •
 
 UploadCertificateWithPrivateKeyInPKCS12
-
-•
-
-GetCertificate
-
-•
-
-GetAllCertificates
-
-•
-
-DeleteCertificate
 
 •
 
@@ -4664,88 +4500,13 @@ GetAllCertificationPaths
 
 DeleteCertificationPath
 
-If true, MaximumNumberOfKeys >=2 shall hold.
-If true, MaximumNumberOfCertificates >=2 shall hold.
-If true, MaximumNumberOfCertificattionPaths >0 shall hold.
-If true, the list of supported password-based encryption algorithms as
-indicated by the PasswordBasedEncryptionAlgorithms capability shall
-contain at least the algorithm pbeWithSHAAnd3-KeyTripleDES-CBC.
-If true, the list of supported password-based MAC algorithms as
-indicated by the PasswordBasedMACAlgorithms capability shall contain
-at least the algorithm hmacWithSHA256.
-If true, the list of supported X.509 versions as indicated by the
-X.509Versions capability shall contain at least the value 3.
-PKCS12CertificateWithRSAPrivateKeyUpload
-If true, the conditions of capability PKCS12 shall be fulfilled.
-If true, the list of supported RSA key lengths as indicated by the
-RSAKeyLengths capability shall not be empty.
-PKCS10
-
-If true, the following operations shall be supported:
-
-•
-
-Creating a CSR with the CreatePKCS10CSR command.
-
-•
-
-GetCertificate
-
-•
-
-GetAllCertificates
-
-ONVIF™
-Capability
-
-– 67 –
-
-Security Configuration – Ver. 25.06
-
-Implied Requirements
-
-•
-
-DeleteCertificate
-
-•
-
-Uploading the certificate created for the CSR as well as
-the certificate of the created certificate’s signer with the
-UploadCertificate command.
-
-If
-true,
-MaximumNumberOfCertificates>=2
-MaximumNumberOfCertificationPaths>0 shall hold.
-
-and
-
-If true, MaximumNumberOfKeys>=2 shall hold.
-If true and the capability RSAKeyLengths is not empty the following
-condition shall be fulfilled:
-
-•
-
-The capability RSAKeyPairGeneration shall be specified .
-
-If true and the capability EllipticCurves is provided, the following
-conditions shall be fulfilled:
-
-•
-
-The capability ECCKeyPairGeneration shall be specified.
-
-•
-
-The list of supported signature algorithms as indicated by
-the SignatureAlgorithms capability shall contain at least the
-algorithms ECDSA-With-SHA1 and ECDSA-With-SHA256.
-
-PKCS10ExternalCertificationWithRSA
-If true, the conditions of capability PKCS10 shall be fulfilled.
-If true, the list of supported RSA key lengths as indicated by the
-RSAKeyLengths capability shall not be empty.
+If true, the list of supported passwordbased encryption algorithms as indicated by
+the PasswordBasedEncryptionAlgorithms capability
+shall include the baseline specified in the ONVIF
+Security Baseline.
+If true, the list of supported X.509 versions as
+indicated by the X.509Versions capability shall
+contain at least the value 3.
 SelfSignedCertificateCreation
 
 If true, the following commands shall be supported:
@@ -4754,78 +4515,26 @@ If true, the following commands shall be supported:
 
 CreateSelfSignedCertificate
 
-•
-
-GetCertificate
-
-•
-
-GetAllCertificates
-
-•
-
-DeleteCertificate
-
-If true, MaximumNumberOfCertificates> 0 shall hold.
 If true, the following operations shall be supported:
 
 •
-
-Key pair generation as signaled by the RSAKeyPairGeneration
-or ECCKeyPairGeneration capability or key pair upload as
-signaled by the PKCS8 capability or key pair upload as signaled
-by the PKCS12CertificateWithRSAPrivateKeyUpload capability
-
-If true and the capability RSAKeyLengths is not empty the following
-conditions shall be fulfilled:
-
-•
-
-The capability RSAKeyPairGeneration shall be specified .
-
-•
-
-The list of supported signature algorithms as indicated
-by the SignatureAlgorithms capability shall contain
-at least the algorithms sha1-WithRSAEncryption and
-sha256WithRSAEncryption.
-
-ONVIF™
-
-– 68 –
-
-Capability
-
-Security Configuration – Ver. 25.06
-
-Implied Requirements
-If true and the capability EllipticCurves is provided, the following
-condition shall be fulfilled:
-
-•
-
-The capability ECCKeyPairGeneration shall be specified.
-
-SelfSignedCertificateCreationWithRSA
-If true, the conditions of the SelfSignedCertificateCreation capability shall
-be supported.
-If true, the list of supported RSA key lengths as indicated by the
-RSAKeyLengths capability shall not be empty.
 TLSServerSupported
+
+Key pair generation as signaled by the
+KeyPairGeneration or key pair upload as
+signaled by PKCS12 capability.
 
 If
 not
 empty,
-PKCS10ExternalCertificationWithRSA
-SelfSignedCertificateCreationWithRSA
-or
-PKCS10
+PKCS10,
+PKCS12
 SelfSignedCertificateCreation shall be true.
 
 or
-or
 
-If not empty, the following commands shall be supported:
+If not empty, the following commands shall be
+supported:
 
 •
 
@@ -4851,6 +4560,15 @@ AddServerCertificateAssignment
 
 RemoveServerCertificateAssignment
 
+ONVIF™
+Capability
+
+– 66 –
+
+Security Configuration – Ver. 25.12
+
+Implied Requirements
+
 •
 
 ReplaceServerCertificateAssignment
@@ -4862,38 +4580,8 @@ GetAssignedServerCertificates
 If
 not
 empty,
-MaximumNumberOfCertificationPaths>=2
-MaximumNumberOfTLSCertificationPaths>0 shall hold.
-TLSServerSupported
-and If
-TLSServerSupported
-is
-PKCS10ExternalCertificationWithRSA
-PKCS10ExternalCertificationWithRSA
-MaximumNumberOfCertificates>=3 shall hold.
-TLSServerSupported
-PKCS10
-
-and
-
-non-empty
-is
-
-If TLSServerSupported is non-empty and
-MaximumNumberOfCertificates>=3 shall hold.
-
-PKCS10
-
-and
-and
-true,
-
-is
-
-true,
-
-MaximumNumberOfTLSCertificationPaths
-If greater than zero, MaximumNumberOfCertificationPaths>0 shall hold.
+MaximumNumberOfTLSCertificationPaths>0 shall
+hold.
 EnabledVersionsSupported
 
 If true, the following commands are supported:
@@ -4908,27 +4596,20 @@ GetEnabledTLSVersions
 
 X.509Versions
 
-If X.509v3 is supported, the device shall support the distinguished name
-attribute types country, organization, organizational unit, distinguished
-name qualifier, state or province name, common name, and serial
-number.
+If X.509v3 is supported, the device shall support
+the distinguished name attribute types country,
+organization, organizational unit, distinguished
+name qualifier, state or province name, common
+name, and serial number.
 
 MaximumNumberOfCRLs
 
-If greater than zero, then the following commands shall be supported
+If greater than zero, then the following commands
+shall be supported
 
 •
 
 UploadCRL
-
-ONVIF™
-Capability
-
-– 69 –
-
-Security Configuration – Ver. 25.06
-
-Implied Requirements
 
 •
 
@@ -4942,31 +4623,18 @@ GetAllCRLs
 
 DeleteCRL
 
-MaximumNumberOfCertificationPathValidationPolicies
-If greater than zero, then the following command shall be supported
+If greater than zero, then processing X.509 CRLs
+that are compliant to the CRL profile defined in RFC
+5280, Sect. 5 and that
 
 •
 
-CreateCertPathValidationPolicy
-
-•
-
-GetCertPathValidationPolicy
-
-•
-
-GetAllCertPathValidationPolicies
-
-•
-
-DeleteCertPathValidationPolicy
-
-If greater than zero, PKCS12CertificateWithRSAPrivateKeyUpload,
-PKCS10ExternalCertificationWithRSA
-or
-SelfSignedCertificateCreationWithRSA or PKCS12 or PKCS10 or
-SelfSignedCertificateCreation shall be true.
 TLSClientAuthSupported
+
+are complete direct CRLs as defined in
+RFC 5280 that are signed with the same
+signature key as the signature key that the
+CA uses to sign issued certificates
 
 If true, the following commands shall be supported
 
@@ -4995,50 +4663,32 @@ ReplaceCertPathValidationPolicyAssignment
 GetAssignedCertPathValidationPolicies
 
 If true, TLSServerSupported shall not be empty.
-If
-true,
-MaximumNumberOfCertificationPathValidationPolicies>=2
-and MaximumNumberOfTLSCertificationPathValidationPolicies>0 shall
-hold.
-If true, the device shall support
-
-•
-
-validating certification paths containing X.509v3 certificates that
-are signed with signatures of type sha1-WithRSAEncryption or
-sha256WithRSAEncrpytion
-
-•
-
-processing X.509 CRLs that are compliant to the CRL profile
-defined in RFC 5280, Sect. 5 and that
-○
-
-are signed with signatures of type sha1WithRSAEncryption or, sha256WithRSAEncryption and
-
-○
-
-are complete direct CRLs as defined in RFC 5280 that
-are signed with the same signature key as the signature
-key that the CA uses to sign issued certificates
 
 ONVIF™
 Capability
 
-– 70 –
+– 67 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Implied Requirements
-
-MaximumNumberOfTLSCertificationPathValidationPolicies
 If
-greater
-than
-zero,
-MaximumNumberOfCertificationPathValidationPolicies >0 shall hold.
+true,
+MaximumNumberOfTLSCertificationPathValidationPolicies>0
+shall hold.
+If true, the device shall support
+
+•
+
 MaximumNumberOfDot1XConfigurations
-If greater than zero, the following commands shall be supported:
+
+validating certification paths containing
+X.509v3 certificates that are signed with
+signature algorithm listed in the security
+baseline.
+
+If greater than zero, the following commands shall
+be supported:
 
 •
 
@@ -5068,29 +4718,46 @@ GetNetworkInterfaceDot1XConfiguration
 
 DeleteNetworkInterfaceDot1XConfiguration
 
-If greater than zero, the Dot1XMethods capability shall be present and
-shall contain at least the EAP-PEAP MSCHAPv2 method.
+If greater than zero, the Dot1XMethods capability
+shall be present and shall contain at least the EAPPEAP MSCHAPv2 method.
 Dot1XMethods
 
-If not empty, shall contain at least the “EAP-PEAP/MSCHAPv2” method,
-and MaximumNumberOfDot1XConfigurations shall be greater than zero.
+If
+not
+empty,
+shall
+contain
+at
+least
+the
+“EAP-PEAP/MSCHAPv2”
+method,
+and
+MaximumNumberOfDot1XConfigurations shall be
+greater than zero.
 
 MediaSigningSupported
 
-If true, GetAssignedMediaSigningCertificates shall be supported.
+If true, GetAssignedMediaSigningCertificates shall
+be supported.
 
-UserMediaSigningKeySupported If
-true,
-AddMediaSigningCertificateAssignment
-RemoveMediaSigningCertificateAssignment shall be supported.
+UserMediaSigningKeySupported
+
+If true, AddMediaSigningCertificateAssignment and
+RemoveMediaSigningCertificateAssignment shall
+be supported.
+
 EllipticCurves
 
-and
-
-The list of supported elliptic curves.
+The list of supported elliptic curves. If the entry is
+non-empty it shall contain at least the baseline
 
 AuthorizationServer.MaxConfigurations
-If > 0, MaximumNumberOfCertificationPathValidationPolicies>=2
+
+If
+>
+0,
+MaximumNumberOfCertificationPathValidationPolicies>=2
 
 5.9 Events
 5.9.1 Key Status
@@ -5098,6 +4765,13 @@ A device that indicates support for key handling via the MaximumNumberOfKeys cap
 information about key status changes through key status events.
 A device shall include optional item OldStatus unless NewStatus is generating.
 Topic: tns1:Advancedsecurity/Keystore/KeyStatus
+
+ONVIF™
+
+– 68 –
+
+Security Configuration – Ver. 25.12
+
 <tt:MessageDescription>
 <tt:Source>
 <tt:SimpleItemDescription Name="KeyID" Type="tas:KeyID"/>
@@ -5114,12 +4788,6 @@ The service specific data types are defined in security.wsdl.
 6 Security Considerations
 This section is informative.
 
-ONVIF™
-
-– 71 –
-
-Security Configuration – Ver. 25.06
-
 •
 
 Faults and their types shall not disclose sensitive information to an attacker that he could not obtain
@@ -5129,10 +4797,7 @@ otherwise.
 
 Secure up to date signature algorithm should be implemented by devices and clients. Devices signal
 the supported algorithm via their capabilities and clients should select the algorithm with highest
-security strength supported by both parties. As common baseline this specification requires device
-side support for SHA-2, particularly sha256WithRSAEncryption as specified in RFC 4055. Note that
-for backward compatibility of some usages this specification currently mandates device side support
-for sha1WithRSAEncryption as specified in RFC 3279.
+security strength supported by both parties. See ONVIF Security Baseline for algorithm to be supported.
 
 •
 
@@ -5148,11 +4813,11 @@ keystore be distinct.
 •
 
 Private keys must be protected against disclosure to unauthorized parties. If a private key is uploaded
-in an encrypted PKCS#8 or PKCS#12 structure, the passphrase that is used to encrypt the structure
-must be uploaded to the device over a communication channel that is protected against eavesdropping
-in order to preserve the confidentiality of the private key. Moreover, the confidentiality of the uploaded
-private key depends on the strength of the encryption passphrase. It is therefore strongly recommended
-to use random passwords with sufficient length.
+in an encrypted PKCS#12 structure, the passphrase that is used to encrypt the structure must be
+uploaded to the device over a communication channel that is protected against eavesdropping in order
+to preserve the confidentiality of the private key. Moreover, the confidentiality of the uploaded private
+key depends on the strength of the encryption passphrase. It is therefore strongly recommended to
+use random passwords with sufficient length.
 
 •
 
@@ -5160,20 +4825,6 @@ In general, externally generated keys must be regarded less trustworthy than key
 by the device because the probability of being disclosed to an attacker is higher for an externally
 generated key than for an internally generated key. A client may determine whether a key was
 generated by the device from the externallyGenerated attribute of the key.
-
-•
-
-While new specifications should be based on PKCS#5 v2.0 or higher, adoption of this standard
-is still limited. Therefore, this specification intends to balance security and interoperability by
-mandating cryptographic algorithms based on PKCS#5 v1.5 as interoperability baseline while strongly
-encouraging the use of PKCS#5 v2.0 or higher. Future versions of this specification or specifications
-referring to this specification may mandate additional cryptographic algorithms.
-
-•
-
-Although PKCS#8 RFC 5208 is widely used for exchanging cryptographic keys, this specification is
-based on the successor standard RFC 5958, particularly in order to incorporate both private key and
-public key in the same data structure.
 
 •
 
@@ -5200,17 +4851,18 @@ an attribute of the X509Certificate data type.
 RFC 5280, Sect. 6.1.4 (k) mandates that every certificate in a certification path except for the end
 entity certificate must be verified to be a CA certificate. For X.509 version 3 certificates, this is verified
 through the CA attribute in the basic constraints extension. For X.509 version 1 and 2 certificates, this
+
+ONVIF™
+
+– 69 –
+
+Security Configuration – Ver. 25.12
+
 information must be supplied by out-of-band mechanisms. Within the scope of this specification, the
 only means to obtain this information is the trust anchor information contained in the certification path
 validation algorithm.
 
-ONVIF™
-
 •
-
-– 72 –
-
-Security Configuration – Ver. 25.06
 
 When configuring IEEE 802.1X, it is usually necessary to upload a password to the device’s keystore.
 This should be done either on a private network (e.g., using a direct network connection between a
@@ -5234,17 +4886,17 @@ The keystore design assumes that passphrases are chosen by clients. Therefore, a
 passphrases from a device is deliberately omitted. If client loses a previously uploaded passphrase, the client
 should create a new passphrase, upload the new passphrase to the device, and delete the old passphrase
 from the device.
-This specification deliberately deviates from the terminology in PKCS#8 and PKCS#12 by using the term
-‘passphrase’ instead of ‘password’ in order to avoid confusion with the password that is assigned to ONVIF
-device users and the corresponding API in the ONVIF Device Management Service.
+This specification deliberately deviates from the terminology in PKCS#12 by using the term ‘passphrase’
+instead of ‘password’ in order to avoid confusion with the password that is assigned to ONVIF device users
+and the corresponding API in the ONVIF Device Management Service.
 The keystore design is based on the rationale that an RSA key pair is a special type of key pair and a key
 pair is a special type of key. Therefore, key-related operations in the keystore deliberately refer to the most
-generic possible type in this hierarchy. For example, the DeleteKey operation (see Sect. 5.2.6.2.7) refers to a
+generic possible type in this hierarchy. For example, the DeleteKey operation (see Sect. 5.2.6.2.6) refers to a
 key instead of a key pair or even an RSAKeyPair because it is applicable to all keys. On the other hand, the
 GetPrivateKeyStatus command refers to a key pair instead of a key, since this command is not meaningful for
 a key that is not a key pair, e.g., a symmetric key.
-While this revision of the keystore specification only supports RSA key pairs as key pairs, later revisions of this
-specification may add other types of key pairs or symmetric keys as special types of keys.
+While this revision of the keystore specification only supports RSA and EC key pairs as key pairs, later revisions
+of this specification may add other types of key pairs or symmetric keys as special types of keys.
 Some interactions with the keystore, e.g., retrieving the private key for a public key that is contained in
 a certificate, are required device-internally, but need not be accessible to clients and may even, as in the
 above example, imply a security risk when made available outside the device. Such operations are therefore
@@ -5257,16 +4909,16 @@ algorithm can be used in their default configurations as much as permitted by th
 acceptable security baseline.
 At the same time, more fine grained customization of the default certification path validation behavior in
 future versions of this specification is enabled by an extensible CertValidationPolicyParameters data type and
-capabilities that indicate which configuration options a device supports. As an example, checking for the TLS
-WWW client authentication key usage extension in client certificates is included in this specification, which can
-be implemented with moderate effort on the device side (e.g., with the OpenSSL option –purpose sslclient).
 
 ONVIF™
 
-– 73 –
+– 70 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
+capabilities that indicate which configuration options a device supports. As an example, checking for the TLS
+WWW client authentication key usage extension in client certificates is included in this specification, which can
+be implemented with moderate effort on the device side (e.g., with the OpenSSL option –purpose sslclient).
 Customization options for other parameters of the certification path validation algorithm are deliberately left to
 future versions of this specification in order to limit the required initial implementation effort.
 In order to facilitate future extensions of this specification, the number of certification path validation policies that
@@ -5284,9 +4936,9 @@ be addressed by later revisions of this document.
 
 ONVIF™
 
-– 74 –
+– 71 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Annex A.
 JWT Content example
@@ -5309,9 +4961,9 @@ RJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
 
 ONVIF™
 
-– 75 –
+– 72 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Annex B.
 JWT over SCTP example
@@ -5351,9 +5003,9 @@ pTTWVLS0YyUVQ0ZndwTWVKZjM2UE9rNnlKVl9hZFFzc3c1Yw==
 
 ONVIF™
 
-– 76 –
+– 73 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Annex C.
 JWT over HTTPS example
@@ -5408,9 +5060,9 @@ X-Frame-Options: SAMEORIGIN
 
 ONVIF™
 
-– 77 –
+– 74 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Annex D.
 JWT over RTSPS example
@@ -5443,60 +5095,55 @@ Accept: application/sdp
 
 ONVIF™
 
-– 78 –
+– 75 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Annex E.
-Cipher Reference (Informative)
-This Annex is advocating a small subset of Ciphers as part of the ONVIF standard that readers of this
-specification can use as an informative guide. The following small subset of ciphers covering TLS 1.2 / 1.3
-are common recommendations issued as guidance by the bodies Cloudflare, IETF (TLS 1.2, TLS1.3), Mozilla,
-and ciphersuite.info (TLS 1.2, TLS 1.3).
-While TLS 1.2 and 1.3 are both currently viable, we would suggest that TLS 1.3 is preferred. Do note that the
-table is not ordered by the strength of the cipher.
-Table E.1: TLS 1.3 / 1.2 Cipher list
-Minimum Protocol
+Deprecated Capabilities
+The following capabilities from the first version of the specification are still present in the schema files and are
+also partially referenced by the TLS Configuration Addon.
 
-IANA Name
+E.1 Keystore
+Table E.1: Deprecated Keystore Capabilities
+Capability Name
 
-TLS 1.3
+Replacement
 
-TLS_AES_256_GCM_SHA384
+RSAKeyPairGeneration
 
-TLS 1.3
+KeyPairGeneration and RSAKeyLengths
 
-TLS_CHACHA20_POLY1305_SHA256
+ECCKeyPairGeneration
 
-TLS 1.2
+KeyPairGeneration and EllipticCurves
 
-TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+PKCS8RSAKeyPairUpload
 
-TLS 1.2
+deprecated
 
-TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+PKCS12CertificateWithRSAPrivateKeyUpload
 
-TLS 1.2
+PKCS12 and RSAKeyLengths
 
-TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+PKCS10ExternalCertificationWithRSA
 
-TLS 1.2
+PKCS10 and RSAKeyLengths
 
-TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+SelfSignedCertificateCreationWithRSA
 
-TLS 1.2
+SelfSignedCertificateCreation
+RSAKeyLengths
 
-TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+PasswordBasedMACAlgorithms
 
-TLS 1.2
-
-TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+and
 
 ONVIF™
 
-– 79 –
+– 76 –
 
-Security Configuration – Ver. 25.06
+Security Configuration – Ver. 25.12
 
 Annex F.
 Revision History
@@ -5619,8 +5266,8 @@ Dec-2022
 
 Hans Busch
 
-Do not require to support multiple identical pathes.
-Remove CRL requirement on client authentication.
+Do not require to support multiple identical paths. Remove
+CRL requirement on client authentication.
 
 23.06
 
@@ -5679,5 +5326,17 @@ Tomasz Chmiel
 
 Add custom claims to JWTConfiguration. Add validation
 policy to Dot1X configuration.
+
+25.12
+
+Dec-2025
+
+Ottavio Campana,
+Hans Busch
+
+Add support for user roles. Remove requirements
+on integrity password derivation. Move algorithm
+requirements to Security Baseline. Add AutoDeleteKey.
+Deprecate PKCS8.
 
 

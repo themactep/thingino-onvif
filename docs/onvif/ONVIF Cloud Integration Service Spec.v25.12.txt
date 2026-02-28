@@ -2,18 +2,18 @@ ONVIF™
 
 –1–
 
-Cloud Integration – Ver. 25.06
+Cloud Integration – Ver. 25.12
 
 ONVIF™
 Cloud Integration Specification
-Version 25.06
-June, 2025
+Version 25.12
+December, 2025
 
 ONVIF™
 
 –2–
 
-Cloud Integration – Ver. 25.06
+Cloud Integration – Ver. 25.12
 
 Copyright © 2008-2025 ONVIF™ All rights reserved.
 Recipients of this document may copy, distribute, publish, or display this document so long as this copyright notice, license and disclaimer
@@ -36,7 +36,7 @@ CORPORATION.
 
 –3–
 
-Cloud Integration – Ver. 25.06
+Cloud Integration – Ver. 25.12
 
 CONTENTS
 1
@@ -72,39 +72,48 @@ Overview
 
 5
 
-Web Services ........................................................................................................................... 5
+Web Services ........................................................................................................................... 6
 
-4.2 Security .................................................................................................................................... 6
-4.2.1 Authentication .................................................................................................................... 6
-4.2.2 Information protection ........................................................................................................ 6
+4.2 Security .................................................................................................................................... 7
+4.2.1 Authentication .................................................................................................................... 7
+4.2.2 Information protection ........................................................................................................ 7
 4.3
 5
 
-Format of the share token ........................................................................................................ 6
+6
+
+Format of the share token ........................................................................................................ 7
 
 Device sharing
 
-7
+8
 
 5.1
 
-startDeviceSharing .................................................................................................................... 7
+startDeviceSharing .................................................................................................................... 8
 
 5.2
 
-deviceSharingCompleted .......................................................................................................... 7
+deviceSharingCompleted .......................................................................................................... 8
+
+Firmware upgrade
+6.1
+
+8
+
+getAvailableFWImages ............................................................................................................. 8
 
 Annex A
 
 Revision History
 
-8
+10
 
 ONVIF™
 
 –4–
 
-Cloud Integration – Ver. 25.06
+Cloud Integration – Ver. 25.12
 
 1 Scope
 This document defines the connection protocol for sharing cloud native devices between cloud-based clients.
@@ -202,7 +211,7 @@ YAML
 
 Yet Another Markup Language.
 
-Cloud Integration – Ver. 25.06
+Cloud Integration – Ver. 25.12
 
 4 Overview
 On-boarding devices in cloud native Video Management Systems involves two major steps:
@@ -241,6 +250,41 @@ Ownership claim
 Device sharing
 
 Figure 1: Onboarding phases and ONVIF scope
+If the original connection to the MCS is kept, it is possibile for the MCS to perform FW upgrade, upon request
+from the OCS. On the MCS, multiple versions of device FW images may be present for each model, so that the
+OCS can select the desired one. In case upgrading to the desired FW version will require multiple operations,
+the device and the MCS will perform them automatically, without the need for the OCS to know the required
+steps.
+Figure Figure 2 demonstrates the flow for cloud firmware upgrade.
+
+ONVIF™
+
+–6–
+
+MCS
+
+Cloud Integration – Ver. 25.12
+
+OCS
+
+Device
+
+getAvailabeFWimages
+
+returns list of availabe FW
+versions for a given model
+
+tds:StartCloudFirmwareUpgrade
+
+proprietary interaction,
+out of the scope of this service
+
+tns1:Monitoring/CloudFirmwareUpgrade/Completed
+
+or
+tns1:Monitoring/CloudFirmwareUpgrade/Failure
+
+Figure 2: Cloud firmware upgrade
 
 4.1 Web Services
 Unlike for other services defined by ONVIF, in this document the term Web Services is the name of a
@@ -250,9 +294,9 @@ OpenAPI is used for message transfer and YAML is used for describing the service
 
 ONVIF™
 
-–6–
+–7–
 
-Cloud Integration – Ver. 25.06
+Cloud Integration – Ver. 25.12
 
 YAML Document
 
@@ -271,8 +315,8 @@ MCS
 OCS
 OpenAPI
 
-Figure 2: OpenAPI based development principles
-Figure 2 gives an overview of the basic principles for development based on Web Services and OpenAPI. The
+Figure 3: OpenAPI based development principles
+Figure 3 gives an overview of the basic principles for development based on Web Services and OpenAPI. The
 service provider (MCS) implements the ONVIF service. The service is described using the YAML-based file.
 Then, the YAML file is used as the basis for the service requester (OCS) implementation/integration. Integration
 is simplified using code generating tools that generate platform specific code that can be used by the developers
@@ -299,13 +343,15 @@ To start the device sharing operation, the OCS must provide a share token to the
 to access the camera. The way the OCS retrieves the share token is beyond the scope of this specification.
 The share token must be a JWT and must include the following claims:
 
+ONVIF™
+
+–8–
+
+Cloud Integration – Ver. 25.12
+
 •
 
 onvif:xaddr: The full URI where the PCS will be accepting the incoming requests from the OCS
-
-ONVIF™
-
-–7–
 
 •
 
@@ -321,8 +367,6 @@ onvif:manufacturer: The manufacturer of the device.
 
 The claims onvif:sn, onvif:model and onvif:manufacturer
 GetDeviceInformation of the Device service.
-
-Cloud Integration – Ver. 25.06
 
 shall
 
@@ -364,9 +408,33 @@ This is an empty message.
 FAULTS:
 No command specific faults defined.
 
+6 Firmware upgrade
+6.1 getAvailableFWImages
+This operation notifies the OCS of the available FW versions for a specific device model. It is mandatory that
+the value of the model parameter coincides with the model parameter of tds:GetDeviceInformationResponse.
+REQUEST:
+model [string]
+
 ONVIF™
 
-–8–
+–9–
+
+Cloud Integration – Ver. 25.12
+
+RESPONSE:
+
+•
+
+An array of lists with all the FW versions available for the specified model
+
+FAULTS:
+400 - Invalid Argument Value
+
+ONVIF™
+
+– 10 –
+
+Cloud Integration – Ver. 25.12
 
 Annex A.
 Revision History
@@ -380,12 +448,19 @@ Changes
 
 25.06
 
-June 2025
+Jun-2025
 
 Ottavio Campana
 
 First release
 
-Cloud Integration – Ver. 25.06
+25.12
+
+Dec-2025
+
+Ottavio Campana
+
+Add listing the available FW images for cloud firmware
+upgrade
 
 

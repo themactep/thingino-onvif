@@ -4,16 +4,16 @@ ONVIF™
 
 ONVIF™
 Media2 Service Specification
-Version 25.06
-June, 2025
+Version 25.12
+December, 2025
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 ONVIF™
 
 –2–
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 Copyright © 2008-2025 ONVIF™ All rights reserved.
 Recipients of this document may copy, distribute, publish, or display this document so long as this copyright notice, license and disclaimer
@@ -36,7 +36,7 @@ CORPORATION.
 
 –3–
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 CONTENTS
 1
@@ -88,27 +88,27 @@ Service
 5.1 Media Profile Methods .............................................................................................................. 9
 5.1.1 CreateProfile ..................................................................................................................... 9
 5.1.2 GetProfiles ....................................................................................................................... 10
-5.1.3 AddConfiguration ............................................................................................................. 10
+5.1.3 AddConfiguration ............................................................................................................. 11
 5.1.4 RemoveConfiguration ....................................................................................................... 11
 5.1.5 DeleteProfile .................................................................................................................... 12
 5.1.6 CreateMultitrackConfiguration ........................................................................................... 12
 5.2 Media Configurations .............................................................................................................. 13
 5.2.1 General ........................................................................................................................... 13
-5.2.2 Video source configuration ............................................................................................... 13
-5.2.3 Video encoder configuration ............................................................................................. 14
+5.2.2 Video source configuration ............................................................................................... 14
+5.2.3 Video encoder configuration ............................................................................................. 15
 5.2.4 Audio source configuration ............................................................................................... 15
 5.2.5 Audio encoder configuration ............................................................................................. 15
 5.2.6 PTZ Configuration ............................................................................................................ 15
 5.2.7 Analytics Configuration ..................................................................................................... 15
-5.2.8 Metadata Configuration .................................................................................................... 15
+5.2.8 Metadata Configuration .................................................................................................... 16
 5.2.9 Audio output configuration ................................................................................................ 16
 5.2.9.1 Audio channel modes ................................................................................................ 16
-5.2.9.2 SetEQPreset ............................................................................................................. 16
+5.2.9.2 SetEQPreset ............................................................................................................. 17
 5.2.10 Audio decoder configuration ........................................................................................... 17
 5.2.11 Receiver configuration .................................................................................................... 17
 5.3 Media Configuration Methods .................................................................................................. 17
 5.3.1 General ........................................................................................................................... 17
-5.3.2 Get<entity>Configurations ................................................................................................ 17
+5.3.2 Get<entity>Configurations ................................................................................................ 18
 5.3.3 Set<entity>Configuration .................................................................................................. 18
 5.3.4 Get<entity>ConfigurationOptions ....................................................................................... 19
 5.3.5 GetVideoEncoderInstances ............................................................................................... 19
@@ -118,10 +118,10 @@ Service
 5.5.1 GetSnapshotUri ............................................................................................................... 21
 5.6 Multicast ................................................................................................................................. 22
 5.6.1 StartMulticastStreaming .................................................................................................... 22
-5.6.2 StopMulticastStreaming .................................................................................................... 22
+5.6.2 StopMulticastStreaming .................................................................................................... 23
 5.7 Synchronization Points ............................................................................................................ 23
 5.7.1 SetSynchronizationPoint ................................................................................................... 23
-5.8 Video source mode ................................................................................................................ 23
+5.8 Video source mode ................................................................................................................ 24
 5.8.1 GetVideoSourceModes ..................................................................................................... 24
 
 ONVIF™
@@ -130,70 +130,75 @@ Service
 
 5.8.2
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 SetVideoSourceMode ....................................................................................................... 24
 
-5.9 OSD (On-Screen Display) ....................................................................................................... 24
-5.9.1 General ........................................................................................................................... 24
+5.9 OSD (On-Screen Display) ....................................................................................................... 25
+5.9.1 General ........................................................................................................................... 25
 5.9.2 CreateOSD ...................................................................................................................... 25
 5.9.3 DeleteOSD ...................................................................................................................... 26
 5.9.4 GetOSDs ......................................................................................................................... 26
 5.9.5 SetOSD ........................................................................................................................... 27
 5.9.6 GetOSDOptions ............................................................................................................... 27
-5.9.7 OSD Images .................................................................................................................... 27
-5.10 Privacy Masks ...................................................................................................................... 28
-5.10.1 General ......................................................................................................................... 28
+5.9.7 OSD Images .................................................................................................................... 28
+5.10 Privacy Masks ...................................................................................................................... 29
+5.10.1 General ......................................................................................................................... 29
 5.10.2 CreateMask ................................................................................................................... 29
 5.10.3 DeleteMask .................................................................................................................... 30
 5.10.4 GetMasks ...................................................................................................................... 30
-5.10.5 SetMask ........................................................................................................................ 30
+5.10.5 SetMask ........................................................................................................................ 31
 5.10.6 GetMaskOptions ............................................................................................................ 31
-5.11 WebRTC ............................................................................................................................... 31
-5.11.1 WebRTC configuration .................................................................................................... 31
+5.11 WebRTC ............................................................................................................................... 32
+5.11.1 WebRTC configuration .................................................................................................... 32
 5.11.2 GetWebRTCConfigurations ............................................................................................. 32
 5.11.3 SetWebRTCConfigurations ............................................................................................. 32
 5.12 Audio Clip Management ........................................................................................................ 33
 5.12.1 Audio Clip Configuration ................................................................................................. 33
-5.12.2 GetAudioClips ................................................................................................................ 33
+5.12.2 GetAudioClips ................................................................................................................ 34
 5.12.3 AddAudioClip ................................................................................................................. 34
 5.12.4 SetAudioClip .................................................................................................................. 35
 5.12.5 DeleteAudioClip ............................................................................................................. 35
-5.12.6 PlayAudioClip ................................................................................................................ 35
+5.12.6 PlayAudioClip ................................................................................................................ 36
 5.12.7 GetPlayingAudioClips ..................................................................................................... 36
-5.13
+5.13 Multicast Audio Decoder ....................................................................................................... 37
+5.13.1 GetMulticastAudioDecoderConfigurations ........................................................................ 37
+5.13.2 GetMulticastAudioDecoderConfigurationOptions .............................................................. 38
+5.13.3 SetMulticastAudioDecoderConfiguration .......................................................................... 38
+5.14
 
-GetServiceCapabilities .......................................................................................................... 36
+GetServiceCapabilities .......................................................................................................... 38
 
-5.14 Events .................................................................................................................................. 38
-5.14.1 Profile Change ............................................................................................................... 38
-5.14.2 Configuration Change .................................................................................................... 38
-5.14.3 Active Connections ........................................................................................................ 38
-5.14.4 Active Sessions ............................................................................................................. 39
-5.14.5 Audio Clip State ............................................................................................................. 40
+5.15 Events .................................................................................................................................. 40
+5.15.1 Profile Change ............................................................................................................... 40
+5.15.2 Configuration Change .................................................................................................... 40
+5.15.3 Active Connections ........................................................................................................ 40
+5.15.4 Active Sessions ............................................................................................................. 41
+5.15.5 Audio Clip State ............................................................................................................. 42
+5.15.6 MulticastAudioDecoder State .......................................................................................... 43
 Annex A
 
 Efficient XML Interchange (EXI) (Normative)
 
-41
+44
 
 Annex B
 
 Lens description (Normative)
 
-42
+45
 
 Annex C
 
 Revision History
 
-44
+47
 
 ONVIF™
 
 –5–
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 1 Scope
 This document defines the second generation web service interface for configuration of the so called media
@@ -284,7 +289,7 @@ EXI
 
 Efficient XML Interchange Format
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 4 Overview
 Media configurations are handled through the media service. Media configurations are used to determine the
@@ -338,7 +343,7 @@ and can be either static or created dynamically by the device. For example, the 
 
 –7–
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 be created by the device depending on current available encoding resources. A configuration entity is one of
 the following:
@@ -383,6 +388,7 @@ A profile consists of all or a subset of these configuration entities. Depending
 a particular configuration entity can be part of a profile or not. For example, a profile with an audio source and
 an audio encoder configuration can exist only in a device with audio support.
 An example of a complete profile configuration is illustrated in Figure 2.
+
 .
 Media Profile
 Video
@@ -425,8 +431,6 @@ Events
 PTZ
 Configuration
 
-PTZ Node
-
 Analytics
 Configuration
 
@@ -434,15 +438,17 @@ Metadata
 Configuration
 
 Figure 2: Figure 2: Complete profile configuration
-A media profile describes how and what to present to the client in a media stream as well as how to handle
-PTZ input and Analytics.
+
+PTZ Node
 
 ONVIF™
 
 –8–
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
+A media profile describes how and what to present to the client in a media stream as well as how to handle
+PTZ input and Analytics.
 The following commands manage Media Profiles:
 
 •
@@ -527,18 +533,21 @@ configurations are handled through media profiles. An overview of the ONVIF medi
 given in Section 1.
 The media service commands are divided into two major categories:
 
+ONVIF™
+
 •
+
+•
+
+–9–
+
+Media2 – Ver. 25.12
 
 Media configuration:
 ○
 
 Media profile commands
 
-ONVIF™
-
-•
-
-–9–
 ○
 
 Video source commands
@@ -570,8 +579,6 @@ Audio output commands
 ○
 
 Audio decoder commands
-
-Media2 – Ver. 25.06
 
 Media streaming:
 ○
@@ -618,8 +625,6 @@ List
 
 entries
 
-with
-
 RESPONSE:
 
 •
@@ -634,19 +639,21 @@ FAULTS:
 env:Receiver - ter:Action - ter:MaxNVTProfiles
 The maximum number of supported profiles supported by the device has been reached.
 
+with
+
+ONVIF™
+
+– 10 –
+
+Media2 – Ver. 25.12
+
 •
 
 env:Receiver - ter:Action - ter:ConfigurationConflict
 Other configurations of the media profile conflicts with the one to add and adding it would cause a
 conflicting media profile.
 
-ONVIF™
-
 •
-
-– 10 –
-
-Media2 – Ver. 25.06
 
 env:Sender - ter:InvalidArgVal - ter:NoConfig
 One of the provided configurations indicated by their ConfigurationToken does not exist.
@@ -717,17 +724,16 @@ READ_MEDIA
 Note: a client can request an enumeration of profiles without any configuration details by not passing a Type
 parameter.
 
-5.1.3 AddConfiguration
-This operation adds one or more configurations to an existing media profile. If one of the configuration already
-exists in the media profile, it will be replaced. A device supporting the Media2 service shall support this
-command.
-
 ONVIF™
 
 – 11 –
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
+5.1.3 AddConfiguration
+This operation adds one or more configurations to an existing media profile. If one of the configuration already
+exists in the media profile, it will be replaced. A device supporting the Media2 service shall support this
+command.
 REQUEST:
 
 •
@@ -800,14 +806,14 @@ env:Receiver - ter:Action - ter:ConfigurationConflict
 Other configurations of the media profile are dependant on this configuration and removing it would
 cause a conflicting state of the media profile.
 
-ACCESS CLASS:
-ACTUATE
-
 ONVIF™
 
 – 12 –
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
+
+ACCESS CLASS:
+ACTUATE
 
 5.1.5 DeleteProfile
 This operation deletes a profile. The device shall support the deletion of a media profile through the
@@ -869,19 +875,19 @@ FAULTS:
 env:Sender - ter:InvalidArgVal - ter:NoProfile
 One or more passed profile tokens do not exist.
 
+ONVIF™
+
 •
+
+– 13 –
+
+Media2 – Ver. 25.12
 
 env:Sender - ter:InvalidArgVal - ter: InvalidProfileToken
 The requested profiles can not be put together to create a virtual profile.
 
 ACCESS CLASS:
 ACTUATE
-
-ONVIF™
-
-– 13 –
-
-Media2 – Ver. 25.06
 
 5.2 Media Configurations
 5.2.1 General
@@ -948,17 +954,16 @@ AnalyticsConfiguration depends on VideoSourceConfiguration and/or AudioSourceCon
 If a dependency is violated in an AddConfiguration or RemoveConfiguration request, a ter:ConfigurationConflict
 fault should be returned in the response.
 
-5.2.2 Video source configuration
-A VideoSourceConfiguration contains a reference to a VideoSource and a Bounds structure containing either
-the whole VideoSource pixel area or a sub-portion of it. The Bounds and VideoSource define the image that is
-streamed to a client. The origin of the bounds is located in the upper left corner of the video source.
-
 ONVIF™
 
 – 14 –
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
+5.2.2 Video source configuration
+A VideoSourceConfiguration contains a reference to a VideoSource and a Bounds structure containing either
+the whole VideoSource pixel area or a sub-portion of it. The Bounds and VideoSource define the image that is
+streamed to a client. The origin of the bounds is located in the upper left corner of the video source.
 The Rotate option specifies an optional rotation of the area defined by the Bounds parameters. Three modes
 are defined:
 Off
@@ -981,6 +986,10 @@ vice versa.
 All coordinate systems (e.g. Normalized coordinate system of Privacy Masks in the Media2 Service and pixel
 based coordinate system of Motion Regions in the Analytics service) that apply to a video source configuration
 are based on the resulting image after applying the bounds and rotation to the source image.
+When Mirror is enabled, the video will be flipped horizontally. If applied alongside rotation, the mirror
+effect shall be executed after the rotation. Additionally, when Mirror is enabled and Reverse=Auto is set
+in PTControlDirection or if the device doesn't support Reverse in PTControlDirection, the device shall
+automatically adjust the pan direction.
 The Lens Description option allows to describe the geometric distortion of the Video Source. For details see
 Annex B.
 The Scene Orientation options allow a description of the orientation of the scene the video source is capturing.
@@ -1024,6 +1033,12 @@ sensors.
 
 Dewarp – Dewarped view mode for device supporting fisheye lens.
 
+ONVIF™
+
+– 15 –
+
+Media2 – Ver. 25.12
+
 When Fisheye View Mode is present in the VideoSourceConfiguration, the device should also include the
 LensDescription (see Annex B).
 
@@ -1044,17 +1059,10 @@ Resolution – The pixel resolution of the encoded video data.
 Quality – Determines the quality of the video. A high value within supported quality range means higher
 quality.
 
-ONVIF™
-
-– 15 –
-
-Media2 – Ver. 25.06
-
 •
 
-RateControl – Defines parameters to configure the bitrate [kbps] as well as an EncodingInterval
-parameter (Interval at which images are encoded and transmitted) and a TargetFrameRate [fps]
-parameter to configure the output framerate.
+RateControl – Defines parameters to configure the bitrate [kbps] and a FrameRateLimit [fps] parameter
+to configure the output framerate.
 
 •
 
@@ -1102,6 +1110,13 @@ media profile can be used for controlling PTZ movement as defined in the PTZ Ser
 A profile containing a AnalyticsConfiguration enables streams using that media profile to contain analytics data
 (in the metadata) as defined by the submitted configuration reference. For the configuration of Analytics refer
 to the ONVIF Analytics Service Specification.
+
+ONVIF™
+
+– 16 –
+
+Media2 – Ver. 25.12
+
 When an analytics configuration is present in a profile, the metadata configuration can activate the streaming
 of the scene description within the RTP streams (see next section).
 A device may not allow referencing the very same AnalyticsConfiguration from multiple media profiles with
@@ -1114,13 +1129,6 @@ refer to the very same VideoSource.
 5.2.8 Metadata Configuration
 A profile containing a MetadataConfiguration enables the streaming of metadata. Metadata can consist of
 events, PTZ status, and/or analytics data.
-
-ONVIF™
-
-– 16 –
-
-Media2 – Ver. 25.06
-
 For PTZ transmission of status and position change information can be enabled separately.
 Event streaming can be enabled and controlled using topic filters. A device signalling MaxContentFilterSize
 shall support content filtering. For topic and content filter configuration refer to section “Event Handling” of the
@@ -1167,6 +1175,13 @@ backchannel to the device in this mode.
 •
 
 www.onvif.org/ver20/HalfDuplex/Client
+
+ONVIF™
+
+– 17 –
+
+Media2 – Ver. 25.12
+
 The client is allowed to send audio data via the backchannel to the server. The device shall not send
 audio data to the client in this mode.
 
@@ -1181,13 +1196,9 @@ Acoustic echo cancellation is out of ONVIF scope.
 This command configures the Audio EQPreset, provided it is supported. Refer to the
 AudioOutputConfigurationOptions response, associated with the audio output, to verify whether the
 EQPreset is supported and configurable.
-
-ONVIF™
-
-– 17 –
-
-Media2 – Ver. 25.06
-
+When isFrequencyDecibelEditable is signaled as true, the device shall accept any decibel value provided
+as input, automatically adjust it within its operating range, and return the adjusted value in a subsequent get
+operation.
 When a specific EQPreset is designated as the default, it will become active whenever the scheduler is inactive.
 Additionally, in the event of any conflicts within the scheduler, the default preset will remain active. Only one
 preset can be set as the default among the EQ presets linked to an audio output. If all presets have isDefault
@@ -1227,6 +1238,12 @@ GetReceivers as long as the profile doesn't include any other video or audio sou
 For each supported entity a device shall provide the set of Get<entity>Configuration, Set<entity>Configuration
 and Get<entity>ConfigurationOptions command.
 
+ONVIF™
+
+– 18 –
+
+Media2 – Ver. 25.12
+
 5.3.2 Get<entity>Configurations
 The Get<entity>Configurations operation allows to retrieve the actual settings of one ore more configurations.
 The syntax and semantics of the request message are the same for all configuration entities:
@@ -1252,13 +1269,7 @@ REQUEST:
 ProfileToken - optional [tt:ReferenceToken]
 Optional profile token to retrieve all compatible configurations.
 
-ONVIF™
-
 •
-
-– 18 –
-
-Media2 – Ver. 25.06
 
 ConfigurationToken - optional [tt:ReferenceToken]
 Optional token to retrieve exactly one configuration.
@@ -1316,6 +1327,12 @@ The configuration parameters are not possible to set.
 env:Receiver - ter:Action - ter:ConfigurationConflict
 The new settings conflicts with other uses of the configuration.
 
+ONVIF™
+
+– 19 –
+
+Media2 – Ver. 25.12
+
 ACCESS CLASS:
 ACTUATE
 Note for the VideoEncoderConfiguration: if necessary the device may adapt parameter values for Quality and
@@ -1326,12 +1343,6 @@ RTSP, for example by changing codec type, the device must not apply these settin
 Instead it must either continue to stream using the old settings or stop sending data on the affected streams.
 Note for the VideoSourceConfiguration: If a Device supports Rotation and the new settings do not contain
 Rotate element, a device shall keep current rotation state.
-
-ONVIF™
-
-– 19 –
-
-Media2 – Ver. 25.06
 
 5.3.4 Get<entity>ConfigurationOptions
 The Get<entity>ConfigurationOptions operation returns the available parameters and their valid ranges to the
@@ -1387,6 +1398,13 @@ READ_MEDIA
 This command provides information on how many video encoders a device can instantiate concurrently for
 a VideoSourceConfiguration. A device signaling support for VideoEncoder via the ConfigurationsSupported
 capability shall support this command.
+
+ONVIF™
+
+– 20 –
+
+Media2 – Ver. 25.12
+
 The Info response contains the following information:
 Total
 
@@ -1399,13 +1417,6 @@ video codec. For each video source, there shall be at least one video source con
 GetVideoEncoderInstances shall return a Total greater than 0.
 The total sum of video encoder instances over all video source configurations of a device shall not exceed the
 value signaled via MaximumNumberOfProfiles.
-
-ONVIF™
-
-– 20 –
-
-Media2 – Ver. 25.06
-
 For example, if a device has two VideoSourceConfigurations and if the first allows a total of two concurrent
 instances and the second allows only one instance, this device shall allow creation of at least three media
 profiles.
@@ -1467,6 +1478,13 @@ For full compatibility with other ONVIF services a device shall not generate URI
 A device that signals the RTSPStreaming capability shall support this command. On a request for transport
 protocol RtspOverHttp a device shall return a URI that uses the same port as the web service. This enables
 seamless NAT traversal.
+
+ONVIF™
+
+– 21 –
+
+Media2 – Ver. 25.12
+
 A device supporting MultiTrackStreaming shall support the retrieval of a multitrack RTSP session URI by
 passing a virtual profile token.
 A device signaling support for SecureRTSPStreaming shall support streaming via SRTP.
@@ -1482,12 +1500,6 @@ The Protocol defines how the encoded data is expected to be streamed to the clie
 ProfileToken [tt:ReferenceToken]
 The ProfileToken element indicates the media profile to use and will define the configuration of the
 content of the stream.
-
-ONVIF™
-
-– 21 –
-
-Media2 – Ver. 25.06
 
 RESPONSE:
 
@@ -1549,6 +1561,12 @@ ProfileToken [tt:ReferenceToken]
 The ProfileToken element indicates the media profile to use and will define the configuration of the
 content of the stream.
 
+ONVIF™
+
+– 22 –
+
+Media2 – Ver. 25.12
+
 RESPONSE:
 
 •
@@ -1569,12 +1587,6 @@ The requested profile token does not exist.
 env:Receiver - ter:Action - ter:IncompleteConfiguration
 The specified media profile does contain either unused sources or encoder configurations without a
 corresponding source.
-
-ONVIF™
-
-– 22 –
-
-Media2 – Ver. 25.06
 
 ACCESS CLASS:
 READ_MEDIA
@@ -1620,6 +1632,12 @@ The specified media profile does not contain either a reference to a video encod
 configuration, to a audio source or to audio encoder configuration or a reference to a metadata
 configuration
 
+ONVIF™
+
+– 23 –
+
+Media2 – Ver. 25.12
+
 ACCESS CLASS:
 ACTUATE
 
@@ -1633,12 +1651,6 @@ REQUEST:
 
 ProfileToken [tt:ReferenceToken]
 The ProfileToken element indicates the media profile to use.
-
-ONVIF™
-
-– 23 –
-
-Media2 – Ver. 25.06
 
 RESPONSE:
 This message is empty.
@@ -1679,6 +1691,13 @@ Profile reference for which a Synchronization Point is requested.
 
 RESPONSE:
 This message is empty.
+
+ONVIF™
+
+– 24 –
+
+Media2 – Ver. 25.12
+
 FAULTS:
 
 •
@@ -1694,13 +1713,6 @@ A device may have the ability to change its video source mode. Different video s
 options are available in GetVideoSourceConfigurationOptions and GetVideoEncoderConfigurationOptions,
 such as only allowing 16x9 aspect ratios in one mode and only allowing 4x3 aspect ratios in another, or only
 allowing 30fps-derived frame rates in one mode and only allowing 25fps-derived frame rates in another. The
-
-ONVIF™
-
-– 24 –
-
-Media2 – Ver. 25.06
-
 GetVideoSourceModes command provides summary information about the different modes supported by the
 device.
 
@@ -1755,6 +1767,12 @@ Reboot [xs:boolean]
 information about rebooting after returning response. When Reboot is set “true”, a device will reboot
 automatically after setting mode.
 
+ONVIF™
+
+– 25 –
+
+Media2 – Ver. 25.12
+
 FAULTS:
 
 •
@@ -1774,13 +1792,6 @@ WRITE_SYSTEM
 5.9.1 General
 The OSD service provides functions to enable a client to control and configure On-Screen Display of a device.
 The service introduces the OSD configuration with multiple types (e.g., image, text, date, and time). Also
-
-ONVIF™
-
-– 25 –
-
-Media2 – Ver. 25.06
-
 functions to retrieve and configure the configurations are provided. All OSD configurations are related to a
 VideoSourceConfiguration which will display the content of OSD.
 (-1,1)
@@ -1803,7 +1814,7 @@ This chapter defines methods to create and delete OSD configurations as well as 
 the options. A device that signals support for OSD via the OSD capability shall support all OSD methods defined
 in section 5.9.
 Device supporting temporary OSDTextConfiguration, shall notify TemporaryOSDText capability as defined in
-section 5.13. Device shall by default make all OSDTextConfigurations as persistent across reboot, but when
+section 5.14. Device shall by default make all OSDTextConfigurations as persistent across reboot, but when
 IsPersistentText attribute in OSDTextConfiguration is set as false, OSD text content shall be cleared after
 reboot. OSDConfiguration shall still be valid after reboot.
 
@@ -1814,6 +1825,13 @@ value required by a device for a new OSD configuration that is optional and not 
 message may be adapted to the appropriate value by the device. A device that indicates OSD capability
 shall support the creation of OSD as long as the number of existing OSDs does not exceed the value of
 MaximumNumberOfOSDs in GetOSDOptions. A created OSD configuration shall be deletable.
+
+ONVIF™
+
+– 26 –
+
+Media2 – Ver. 25.12
+
 REQUEST:
 
 •
@@ -1836,12 +1854,6 @@ FAULTS:
 env:Receiver - ter:Action - ter:MaxOSDs
 The maximum number of supported OSDs by the specific VideoSourceConfiguration has been
 reached.
-
-ONVIF™
-
-– 26 –
-
-Media2 – Ver. 25.06
 
 •
 
@@ -1891,7 +1903,13 @@ OSDToken - optional [tt:ReferenceToken]
 Token of an existing OSD configuration. If an OSD token is provided the device shall respond with the
 requested configuration or provide an error if it does not exist.
 
+ONVIF™
+
 •
+
+– 27 –
+
+Media2 – Ver. 25.12
 
 ConfigurationToken - optional [tt:ReferenceToken]
 In case only a video source configuration token is provided the device shall respond with all
@@ -1913,12 +1931,6 @@ The requested OSD token OSDToken does not exist.
 
 ACCESS CLASS:
 READ_MEDIA
-
-ONVIF™
-
-– 27 –
-
-Media2 – Ver. 25.06
 
 5.9.5 SetOSD
 This operation modifies an OSD configuration. Running streams using this configuration may be immediately
@@ -1964,6 +1976,12 @@ ConfigurationToken - [tt:ReferenceToken]
 The ConfigurationToken element specifies the video source configuration of which the suitable OSD
 options are requested. The Video Source Configuration Token shall exist in the device.
 
+ONVIF™
+
+– 28 –
+
+Media2 – Ver. 25.12
+
 RESPONSE:
 
 •
@@ -1984,13 +2002,6 @@ READ_MEDIA
 5.9.7 OSD Images
 The ImageOption section of the GetOSDOptions response contains ImagePath, a list of URIs defining images
 on the device. If the FormatsSupported attribute of ImageOption is set, any URI in the ImagePath list may be
-
-ONVIF™
-
-– 28 –
-
-Media2 – Ver. 25.06
-
 used to upload (POST) an image. Otherwise, the list defines references to images that may have been installed
 on the device outside of the ONVIF scope.
 A device that returns the FormatsSupported attribute shall support at least the MIME type image/png. The
@@ -2046,7 +2057,12 @@ Image file was successfully returned in the response.
 
 attempted GET without authentication credentials at the READ_MEDIA access policy.
 
+ONVIF™
 404 Not Found
+
+– 29 –
+
+Media2 – Ver. 25.12
 
 attempted GET of a URI not included in ImagePath list, or no uploaded image exists
 at the requested URI location
@@ -2062,12 +2078,6 @@ Privacy Masks allow to cover regions of the image. The device signals via the op
 and how many edges each mask may support. Additionally devices may restrict to support rectangle masks
 only. Figure 4 shows how the mask is defined by a polygon using normalized coordinates relative to the
 VideoSourceConfiguration window.
-
-ONVIF™
-
-– 29 –
-
-Media2 – Ver. 25.06
 
 Figure 4: Example of screen with mask and coordinate system
 A device may support automatic update of the mask location and shape depending on internal operation.
@@ -2099,6 +2109,12 @@ REQUEST:
 Mask [tr2:Mask]
 Contains the new mask configuration. The device is responsible for assigning the mask token.
 
+ONVIF™
+
+– 30 –
+
+Media2 – Ver. 25.12
+
 RESPONSE:
 
 •
@@ -2126,12 +2142,6 @@ The provided polygon is not supported.
 
 ACCESS CLASS:
 ACTUATE
-
-ONVIF™
-
-– 30 –
-
-Media2 – Ver. 25.06
 
 5.10.3 DeleteMask
 This operation deletes a mask configuration.
@@ -2180,6 +2190,12 @@ RESPONSE:
 Mask - optional, unbounded [tr2:Mask]
 List of masks.
 
+ONVIF™
+
+– 31 –
+
+Media2 – Ver. 25.12
+
 FAULTS:
 
 •
@@ -2197,13 +2213,6 @@ A device signaling support for Mask via its capabilities support this command. I
 of parameters returned by GetMaskOptions. If necessary the device may adapt parameter values for the Color
 and Polygon element without returning an error.
 Note that for devices signaling SingleColorOnly all masks of the associated VideoSource will be updated.
-
-ONVIF™
-
-– 31 –
-
-Media2 – Ver. 25.06
-
 Note: A device signaling RectangleOnly shall accept any polygon with four points. In case the four vertices are
 not defining an exact rectangle the device may adjust the vertices.
 REQUEST:
@@ -2255,6 +2264,12 @@ Options [tr2:MaskOptions]
 This message contains the Mask options which are suitable for the video source configuration specified
 in the request
 
+ONVIF™
+
+– 32 –
+
+Media2 – Ver. 25.12
+
 FAULTS:
 
 •
@@ -2271,12 +2286,6 @@ This section is about configuring one or more WebRTC signaling servers that a de
 order to be able to receive requests from clients and establish peer-to-peer WebRTC connections. The signaling
 protocol that is used for this is descibed in the [ONVIF WebRTC Specification]. A WebRTC configuration has
 the following parameters:
-
-ONVIF™
-
-– 32 –
-
-Media2 – Ver. 25.06
 
 •
 
@@ -2330,6 +2339,13 @@ READ_SYSTEM
 5.11.3 SetWebRTCConfigurations
 This operation shall synchronise the tr2:WebRTCConfiguration list with the configuration stored on the device,
 by creating new entries, updating existing ones, and deleting those omitted from the input. The operation shall
+
+ONVIF™
+
+– 33 –
+
+Media2 – Ver. 25.12
+
 be supported if the WebRTC capability is present. The device shall attempt to establish a connection to each
 signaling server where the Enabled parameter is set to true in the associated tr2:WebRTCConfiguration.
 REQUEST:
@@ -2349,10 +2365,6 @@ FAULTS:
 env:Receiver - ter:Action - ter:MaxWebRTCConfiguration
 The maximum number of configurations supported by the device has been reached.
 
-ONVIF™
-
-– 33 –
-
 •
 
 env:Sender - ter:InvalidArgVal - ter:InvalidConfig
@@ -2367,8 +2379,6 @@ The authorization server token does not exist.
 
 env:Sender - ter:InvalidArgVal - ter:NoProfile
 The profile token does not exist.
-
-Media2 – Ver. 25.06
 
 ACCESS CLASS:
 WRITE_SYSTEM
@@ -2418,7 +2428,13 @@ AudioOutputLevel [xs:int] optional - Optional level to control the volume of the
 played. The device should automatically adjust the output level for a particular audio output when the
 parameter is outside its range.
 
+ONVIF™
+
 •
+
+– 34 –
+
+Media2 – Ver. 25.12
 
 ScheduleToken [tt:ReferenceToken] optional - Optional schedule token associated with the audio clip
 configuration. The audio clip should be played when the configured schedule is triggered.
@@ -2436,12 +2452,6 @@ REQUEST:
 
 Token - optional [tt:ReferenceToken]
 Token associated with the audio clip.
-
-ONVIF™
-
-– 34 –
-
-Media2 – Ver. 25.06
 
 RESPONSE:
 
@@ -2502,7 +2512,13 @@ FAULTS:
 env:Receiver - ter:Action - ter:MaxAudioClipLimit
 The maximum number of audio clip configurations supported by the device has been reached.
 
+ONVIF™
+
 •
+
+– 35 –
+
+Media2 – Ver. 25.12
 
 env:Sender - ter:InvalidArgVal - ter:InvalidConfig
 The configuration parameters are not possible to set.
@@ -2525,12 +2541,6 @@ configuration, the device should return an HTTP 415 Unsupported Media Type error
 
 When the size of the audio clip upload exceeds the MaxAudioClipSize parameter in KB, the device
 should return an HTTP 413, Request Entity Too Large error to the client.
-
-ONVIF™
-
-– 35 –
-
-Media2 – Ver. 25.06
 
 5.12.4 SetAudioClip
 This operation modifies the existing audio clip configuration on the device.
@@ -2576,6 +2586,12 @@ REQUEST:
 Token - [tt:ReferenceToken]
 Token of the audio clip to be deleted from the device.
 
+ONVIF™
+
+– 36 –
+
+Media2 – Ver. 25.12
+
 RESPONSE:
 This is an empty message.
 FAULTS:
@@ -2597,13 +2613,6 @@ WRITE_SYSTEM
 This operation plays or stops the ongoing audio clip on the device. If a new audio clip play request is received
 from the client while another clip is playing, the device shall stop the current audio clip and start the new audio
 clip.
-
-ONVIF™
-
-– 36 –
-
-Media2 – Ver. 25.06
-
 REQUEST:
 
 •
@@ -2655,6 +2664,13 @@ READ_SYSTEM
 This operation retrieves audio clips information which are playing currently in the device.
 REQUEST:
 This is an empty message.
+
+ONVIF™
+
+– 37 –
+
+Media2 – Ver. 25.12
+
 RESPONSE:
 
 •
@@ -2667,18 +2683,111 @@ None
 ACCESS CLASS:
 READ_SYSTEM
 
-5.13 GetServiceCapabilities
+5.13 Multicast Audio Decoder
+The multicast audio decoder configuration pertains to scenarios involving audio broadcasts. Devices that
+support this feature indicate their capability by including "MulticastAudioDecoder" in the GetServiceCapabilities
+response. A device can support multiple multicast audio decoder configurations. When enabled, the device
+listens on the specified multicast address and port for RTP audio data and plays it through the configured
+audio output.
+Optionally, the device can indicate its capability to receive SRTP packets—according to RFC 3711 and RFC
+7714 in the GetServiceCapabilitiesResponse response and supported cryptographic algorithms are provided
+in the GetMulticastAudioDecoderConfigurationOptions response.
+When SRTP is configured with a Pre-Shared Key (PSK), the device expects all incoming RTP packets to
+be encrypted. The required key and salt specifications are defined by the selected encryption algorithm, as
+described in RFC 3711 for AES-CM with HMAC-SHA1 and in RFC 7714 for AES-GCM modes. To support
+SRTP decryption, the RTP Roll-Over Counter (ROC) must be conveyed reliably. This is achieved using an
+RTP header extension formatted according to the one-byte header extension mechanism defined in RFC 8285.
+Because RTP header extensions are included in the SRTP authentication tag, this approach ensures integrity
+and guards against tampering. For detailed information on SRTP packet structure and the use of extension
+headers, refer to Chapter 8 of the Streaming Specification. The frequency of ROC transmission is determined
+by the streaming source, but it is recommended to include the ROC at least once every few seconds to maintain
+synchronization and enhance robustness.
+If the device supports multiple audio multicast configurations and receives audio streams on different multicast
+addresses, it may prioritize one configuration over another based on the configured Priority value and the
+associated audio output. If multiple configurations share the same priority level, the selection order among
+them is undefined. For details on the event related to the MulticastAudioDecoder, refer to section 5.15.6.
+
+5.13.1 GetMulticastAudioDecoderConfigurations
+This operation gets the list of multicast audio decoder configurations.
+REQUEST:
+
+•
+
+ConfigurationToken - optional; [ReferenceToken]
+Unique token of the multicast audio decoder configuration. If not passed, device shall respond with
+all configurations.
+
+RESPONSE:
+
+•
+
+Configurations - optional, unbounded; [MulticastAudioDecoderConfiguration]
+This message contains the list of multicast audio decoder configurations.
+
+FAULTS:
+No command specific faults defined.
+ACCESS CLASS:
+READ_SYSTEM
+
+ONVIF™
+
+– 38 –
+
+Media2 – Ver. 25.12
+
+5.13.2 GetMulticastAudioDecoderConfigurationOptions
+This operation gets the available options for the MulticastAudioDecoder configuration.
+REQUEST:
+
+•
+
+ConfigurationToken - optional; [ReferenceToken]
+This response contains the available MulticastAudioDecoderConfigurationOptions. If a multicast audio
+decoder configuration is specified, the options shall concern that particular configuration.
+
+RESPONSE:
+
+•
+
+Options - unbounded; [MulticastAudioDecoderConfigurationOptions]
+This message contains the available options for the multicast audio decoder configuration.
+
+FAULTS:
+No command specific faults defined.
+ACCESS CLASS:
+READ_SYSTEM
+
+5.13.3 SetMulticastAudioDecoderConfiguration
+This operation sets the MulticastAudioDecoderConfiguration.
+REQUEST:
+
+•
+
+Configuration [MulticastAudioDecoderConfiguration]
+Modified MulticastAudioDecoderConfiguration,the configuration shall exist in the device.
+
+RESPONSE:
+This is an empty message.
+FAULTS:
+
+•
+
+env:Sender - ter:InvalidArgVal - ter:NoConfig
+The provided MulticastAudioDecoderConfiguration does not exist.
+
+•
+
+env:Receiver - ter:InvalidArgVal - ter:ConfigModify
+The configuration parameters are not possible to set.
+
+ACCESS CLASS:
+WRITE_SYSTEM
+
+5.14 GetServiceCapabilities
 The capabilities reflect optional functions and functionality of a service. The information is static and does not
 change during device operation.
 REQUEST:
 This is an empty message.
-
-ONVIF™
-
-– 37 –
-
-Media2 – Ver. 25.06
-
 RESPONSE:
 
 •
@@ -2688,6 +2797,13 @@ List of capabilities as defined above.
 
 FAULTS:
 None
+
+ONVIF™
+
+– 39 –
+
+Media2 – Ver. 25.12
+
 ACCESS CLASS:
 PRE_AUTH
 The following profile capabilites are available:
@@ -2755,13 +2871,13 @@ of the ONVIF Streaming Specification.
 
 NonAggregateControl
 
-Indicates support for non aggregate RTSP control as described in section 5.2.1.1
-of the ONVIF Streaming Specification.
+Indicates support for non aggregate RTSP control as described in section
+5.2.1.1 of the ONVIF Streaming Specification.
 
 RTSPWebSocketUri
 
-Indicates the support for RTSP/RTP streaming over WebSocket and provides the
-WebSocket URI, as described in Streaming Specification Section 5.1.1.5.
+Indicates the support for RTSP/RTP streaming over WebSocket and provides
+the WebSocket URI, as described in Streaming Specification Section 5.1.1.5.
 
 AutoStartMulticast
 
@@ -2775,17 +2891,21 @@ WebRTC
 
 Indicates the supported number of WebRTC configurations.
 
-ONVIF™
+MulticastAudioDecoder
 
-– 38 –
-
-Media2 – Ver. 25.06
+Indicates support for multicast audio decoder.
 
 The following media signing capabilites are available:
 MediaSigningSupported
 
 Indicates whether the device supports signing of media according to the Media
 Signing Specification.
+
+ONVIF™
+
+– 40 –
+
+Media2 – Ver. 25.12
 
 The following audio clip Capabilities are available:
 MaxAudioClipLimit
@@ -2814,8 +2934,8 @@ See
 
 tr2:
 
-5.14 Events
-5.14.1 Profile Change
+5.15 Events
+5.15.1 Profile Change
 Whenever a profile is created, deleted or one or more of its configurations are added or removed the following
 event should be generated.
 Topic: tns1:Media/ProfileChanged
@@ -2825,7 +2945,7 @@ Topic: tns1:Media/ProfileChanged
 </tt:Source>
 </tt:MessageDescription>
 
-5.14.2 Configuration Change
+5.15.2 Configuration Change
 Whenever a Configuration of a device changes the device should provide the following event. For the parameter
 Type pass the appropriate ConfigurationEnumeration value.
 Topic: tns1:Media/ConfigurationChanged
@@ -2836,7 +2956,7 @@ Topic: tns1:Media/ConfigurationChanged
 </tt:Source>
 </tt:MessageDescription>
 
-5.14.3 Active Connections
+5.15.3 Active Connections
 A device that supports the media service should provide the “Active Connections” monitoring event to inform
 a client about the current usage of its Media Profiles. An ONVIF compliant device shall use the following topic
 and message format:
@@ -2854,18 +2974,18 @@ maxOccurs="unbounded"/>
 <xs:element name="CurrentFps" type="xs:float"/>
 <xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
 </xs:sequence>
-
-ONVIF™
-
-– 39 –
-
-Media2 – Ver. 25.06
-
 </xs:complexType>
 <tt:MessageDescription IsProperty="true">
 <tt:Source>
 <tt:SimpleItemDescription Name="Profile" Type="tt:ReferenceToken"/>
 </tt:Source>
+
+ONVIF™
+
+– 41 –
+
+Media2 – Ver. 25.12
+
 <tt:Data>
 <tt:ElementItemDescription Name="Status" Type="tt:ProfileStatus"/>
 </tt:Data>
@@ -2873,7 +2993,7 @@ Media2 – Ver. 25.06
 
 NOTE: Active Connections Event is deprecated and its replaced by Active Sessions Event.
 
-5.14.4 Active Sessions
+5.15.4 Active Sessions
 A device that supports the media service should provide the "Active Sessions" monitoring events to inform
 a client about the current usage of its Media Streams. The monitoring events are sent every time a client
 connects to or disconnects from a unicast stream. An ONVIF compliant device shall use the following topics
@@ -2917,15 +3037,16 @@ Value="10.220.232.202 fc80::2934:4e3e:e559:83e9 10.220.232.202" />
 </tt:Message>
 </wsnt:Message>
 
-ONVIF™
-
-– 40 –
-
-Media2 – Ver. 25.06
-
 Example of event for a Metadata Configuration when connecting its first active stream to IPv4 10.220.232.202:
 <wsnt:Topic Dialect="...">
 tns1:Monitoring/ActiveSessions/Metadata
+
+ONVIF™
+
+– 42 –
+
+Media2 – Ver. 25.12
+
 </wsnt:Topic>
 <wsnt:Message>
 <tt:Message UtcTime="..." PropertyOperation="Initialized">
@@ -2953,7 +3074,7 @@ tns1:Monitoring/ActiveSessions/AudioEncoder
 </tt:Message>
 </wsnt:Message>
 
-5.14.5 Audio Clip State
+5.15.5 Audio Clip State
 A device that supports AudioClipCapabilities in the GetServiceCapabilities response should generate an audio
 clip start event when an audio clip starts playing on the device and generate an audio clip stop event when
 the audio clip stops playing.Token and ClipName parameters can be empty if no audio clip has either started
@@ -2967,17 +3088,89 @@ Topic: tns1:Media/AudioClip/State
 <tt:SimpleItemDescription Name="Token" Type="tt:ReferenceToken"/>
 <tt:SimpleItemDescription Name="ClipName" Type="xs:string"/>
 <tt:SimpleItemDescription Name="Playing" Type="xs:boolean"/>
+<tt:SimpleItemDescription Name="Reason" Type="xs:string"/>
 </tt:Data>
 </tt:MessageDescription>
 
 The "Playing" parameter value is set to true for the audio clip start event and set to false for the audio clip
 stop event.
+The optional "Reason" parameter describes why the audio clip is playing or has stopped playing. It takes the
+value "Started", "Waiting", "Repeating", "Scheduled", or "EventTriggered" when the Playing parameter is set
+to true. It takes the value "Stopped", "Completed", "Interrupted", or "Error" when the Playing parameter is set
+to false.
+Table 2: Reason Parameter Values
+Reason
+
+Description
+
+Started
+
+Audio clip started by the PlayAudioClip API
+
+Waiting
+
+Audio clip is waiting before repeating
 
 ONVIF™
 
-– 41 –
+– 43 –
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
+
+Reason
+
+Description
+
+Repeating
+
+Audio clip is repeating due to repeat cycle configuration
+
+Scheduled
+
+Audio clip is played due to a schedule trigger
+
+EventTriggered
+
+Audio clip is played due to an event action trigger
+
+Stopped
+
+Audio clip stopped by the PlayAudioClip API
+
+Completed
+
+Audio clip stopped after all repeat cycles completed
+
+Interrupted
+
+Audio clip stopped due to external interruption
+
+Error
+
+Audio clip stopped due to playback error
+
+5.15.6 MulticastAudioDecoder State
+Whenever a multicast audio decoder starts or stops receiving an audio stream, the following event should be
+generated.
+The ConfigurationToken refers to the multicast audio decoder configuration token. If none of the multicast
+audio decoder configurations are active at any point, the ConfigurationToken field can be left empty, and the
+Active field can be set to false.
+Topic: tns1:Media/MulticastAudioDecoder/State
+<tt:MessageDescription IsProperty="true">
+<tt:Source>
+<tt:SimpleItemDescription Name="AudioOutputToken" Type="tt:ReferenceToken"/>
+</tt:Source>
+<tt:Data>
+<tt:SimpleItemDescription Name="Active" Type="xs:boolean"/>
+<tt:SimpleItemDescription Name="ConfigurationToken" Type="tt:ReferenceToken"/>
+</tt:Data>
+</tt:MessageDescription>
+
+ONVIF™
+
+– 44 –
+
+Media2 – Ver. 25.12
 
 Annex A.
 Efficient XML Interchange (EXI) (Normative)
@@ -3071,9 +3264,9 @@ none
 
 ONVIF™
 
-– 42 –
+– 45 –
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 Annex B.
 Lens description (Normative)
@@ -3088,9 +3281,9 @@ approximation as shown in Figure B-2.
 
 ONVIF™
 
-– 43 –
+– 46 –
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 Figure B.2: Smooth mapping using B-Splines
 Lens to imager axis offsets can be described via the so-called LensOffset. Figure B-3 depicts that the
@@ -3100,9 +3293,9 @@ Figure B.3: Compensation of vertical axis offset
 
 ONVIF™
 
-– 44 –
+– 47 –
 
-Media2 – Ver. 25.06
+Media2 – Ver. 25.12
 
 Annex C.
 Revision History
@@ -3253,7 +3446,7 @@ Add secure RTSPS streaming.
 
 Jun-2023
 
-Oksana Tuishkina
+Oksana Tyushkina
 
 Clarify signaling rotation in video source configuration.
 
@@ -3270,7 +3463,7 @@ Add WebRTC configuration.
 Dec-2024
 
 Fredrik Svensson,
-Björn Volker, JeanFrançois Lévesque
+Björn Völker, JeanFrançois Lévesque
 
 Add media signing. Add recommendation to have
 LensDescription present when Fisheye view mode is
@@ -3284,5 +3477,17 @@ Venki Aravapalli,
 Sujith Raman
 
 Add audio clip Management and EQ presets.
+
+25.12
+
+Dec-2025
+
+Sujith Raman,
+Juyoung Jo, Venki
+Aravapalli
+
+Add support for multicast audio decoder. Add mirror
+feature. Optional Reason parameter added in Audio Clip
+State event.
 
 

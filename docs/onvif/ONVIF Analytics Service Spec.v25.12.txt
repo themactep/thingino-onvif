@@ -4,18 +4,18 @@ ONVIF™
 
 ONVIF™
 Analytics Service Specification
-Version 24.12
-December, 2024
+Version 25.12
+December, 2025
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 ONVIF™
 
 –2–
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
-Copyright © 2008-2024 ONVIF™ All rights reserved.
+Copyright © 2008-2025 ONVIF™ All rights reserved.
 Recipients of this document may copy, distribute, publish, or display this document so long as this copyright notice, license and disclaimer
 are retained with all copies of the document. No license is granted to modify this document.
 THIS DOCUMENT IS PROVIDED "AS IS," AND THE CORPORATION AND ITS MEMBERS AND THEIR AFFILIATES, MAKE
@@ -36,7 +36,7 @@ CORPORATION.
 
 –3–
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 CONTENTS
 1
@@ -86,7 +86,7 @@ Scene Description
 Overview .................................................................................................................................. 9
 
 5.2 Frame Related Content ............................................................................................................ 9
-5.2.1 Temporal Relation ........................................................................................................... 10
+5.2.1 Temporal Relation ............................................................................................................ 10
 5.2.2 Spatial Relation ............................................................................................................... 10
 5.3 Scene Elements ..................................................................................................................... 12
 5.3.1 Objects ............................................................................................................................ 12
@@ -103,7 +103,7 @@ Overview .......................................................................
 5.3.12 License plate information descriptor ................................................................................ 22
 5.3.13 Image Data .................................................................................................................... 22
 5.3.14 Face descriptor .............................................................................................................. 23
-5.3.15 Human body descriptor .................................................................................................. 24
+5.3.15 Human body descriptor .................................................................................................. 25
 5.3.16 Barcode information descriptor ....................................................................................... 25
 5.3.17 Label information descriptor ........................................................................................... 26
 5.4 JSON over MQTT .................................................................................................................. 27
@@ -140,7 +140,7 @@ Service
 6.2.3.5
 6.2.3.6
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 GetRules .................................................................................................................. 35
 CreateRules .............................................................................................................. 36
@@ -209,83 +209,85 @@ A.9
 
 Object Removed .................................................................................................................... 53
 
+A.10
+
+Object Track Aggregation ..................................................................................................... 54
+
 Annex B
 B.1
 
 Cell motion detection (informative)
 
-55
+57
 
-Cell motion detector ............................................................................................................... 55
+Cell motion detector ............................................................................................................... 57
 
-B.2 Cell motion analytics engine ................................................................................................... 56
-B.2.1 Module configuration ....................................................................................................... 57
+B.2 Cell motion analytics engine ................................................................................................... 58
+B.2.1 Module configuration ....................................................................................................... 59
 Annex C
 C.1
 
 Motion detection (normative)
 
-59
+61
 
-Motion region detector ........................................................................................................... 59
+Motion region detector ........................................................................................................... 61
 
 Annex D
 
 Radiometry (normative)
 
-61
+63
 
-D.1 Radiometry Analytics Modules ................................................................................................ 63
-D.1.1 Spot Measurement Module .............................................................................................. 63
-D.1.2 Box Measurement Module ............................................................................................... 65
-D.1.3 Temperature Measurement Module .................................................................................. 66
-D.2 Radiometry Rules .................................................................................................................. 68
-D.2.1 RadiometryTemperatureRule ........................................................................................... 68
+D.1 Radiometry Analytics Modules ................................................................................................ 65
+D.1.1 Spot Measurement Module .............................................................................................. 65
+D.1.2 Box Measurement Module ............................................................................................... 67
+D.1.3 Temperature Measurement Module .................................................................................. 68
 
 ONVIF™
-D.2.2
-D.2.3
+
+–5–
+
+Analytics – Ver. 25.12
+
+D.2 Radiometry Rules .................................................................................................................. 70
+D.2.1 RadiometryTemperatureRule ............................................................................................ 70
+D.2.2 TemperatureMeasurementRule ......................................................................................... 71
+D.2.3 BodyTemperatureRule ..................................................................................................... 72
 Annex E
 E.1
 
-Analytics – Ver. 24.12
+74
 
-TemperatureMeasurementRule ........................................................................................ 69
-BodyTemperatureRule ..................................................................................................... 70
-Tampering Detection (normative)
-
-72
-
-Tampering Detection .............................................................................................................. 72
+Tampering Detection ............................................................................................................... 74
 
 Annex F
 F.1
 
-–5–
-
+Tampering Detection (normative)
 Face metadata values samples (informative)
 
-74
+76
 
-Face metadata values samples ............................................................................................... 74
+Face metadata values samples ............................................................................................... 76
 
 Annex G
 
 Recognition rule engines (normative)
 
-83
+85
 
 G.1
 
-Generic parameters for recognition rule engines ..................................................................... 83
+Generic parameters for recognition rule engines ..................................................................... 85
 
 G.2
 
-Face Recognition ................................................................................................................... 84
+Face Recognition ................................................................................................................... 86
 
 G.3
 
-License Plate Recognition ...................................................................................................... 84
+License Plate Recognition ...................................................................................................... 86
 
 Annex H
 H.1
@@ -293,18 +295,18 @@ Annex I
 
 Audio analytics (normative)
 
-87
+89
 
-Audio Classification ................................................................................................................ 87
+Audio Classification ................................................................................................................ 89
 Revision History
 
-88
+90
 
 ONVIF™
 
 –6–
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 1 Scope
 This document defines the web service interface for configuration and operation of video/audio analytics.
@@ -359,7 +361,7 @@ and an implementation can use any prefix.
 
 –7–
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Table 1: Namespaces used in this specification
 Prefix
@@ -394,24 +396,26 @@ XML schema descriptions for the analytics service
 
 ttr
 
-http://www.onvif.org/ver20/
-analytics/radiometry
+http://www.onvif.org/ver20/analytics/
+radiometry
 
 XML schema descriptions for Radiometry
 
 fc
 
-http://www.onvif.org/ver20/
-analytics/humanface
+http://www.onvif.org/ver20/analytics/
+humanface
 
-XML schema descriptions for human face metadata
+XML schema descriptions for human face
+metadata
 
 bd
 
-http://www.onvif.org/ver20/
-analytics/humanbody
+http://www.onvif.org/ver20/analytics/
+humanbody
 
-XML schema descriptions for human body metadata
+XML schema descriptions for human body
+metadata
 
 This specification references to the following namespaces (listed in Table 2) by specified prefix.
 Table 2: Referenced namespaces
@@ -428,21 +432,24 @@ http://www.w3.org/2001/XMLSchema
 Instance namespace as defined by XS [XMLSchema, Part1] and [XML-Schema, Part 2]
 
 4 Overview
-Analytic applications are divided into image/audio analysis and application-specific parts. The interface between these two parts produces an abstraction that describes the scene based on the objects present. The
-application specific part performs a comparison of the scene descriptions and of the scene rules (such as
-virtual lines that are prohibited to cross, or polygons that define a protected area). Other rules may represent
-intra-object behaviour such as objects following other objects (to form a tailgating detection). Such rules can
-also be used to describe prohibited object motion, which may be used to establish a speed limit.
+Analytic applications are divided into image/audio analysis and application-specific parts. The interface
+between these two parts produces an abstraction that describes the scene based on the objects present. The
+application specific part performs a comparison of the scene descriptions and of the scene rules (such as virtual
+lines that are prohibited to cross, or polygons that define a protected area). Other rules may represent intraobject behaviour such as objects following other objects (to form a tailgating detection). Such rules can also
+be used to describe prohibited object motion, which may be used to establish a speed limit.
 These two separate parts, referred to as the video/audio analytics engine and as the rule engine, together with
 the events and actions, form the analytics architecture according to this specification as illustrated in Figure 1.
-The analytics architecture consists of elements and interfaces. Each element provides a functionality corresponding to a semantically unique entity of the complete video/audio analytics solution. Interfaces are unidirectional and define an information entity with a unique content. Only the Interfaces are subject to this specification. Central to this architecture is the ability to distribute any elements or sets of adjacent elements to any
-device in the network.
+The analytics architecture consists of elements and interfaces. Each element provides a functionality
+corresponding to a semantically unique entity of the complete video/audio analytics solution. Interfaces are
+unidirectional and define an information entity with a unique content. Only the Interfaces are subject to this
+specification. Central to this architecture is the ability to distribute any elements or sets of adjacent elements
+to any device in the network.
 
 ONVIF™
 
 –8–
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Action
 Action Engine
@@ -481,7 +488,9 @@ Scene Description
 Rule Configuration Interface
 
 This specification defines a configuration framework for the analytics engine called ONVIF Analytics Service.
-This framework enables a client to contact a device implementing the ONVIF Analytics Service for supported analytics modules and their configurations. Configurations of such modules can be dynamically added, removed or modified by a client, allowing a client to run multiple Analytics Modules in parallel if supported by
+This framework enables a client to contact a device implementing the ONVIF Analytics Service for supported
+analytics modules and their configurations. Configurations of such modules can be dynamically added,
+removed or modified by a client, allowing a client to run multiple Analytics Modules in parallel if supported by
 the device.
 The output from the Analytics Engine is called a Scene Description. The Scene Description represents the
 abstraction of the scene in terms of metadata for the objects, either static or dynamic, that are part of the
@@ -500,17 +509,19 @@ the Rules Analytics Modules Interface.
 
 –9–
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Event and action engine interfaces and configuration is out of scope of this specification. The event interface
 is handled through the Event Service as described in the ONVIF Core specification.
 An analytics configuration can be attached to a Media Profile if the ONVIF Media Service is present. In that
 case the analytics configuration becomes connected to a specific source.
-For server based analytics the ONVIF Analytics Device Service provides for the necessary configuration commands to bundle single analytic algorithm configurations represented as AnalyticsConfiguration to engines or
-application like processing chains (e.g. all algorithms and rules necessary to build a “lost baggage detector”).
+For server based analytics the ONVIF Analytics Device Service provides for the necessary configuration
+commands to bundle single analytic algorithm configurations represented as AnalyticsConfiguration to engines
+or application like processing chains (e.g. all algorithms and rules necessary to build a “lost baggage detector”).
 Note that the Media 1 Service Specification uses the name VideoAnalyticsConfiguration for historic reasons
 which maps to the same entity as the AnalyticsConfiguration.
-WSDL for the analytics service is part of the framework and provided in the Analytics WSDL file http://www.onvif.org/ver20/analytics/wsdl/analytics.wsdl.
+WSDL for the analytics service is part of the framework and provided in the Analytics WSDL file http://
+www.onvif.org/ver20/analytics/wsdl/analytics.wsdl.
 Rule and Module description reference types that are not already defined in the [ONVIF Schema] are defined
 in the RULES Schema file http://www.onvif.org/ver20/analytics/wsdl/rules.xsd.
 Radiometry types, modules and rules are defined in the RADIOMETRY Schema file http://www.onvif.org/ver20/
@@ -526,7 +537,9 @@ Section 5.4 defines an alternate JSON based representation.
 
 5.2 Frame Related Content
 The input of the analytics engine is images from a video source. The extracted scene elements are associated
-with the image from which they were extracted. An extracted scene is distinguished from the general description of the video source processed by the analytics engine (information such as video input line, video resolution, frame cropping, frame rate etc.), the temporal frame association within the input stream, and the spatial
+with the image from which they were extracted. An extracted scene is distinguished from the general description
+of the video source processed by the analytics engine (information such as video input line, video resolution,
+frame cropping, frame rate etc.), the temporal frame association within the input stream, and the spatial
 positioning of elements within a frame.
 The temporal and spatial relation of scene elements with respect to the selected video source is discussed
 in sections 5.2.1 and 5.2.2. The appearance and behaviour of tracked objects is discussed in section 5.3.1.
@@ -553,7 +566,7 @@ Please note that the schema is included here for information only. [ONVIF Schema
 
 – 10 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <xs:element name="ObjectTree" type="tt:ObjectTree" minOccurs="0"/>
 <xs:element name="SceneImageRef" type="tt:anyURI" minOccurs="0"/>
@@ -613,7 +626,7 @@ Figure 2: Normalized frame coordinate system
 
 – 11 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 This specification allows modification of the coordinate system for individual nodes of the XML tree. As a
 result, each frame node starts with the normalized coordinate system. Each child node inherits the most recent
@@ -635,53 +648,47 @@ It follows a mathematical description of coordinate systems and transformations.
 consists of a translational vector
 
 ⎛t x ⎞
-⎟
-t=⎜
-⎜t ⎟
-⎝ y⎠
-
-and scaling
-
-⎛s x ⎞
-⎛px ⎞
+⎛sx ⎞
+⎛ px ⎞
 ⎟
 ⎟
+s
+= ⎜ ⎟
 p
 = ⎜
 ⎟
 ⎜
 ⎟
+⎜
+⎟
+⎝ t y ⎠ and scaling
 ⎝ s y ⎠ . A point
 ⎝ p y ⎠ given with
 
-s=⎜
-⎜
+t = ⎜⎜
 
-⎛q x ⎞
-⎟
-q=⎜
-⎜q ⎟
-⎝ y ⎠ of the normalized
+⎛qx ⎞
+q = ⎜⎜ ⎟⎟
+⎝ q y ⎠ of the normalized
 respect to this coordinate system is transformed into the corresponding point
 
-⎛ q x ⎞ ⎛ p x ⋅s x + t x ⎞
+⎛qx ⎞ ⎛ px ⋅sx + tx ⎞
 ⎜ ⎟= ⎜
 ⎟
-⎜q ⎟ ⎜ p ⋅s + t ⎟
+⎜q ⎟ ⎜ p ⋅ s + t ⎟
 y ⎠
 y
 y ⎠
 ⎝ y
 coordinate system by the following formula: ⎝
 . Similarly, a vector v given with
-
 respect to the coordinate system is transformed into the corresponding vector w of the normalized coordinate
 
-⎛ w x ⎞ ⎛ v x ⋅s x ⎞
+⎛ wx ⎞ ⎛vx ⋅ sx ⎞
 ⎜
 ⎟= ⎜
 ⎟
-⎜ w ⎟ ⎜v ⋅s ⎟
+⎜ w ⎟ ⎜v ⋅ s ⎟
 y ⎠
 y ⎠
 ⎝ y
@@ -690,40 +697,35 @@ system by: ⎝
 
 A transformation node has an optional scaling vector
 
-⎛v x ⎞
+⎛u x ⎞
 ⎟
-v=⎜
-⎜v ⎟
-⎝ y⎠
+⎟
+u
+⎝ y ⎠ and an optional translational vector
 
-. If the scaling is not specified, its default value
+u = ⎜⎜
+
+⎛vx ⎞
+⎛1 ⎞
+⎟
+⎜⎜ ⎟⎟
+u
+=
+⎟
+v
+⎝ y ⎠ . If the scaling is not specified, its default value
+⎝1 ⎠ is assumed. Similarly, the default
+
+v = ⎜⎜
 
 value for the translation is
 the following way:
 
 2
 
-⎛u x ⎞
-⎟
-u=⎜
-⎜u ⎟
-⎝ y⎠
-
 ⎛0 ⎞
-v=⎜
-⎜0 ⎟
-⎟
-⎝ ⎠
-
-and an optional translational vector
-
-⎛1 ⎞
-u=⎜
-⎜1 ⎟
-⎟
-⎝ ⎠
-
-is assumed. Similarly, the default
+v = ⎜⎜ ⎟⎟
+⎝0 ⎠
 
 . The transformation node modifies the top-most coordinate system in
 
@@ -731,38 +733,41 @@ Please note that the schema is included here for information only. [ONVIF Schema
 
 ONVIF™
 
-– 12 –
-
-Analytics – Ver. 24.12
-
-⎛t x' ⎞
-⎛t x' ⎞ ⎛ v x ⋅s x + t x ⎞ ⎛ s x' ⎞ ⎛u x ⋅s x ⎞
-⎛ s x' ⎞
-⎜ ⎟
+⎛ t x' ⎞ ⎛ v x ⋅ s x + t x ⎞
 ⎜ ⎟= ⎜
-⎜ ⎟
-⎟ ⎜ ⎟= ⎜
 ⎟
-⎜t ' ⎟
-⎜t ' ⎟ ⎜v ⋅s + t ⎟ ⎜ s ' ⎟ ⎜u ⋅s ⎟
-⎜s ' ⎟
-y
-y ⎠ ⎝ y ⎠
+⎜t ' ⎟ ⎜v ⋅ s + t ⎟
 y
 y ⎠
-y ⎠
-y ⎠
-⎝
-⎝
 ⎝ y⎠ ⎝ y
 ,
+
+coordinate system.
+
+– 12 –
+
+⎛ s x' ⎞ ⎛ u x ⋅ s x ⎞
+⎜ ⎟= ⎜
+⎟
+⎜ s ' ⎟ ⎜u ⋅ s ⎟
+y ⎠
+⎝ y⎠ ⎝ y
 , where
-and ⎝
-replace the top-most coordi-
 
-nate system.
+Analytics – Ver. 25.12
 
-For example, the coordinates of the scene description are given in a frame coordinate system, where the lower-left corner has coordinates (0,0) and the upper-right corner coordinates (320,240). The frame node resembles the following code where the scaling is set to the doubled reciprocal of the frame width and the frame height:
+⎛ t x' ⎞
+⎜ ⎟
+⎜t ' ⎟
+⎝ y ⎠ and
+
+⎛ s x' ⎞
+⎜ ⎟
+⎜s' ⎟
+⎝ y ⎠ replace the top-most
+
+For example, the coordinates of the scene description are given in a frame coordinate system, where the lowerleft corner has coordinates (0,0) and the upper-right corner coordinates (320,240). The frame node resembles
+the following code where the scaling is set to the doubled reciprocal of the frame width and the frame height:
 <tt:Frame UtcTime="2008-10-10T12:24:57.321">
 <tt:Transformation>
 <tt:Translate x="-1.0" y="-1.0"/>
@@ -778,8 +783,9 @@ Frames where no objects have been detected can be skipped within the scene descr
 as long as the last frame in the scene description is empty as well. . It is recommended that the device regularly
 sends the scene description even if it is empty. This is in order to indicate that the analytics engine is operational.
 The device shall send a scene description if a SynchronizationPoint is requested for the corresponding stream.
-When the receiver of a scene description receives an empty frame, the receiver should assume that all subsequent frames are empty as well until the next non-empty frame is received. When the last received frame is
-non-empty, the receiver should assume that a description of the next processed frame will be transmitted.
+When the receiver of a scene description receives an empty frame, the receiver should assume that all
+subsequent frames are empty as well until the next non-empty frame is received. When the last received frame
+is non-empty, the receiver should assume that a description of the next processed frame will be transmitted.
 
 5.3.1 Objects
 The object node has two placeholders for appearance and behaviour information. The appearance node starts
@@ -809,7 +815,7 @@ Example:
 
 – 13 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <tt:Translate x="-1.0" y="-1.0"/>
 <tt:Scale x="0.003125" y="0.00416667"/>
@@ -880,7 +886,7 @@ Analytics – Ver. 24.12
 
 – 14 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 </tt:Appearance>
 <tt:Behaviour>
@@ -944,7 +950,7 @@ representing the object which is split in the current frame. The objects separat
 
 – 15 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 in the To node. The ObjectId of the From node can reappear in the To node, if this object did occlude the others
 and the analytics algorithm was able to track this object during the occlusion.
@@ -1007,7 +1013,7 @@ Example:
 
 – 16 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 </tt:ObjectTree>
 </tt:Frame>
@@ -1055,16 +1061,16 @@ in color space.
 Note that the color descriptor does not specify, how color clusters are created. They can represent bins of a
 color histogram or the result of a clustering algorithm.
 The color space defaults to the YCbCr color space which refers to the 'sRGB' gamut with the RGB to YcbCr
-transformation as of ISO/IEC 10918-1 (Information technology -- Digital compression and coding of continuous-tone still images: Requirements and guidelines), a.k.a. JPEG. The Colorspace URI for the YCbCr color
-space is http://www.onvif.org/ver10/colorspace/YCbCr. Alternate color spaces as defined in Table 3 can be
-defined on frame level and individually for each object.
+transformation as of ISO/IEC 10918-1 (Information technology -- Digital compression and coding of continuoustone still images: Requirements and guidelines), a.k.a. JPEG. The Colorspace URI for the YCbCr color space
+is http://www.onvif.org/ver10/colorspace/YCbCr. Alternate color spaces as defined in Table 3 can be defined
+on frame level and individually for each object.
 An example metadata containing color information of the detected object is given below.
 
 ONVIF™
 
 – 17 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <tt:Frame UtcTime="2010-09-10T12:24:57.721" Colorspace="RGB">
 <tt:Transformation>
@@ -1079,13 +1085,13 @@ Analytics – Ver. 24.12
 </tt:Shape>
 <tt:Color>
 <tt:ColorCluster>
-<tt:Color X=”58” Y=”105” Z=”212”/>
-<tt:Covariance XX=”7.2” YY=”6” ZZ=”3”/>
+<tt:Color X="58" Y="105" Z="212"/>
+<tt:Covariance XX="7.2" YY="6" ZZ="3"/>
 <tt:Weight>0.5</tt:Weight>
 </tt:ColorCluster>
 <tt:ColorCluster>
-<tt:Color X=”165” Y=”44” Z=”139”/>
-<tt:Covariance XX=”4” YY=”4” ZZ=”4”/>
+<tt:Color X="165" Y="44" Z="139"/>
+<tt:Covariance XX="4" YY="4" ZZ="4"/>
 <tt:Weight>0.3</tt:Weight>
 </tt:ColorCluster>
 </tt:Color>
@@ -1095,9 +1101,11 @@ Analytics – Ver. 24.12
 
 An alternative representation of color can be used by adding a likelihood attribute to the color element.
 Its likelihood denotes how confident the algorithm is that the color is correct. The range of likelihood is [0 .. 1].
-When using the likelihood attribute the weight and covariance should not be used as they are missing a meaningful definition in this case.
-When using the likelihood attribute the meaning of multiple color clusters in the same color descriptor changes.
-Multiple color clusters with likelihood should be interpreted as different color candidates with different likelihoods, not as different regions of colors on the object.
+When using the likelihood attribute the weight and covariance should not be used as they are missing a
+meaningful definition in this case.
+When using the likelihood attribute the meaning of multiple color clusters in the same color descriptor
+changes. Multiple color clusters with likelihood should be interpreted as different color candidates with different
+likelihoods, not as different regions of colors on the object.
 An example metadata containing color information of the detected object using a color cluster with a likelihood
 attribute is given below.
 <tt:Frame UtcTime="2010-09-10T12:24:57.721" Colorspace="RGB">
@@ -1127,7 +1135,7 @@ attribute is given below.
 
 – 18 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <tt:Color X="0" Y="128" Z="0" Likelihood="0.08"/>
 </tt:ColorCluster>
@@ -1141,9 +1149,7 @@ Analytics – Ver. 24.12
 
 The following table lists the acceptable values for colorspace attribute
 Table 3: Colorspace namespace values
-Colorspace
-
-Namespace URI
+Colorspace Namespace URI
 
 Description
 
@@ -1195,7 +1201,8 @@ For all component values [0...255]
 A Class Descriptor is defined as an optional element of the appearance node of an object node. The class
 descriptor is defined by a list of object classes together with a likelihood that the corresponding object belongs
 to this class. The range of likelihood is [0..1].
-The following example shows an object metadata sample that contains object class information about a detected object:
+The following example shows an object metadata sample that contains object class information about a
+detected object:
 <tt:Frame UtcTime="2010-11-10T12:24:57.721">
 <tt:Transformation>
 <tt:Translate x="-1.0" y="-1.0"/>
@@ -1208,9 +1215,9 @@ The following example shows an object metadata sample that contains object class
 <tt:CenterOfGravity x="60.0" y="50.0"/>
 </tt:Shape>
 <tt:Class>
-<tt:Type Likelihood=”0.8”>Vehicle</tt:Type>
-<tt:Type Likelihood=”0.75”>Car</tt:Type>
-<tt:Type Likelihood=”0.3”>Truck</tt:Type>
+<tt:Type Likelihood="0.8">Vehicle</tt:Type>
+<tt:Type Likelihood="0.75">Car</tt:Type>
+<tt:Type Likelihood="0.3">Truck</tt:Type>
 </tt:Class>
 </tt:Appearance>
 </tt:Object>
@@ -1220,7 +1227,7 @@ The following example shows an object metadata sample that contains object class
 
 – 19 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Beside the small set of predefined class types free type definitions can be added using the Type member
 defined as StringLikelihood.
@@ -1294,7 +1301,7 @@ Attribute
 
 – 20 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Description
 If the number of cells is not a multiple of 8 the last byte is filled with zeros.
@@ -1302,9 +1309,10 @@ The information is run-length encoded according to Packbit coding in ISO 12639
 (TIFF, Revision 6.0).
 
 5.3.8 Vehicle information descriptor
-The vehicle information descriptor defines an optional extension of the object appearance node. It is used to
-describe other features of the vehicle, like type, brand and model. The details are shown in Table 6. For each
-element, there is a class, which is asscocaited with a likelihood. A likelihood/probability means the corresponding object belongs to this class. The default value is 1. Missing likelihood attribute means 100%.
+The vehicle information descriptor defines an optional extension of the object appearance node. It is used
+to describe other features of the vehicle, like type, brand and model. The details are shown in Table 6. For
+each element, there is a class, which is asscocaited with a likelihood. A likelihood/probability means the
+corresponding object belongs to this class. The default value is 1. Missing likelihood attribute means 100%.
 Table 6: Description of the vehicle detail
 VehicleInfo
 
@@ -1321,7 +1329,8 @@ Describe the vehicle’s brand which could be the same as its logo.
 
 Model
 
-Describe the vehicle’s model which can give more detail information of the vehicle brand.
+Describe the vehicle’s model which can give more detail information of the
+vehicle brand.
 
 An example metadata containing the vehicle information of the detected object is given below.
 <tt:VideoAnalytics>
@@ -1361,7 +1370,7 @@ to Figure 3, where the distance (r) is the number of meters from the origin, ele
 
 – 21 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 from the x-y plane and the azimuth angle (φ) is the rotation around the z axis, counter clockwise. The range
 for the elevation angle is -90 to 90 degrees and for the azimuth angle -180 to 180 degrees.
@@ -1388,7 +1397,6 @@ Figure 4: Orientation on earth surface
 3
 
 An example metadata containing direction information of the detected object is given below.
-<tt:VideoAnalytics>
 3
 
 Source: By Qniemiec, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=10893168
@@ -1397,8 +1405,9 @@ Source: By Qniemiec, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?cur
 
 – 22 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
+<tt:VideoAnalytics>
 <tt:Frame UtcTime="2016-9-10T12:24:57.321">
 <tt:Object ObjectId="23">
 <tt:Behaviour>
@@ -1439,6 +1448,11 @@ IssuingEntity
 
 State province or authority that issue the license plate.
 
+Color
+
+Optional background color of the license plate in case of vehicle objects.
+For license plate objects use color descriptor.
+
 An example metadata containing the license plate information of the detected object is given below.
 <tt:VideoAnalytics>
 <tt:Frame UtcTime="2010-10-20T12:24:57.321">
@@ -1456,22 +1470,23 @@ An example metadata containing the license plate information of the detected obj
 </tt:VideoAnalytics>
 
 5.3.13 Image Data
-Frames where objects have been detected can also carry image data within the Scene Description. Image Data
-relating to a detected object are added in the Appearance Node. When embedding Image Data as base64Binary, image format shall be either JPG or PNG (On receiving end, start bytes may be used to identify the image
-type). Below, the definitions of Image and ImageRef are given for convenience:
+Frames where objects have been detected can also carry image data within the Scene Description. Image
+Data relating to a detected object are added in the Appearance Node. When embedding Image Data as
+base64Binary, image format shall be either JPG or PNG (On receiving end, start bytes may be used to identify
+the image type). Below, the definitions of Image and ImageRef are given for convenience:
 <xs:complexType name="Appearance">
-<xs:sequence>
-<xs:element name="Transformation" type="tt:Transformation" minOccurs="0"/>
-<xs:element name="Shape" type="tt:ShapeDescriptor" minOccurs="0"/>
-<xs:element name="Color" type="tt:ColorDescriptor" minOccurs="0"/>
-<xs:element name="Class" type="tt:ClassDescriptor" minOccurs="0"/>
 
 ONVIF™
 
 – 23 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
+<xs:sequence>
+<xs:element name="Transformation" type="tt:Transformation" minOccurs="0"/>
+<xs:element name="Shape" type="tt:ShapeDescriptor" minOccurs="0"/>
+<xs:element name="Color" type="tt:ColorDescriptor" minOccurs="0"/>
+<xs:element name="Class" type="tt:ClassDescriptor" minOccurs="0"/>
 <xs:element name="Extension" type="tt:AppearanceExtension" minOccurs="0"/>
 <xs:element name="GeoLocation" type="tt:GeoLocation" minOccurs="0"/>
 <xs:element name="VehicleInfo" type="tt:VehicleInfo" minOccurs="0"/>
@@ -1649,6 +1664,26 @@ xs:boolean
 
 N/A
 
+Eyebrow
+
+Eye
+
+FacialHair
+
+ONVIF™
+
+– 24 –
+
+Analytics – Ver. 25.12
+
+Feature
+
+Sub feature
+
+Type
+
+Defined Value
+
 Lip
 
 N/A
@@ -1672,29 +1707,6 @@ PoseAngle
 tt:GeoOrientation
 
 N/A
-
-Eyebrow
-
-Eye
-
-FacialHair
-
-ONVIF™
-
-– 24 –
-
-Feature
-Accessory
-
-AdditionalFeatures
-
-Analytics – Ver. 24.12
-
-Sub feature
-
-Type
-
-Defined Value
 
 Uncertainty
 
@@ -1774,6 +1786,10 @@ xs:string
 
 fc:FrecklesType
 
+Accessory
+
+AdditionalFeatures
+
 Items denoted with asterisk as e.g. fc:HatType* apply to subtype.
 PoseAngle represents the estimated pose of the face, two elements are included in PoseAngle field. One is
 PoseAngles which includes three angles yaw, pitch, roll, the other one is the pose angle uncertainty, uncertainty
@@ -1786,17 +1802,16 @@ frontal view of the subject. Angle(0,0,0) is shown in Figure 5.
 
 Figure 5: Pose angles with respect to the frontal view of the subject
 
-5.3.15 Human body descriptor
-A human body descriptor is defined as an optional element of the Appearance Node of an Object Node. It is
-exploited to describe some features of the human body, such as body metric, clothing, belonging and behavior.
-All features are listed in the below table.
-
 ONVIF™
 
 – 25 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
+5.3.15 Human body descriptor
+A human body descriptor is defined as an optional element of the Appearance Node of an Object Node. It is
+exploited to describe some features of the human body, such as body metric, clothing, belonging and behavior.
+All features are listed in the below table.
 Table 9: Description of the Human Body detail
 Feature
 
@@ -1916,7 +1931,7 @@ Category
 
 xs:string
 
-bd:KnapsackCategory
+bd:BagCategory
 
 Color
 
@@ -1936,28 +1951,6 @@ xs:boolean
 
 N/A
 
-LiftSomething
-
-N/A
-
-xs:boolean
-
-N/A
-
-Box
-
-Color
-
-tt:ColorDescriptor
-
-N/A
-
-Lug
-
-xs:boolean
-
-N/A
-
 Category
 
 xs:string
@@ -1970,13 +1963,23 @@ tt:ColorDescriptor
 
 N/A
 
-Weapon
+Category
+
+xs:string
+
+bd:WeaponCategory
+
+Color
+
+tt:ColorDescriptor
 
 N/A
 
-xs:boolean
+Pose
 
-N/A
+xs:string
+
+bd:WeaponPose
 
 Smoking
 
@@ -2010,12 +2013,12 @@ Tops
 Bottoms
 
 Shoes
-Belonging
+Belongings
 
 Bag
 Umbrella
-
 Cart
+Weapon
 
 Behaviour
 
@@ -2028,7 +2031,7 @@ in Table 10
 
 – 26 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Table 10: Description of the barcode information
 BarcodeInfo
@@ -2068,7 +2071,8 @@ An example metadata containing the Barcode information is given below
 </tt:VideoAnalytics>
 
 5.3.17 Label information descriptor
-A label descriptor is defined as an optional element of the objects appearance node. It allows to provide information regarding graphical signs. Instead of defining its own classification scheme ONVIF refers to external
+A label descriptor is defined as an optional element of the objects appearance node. It allows to provide
+information regarding graphical signs. Instead of defining its own classification scheme ONVIF refers to external
 authorities. Hence each entry consists of an authority identifier and an ID defined by that authority. For well
 defined authorities see Table 11
 Table 11: Label Authorities
@@ -2108,7 +2112,7 @@ An example metadata describing slippery floor according ISO 7010 is given below
 
 – 27 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <tt:ID>W011</tt:ID>
 </tt:Label>
@@ -2152,7 +2156,8 @@ platforms, VSaaS platforms, etc. Multiple consumers using different topics are p
 
 •
 
-The consumer receives updates on subscribed topics and can implement actions like statistics aggregation and complex analytics rules with data from multiple sources.
+The consumer receives updates on subscribed topics and can implement actions like statistics
+aggregation and complex analytics rules with data from multiple sources.
 
 The following section describe how topics shall be structured by an ONVIF metadata producer when published
 to an MQTT broker. The payload shall be encoded as defined in Annex E of the ONVIF Core Specification.
@@ -2166,7 +2171,8 @@ with
 
 •
 
-TopicPrefix - uniquely identifies the producer and is configurable through the AddEventBroker command in the Event service. It shall not be empty.
+TopicPrefix - uniquely identifies the producer and is configurable through the AddEventBroker
+command in the Event service. It shall not be empty.
 
 •
 
@@ -2192,7 +2198,7 @@ ONVIF metadata with JSON payload
 
 – 28 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Table 13: MetadataType categories with corresponding MetadataProducer
 MetadataType
@@ -2204,20 +2210,37 @@ Description
 
 "VideoAnalytics"
 
-ProfileToken "/" AnalyticsModuleName
+ProfileToken
+AnalyticsModuleName
 
-ONVIF metadata from a VideoAnalytics module active via VideoAnalyticsConfiguration included in
-Profile configuration
+"/"
+
+ONVIF
+metadata
+from
+a
+VideoAnalytics module active
+via VideoAnalyticsConfiguration
+included in Profile configuration
 
 "AudioAnalytics"
 
-ProfileToken "/" AnalyticsModuleName
+ProfileToken
+AnalyticsModuleName
 
-ONVIF metadata from an AudioAnalytics module active via AudioAnalyticsConfiguration included in Profile configuration
+"/"
+
+ONVIF metadata from an
+AudioAnalytics module active
+via AudioAnalyticsConfiguration
+included in Profile configuration
 
 "PTZ"
 
-ProfileToken "/" PTZConfigurationToken
+ProfileToken
+PTZConfigurationToken
+
+"/"
 
 ONVIF metadata from a PTZ node
 included in Profile configuration
@@ -2277,7 +2300,7 @@ xmlns:acme="http://www.acme.com/schema">
 
 – 29 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 </tt:Color>
 <tt:Class>
@@ -2322,7 +2345,8 @@ Analytics – Ver. 24.12
 This data will be published under this topic:
 MyDevice/onvif-mj/VideoAnalytics/1/MyClassifier
 
-Where "MyDevice" is the given TopicPrefix and "1" is the profile token. Shown below is how the sample metadata frame is formatted in JSON:
+Where "MyDevice" is the given TopicPrefix and "1" is the profile token. Shown below is how the sample
+metadata frame is formatted in JSON:
 {
 "Frame": [{
 "@UtcTime": "2021-10-05T15:13:27.321",
@@ -2345,7 +2369,7 @@ Where "MyDevice" is the given TopicPrefix and "1" is the profile token. Shown be
 
 – 30 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 "Appearance": {
 "Shape": {
@@ -2416,7 +2440,7 @@ Analytics – Ver. 24.12
 
 – 31 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 "Belonging": {
 "Bag": {
@@ -2447,9 +2471,10 @@ The analytics service allows fine-grained configuration of individual rules and 
 This specification introduces a description language which is used to configure rules and analytics modules.
 Beside configuration parameters the config description additionally contains an event description according to
 the OASIS topic notification.
-Implementations can define their own configuration types defined using the configuration descriptions as specified in section 6.1.2. The provided APIs allow devices and clients to instantiate one or more instances of the
-types available on a device. Each of the instances can be configured with the parameters given in 6.1.1 and
-their options defined in 6.1.3.
+Implementations can define their own configuration types defined using the configuration descriptions as
+specified in section 6.1.2. The provided APIs allow devices and clients to instantiate one or more instances of
+the types available on a device. Each of the instances can be configured with the parameters given in 6.1.1
+and their options defined in 6.1.3.
 
 6.1.1 Configuration parameters
 Each configuration has two required attributes: one specifies the name and the other specifies the type of the
@@ -2466,15 +2491,17 @@ A description has a name attribute with a name provided by the device vendor.
 The description of a configuration contains the type information for all parameters belonging to a configuration
 as well as the description of the output produced by such a rule. The output of the Rule Engine are events
 which can either be used in an Event Engine or be subscribed to by a client.
-All parameters are defind as SimpleItems or ElementItems and are respectibely described by SimpleItemDescription or ElementItemDescription. Both item descriptions contain a name attribute to identify the parameter
-and a type attribute to reference a specific XML schema type. In case of the SimpleItemDescription, the type
-attribute shall reference a SimpleType schema definition. In case of the ElementItemDescription, the type attribute shall reference a global element declaration of an XML schema.
+All parameters are defind as SimpleItems or ElementItems and are respectibely described by
+SimpleItemDescription or ElementItemDescription. Both item descriptions contain a name attribute to
+identify the parameter and a type attribute to reference a specific XML schema type. In case of the
+SimpleItemDescription, the type attribute shall reference a SimpleType schema definition. In case of the
+ElementItemDescription, the type attribute shall reference a global element declaration of an XML schema.
 
 ONVIF™
 
 – 32 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 1
 
@@ -2559,7 +2586,7 @@ Please note that the schema is included here for information only. [ONVIF Schema
 
 – 33 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Parameter Type
 
@@ -2670,7 +2697,7 @@ The following code snipped shows the options returned by GetAnalyticsModuleOptio
 
 – 34 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <tan:Options AnalyticsModule="nn:myModule" Name="Mode">
 <tt:StringItems>
@@ -2701,8 +2728,10 @@ option:
 </tan:Options>
 
 6.2 Rule interface
-An XML structure is introduced in Section 6.2.1 to communicate the configuration of rules. Section 6.2.2 specifies a language to describe the configuration of a specific rule type. A device implementing a rule engine can
-support rules described in Appendix A. Section 6.2.3 introduces operations to manage rules. If the device supports a Rule Engine, it shall implement the complete rule interface.
+An XML structure is introduced in Section 6.2.1 to communicate the configuration of rules. Section 6.2.2
+specifies a language to describe the configuration of a specific rule type. A device implementing a rule engine
+can support rules described in Appendix A. Section 6.2.3 introduces operations to manage rules. If the device
+supports a Rule Engine, it shall implement the complete rule interface.
 Analytics rules typically operate on scene description generated by analytics models as depicted in Figure 1.
 Note that changes to associated analytics modules may affect rule configuration and cause differing device
 responses for GetSupportedRules and GetRuleOptions.
@@ -2733,7 +2762,7 @@ shows a complete analytics configuration containing two rules:
 
 – 35 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <tt:Point x="1.0" y="0.7"/>
 </tt:Polygon>
@@ -2799,7 +2828,7 @@ Token of an existing analytics configuration.
 
 – 36 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 RESPONSE:
 
@@ -2819,10 +2848,10 @@ ACCESS CLASS:
 READ_MEDIA
 
 6.2.3.3 CreateRules
-A device signaling support for rules via the RuleSupport capability shall support this operation to add rules to an
-AnalyticsConfiguration. If all rules can not be created as requested, the device responds with a fault message.
-The device shall accept adding of analytics rules with an empty Parameter definition. Note that the resulted
-configuration may include a set of default parameter values.
+A device signaling support for rules via the RuleSupport capability shall support this operation to add rules to
+an AnalyticsConfiguration. If all rules can not be created as requested, the device shall respond with a fault
+message. The device shall accept adding of analytics rules with an empty Parameter definition. Note that the
+resulted configuration may include a set of default parameter values.
 REQUEST:
 
 •
@@ -2873,14 +2902,15 @@ ACCESS CLASS:
 ACTUATE
 
 6.2.3.4 ModifyRules
-A device signaling support for modifying rules via the RuleOptionsSupported capability shall support this operation. If all rules can not be modified as requested, the device responds with a fault message. A device may
-reject a request to change the rule type.
+A device signaling support for modifying rules via the RuleOptionsSupported capability shall support this
+operation. If all rules can not be modified as requested, the device shall respond with a fault message. A device
+may reject a request to change the rule type.
 
 ONVIF™
 
 – 37 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 A device should interpret parameters not present in the payload as unchanged. Note that this does not always
 result in unchanged values of such parameters, since some parameters may change due to dependency on
@@ -2969,7 +2999,7 @@ At least one of the requested rules is fixed and cannot be deleted.
 
 – 38 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 env:Receiver - ter:Action - ter:ConfigurationConflict
 The device cannot delete the rules without creating a conflicting configuration.
@@ -2978,7 +3008,8 @@ ACCESS CLASS:
 ACTUATE
 
 6.2.3.6 GetRuleOptions
-A device signaling support for modifying rules via the RuleOptionsSupported capability shall support this operation to retrieve the options for the supported rules that specify an Option attribute.
+A device signaling support for modifying rules via the RuleOptionsSupported capability shall support this
+operation to retrieve the options for the supported rules that specify an Option attribute.
 REQUEST:
 
 •
@@ -3041,7 +3072,7 @@ configuration of the minimum and maximum object size with respect to the process
 
 – 39 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 6.3.2 Analytics module description language
 The Analytics Module reuses the configuration description language, described in section 6.1.2. The following
@@ -3074,11 +3105,15 @@ tns1:VideoAnalytics/nn:ObjectTracker/SceneTooCrowded
 </tt:RuleDescription>
 
 6.3.3 Operations on analytics modules
-The Create/Delete/Modify operations shall be atomic, all modifications can be processed or the complete operation shall fail.
+The Create/Delete/Modify operations shall be atomic, all modifications can be processed or the complete
+operation shall fail.
 
 6.3.3.1 GetSupportedAnalyticsModules
-A device signaling support for analytics modules via the AnalyticsModuleSupport capability shall support retrieving a list of analytics modules for an analytics configuration. The description shall conform to the configuration description language as described in section 6.1.
-The optional AnalyticsModuleContentSchemaLocation parameter allows to list schema file locations that provide reference to types or elements which are not defined by ONVIF.
+A device signaling support for analytics modules via the AnalyticsModuleSupport capability shall support
+retrieving a list of analytics modules for an analytics configuration. The description shall conform to the
+configuration description language as described in section 6.1.
+The optional AnalyticsModuleContentSchemaLocation parameter allows to list schema file locations that
+provide reference to types or elements which are not defined by ONVIF.
 The device shall indicate its limit for maximum number of analytics modules for non-fixed modules through the
 maxInstances attribute.
 REQUEST:
@@ -3106,7 +3141,7 @@ The requested analytics configuration does not exist.
 
 – 40 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 ACCESS CLASS:
 READ_MEDIA
@@ -3140,7 +3175,8 @@ READ_MEDIA
 
 6.3.3.3 CreateAnalyticsModules
 A device signaling support for analytics modules via the AnalyticsModuleSupport capability shall support this
-method to add analytics modules to an analytics configuration.
+method to add analytics modules to an analytics configuration. If all modules can not be created as requested,
+the device shall respond with a fault message.
 The device shall accept adding of analytics modules with an empty Parameter definition. Note that the resulted
 configuration may include a set of default parameter values.
 REQUEST:
@@ -3179,18 +3215,18 @@ The same analytics module name exists already in the configuration.
 env:Sender - ter:Action - ter:FixedModules
 At least one of the requested modules is fixed and cannot be created.
 
+ONVIF™
+
+– 41 –
+
+Analytics – Ver. 25.12
+
 •
 
 env:Receiver - ter:Action - ter:TooManyModules
 There are not enough resources in the device to add the analytics modules to the configuration.
 
-ONVIF™
-
 •
-
-– 41 –
-
-Analytics – Ver. 24.12
 
 env:Receiver - ter:Action - ter:ConfigurationConflict
 The device cannot create the analytics modules without creating a conflicting configuration.
@@ -3200,8 +3236,8 @@ ACTUATE
 
 6.3.3.4 ModifyAnalyticsModules
 A device signaling support for analytics modules via the AnalyticsModuleOptionsSupported capability shall
-support this method to modify analytics module configurations. A device may reject a request to change the
-module type.
+support this method to modify analytics module configurations. If all modules can not be modified as requested,
+the device shall respond with a fault message. A device may reject a request to change the module type.
 A device should interpret parameters not present in the payload as unchanged. Note that this does not always
 result in unchanged values of such parameters, since some parameters may change due to dependency on
 others.
@@ -3259,16 +3295,16 @@ REQUEST:
 ConfigurationToken [tt:ReferenceToken]
 Token of an existing analytics configuration.
 
-•
-
-AnalyticsModuleName - unbounded [xs:string]
-List of modules to be removed for the specified configuration.
-
 ONVIF™
+
+•
 
 – 42 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
+
+AnalyticsModuleName - unbounded [xs:string]
+List of modules to be removed for the specified configuration.
 
 RESPONSE:
 This is an empty message.
@@ -3337,22 +3373,23 @@ ACCESS CLASS:
 READ_MEDIA
 
 6.3.3.7 GetSupportedMetadata
-This operation allows to query what metadata a device can generate. It shall be supported if the SupportedMetadata capability is set to true.
+This operation allows to query what metadata a device can generate. It shall be supported if the
+SupportedMetadata capability is set to true.
 The response contains the following information
-
-•
-
-SampleFrame [tt:Frame]
 
 ONVIF™
 
+•
+
 – 43 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
+SampleFrame [tt:Frame]
 An example Frame instance. The instance shall include all elements that the analytics module outputs
 to the frame of a metadata stream. A device implementation should strive for including all supported
 enumeration values.
+
 If the sample frame includes object bounding boxes or shapes, these shall be located in the top left quarter
 of the image.
 REQUEST:
@@ -3385,7 +3422,8 @@ The capabilities reflect optional functions and functionality of a service. The 
 change during device operation. The following capabilites are available:
 RuleSupport
 
-Indication that the device supports rules interface and rules syntax as specified in Section 6.2.
+Indication that the device supports rules interface and rules syntax as
+specified in Section 6.2.
 
 AnalyticsModuleSupport
 
@@ -3393,17 +3431,14 @@ Indication that the device supports the scene analytics module interface as
 specified in Section 6.3.
 
 CellBasedSceneDescriptionSupported
-
 Indication that the device produces the cell based scene description.
-
 RuleOptionsSupported
 
 Indication that the device supports GetRuleOptions and ModifyRules.
 
 AnalyticsModuleOptionsSupported
-
-Indication that the device supports GetAnalyticsModuleOptions and ModifyAnalyticsModules.
-
+Indication that the device supports GetAnalyticsModuleOptions and
+ModifyAnalyticsModules.
 SupportedMetadata
 
 Indication that the device supports the method GetSupportedMetadata.
@@ -3428,7 +3463,7 @@ None
 
 – 44 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 ACCESS CLASS:
 PRE_AUTH
@@ -3461,7 +3496,7 @@ The Rule field is optional and contains the Rule instance name that generated th
 
 – 45 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Annex A.
 Specified Rules (normative)
@@ -3533,7 +3568,7 @@ specific namespace prefix to the name.
 
 – 46 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <tt:ParentTopic>tns1:RuleEngine/Xxxx</tt:ParentTopic>
 </tt:Messages>
@@ -3549,9 +3584,12 @@ items.
 
 A.1.2.1 Generic parameters
 The following section is reserved for ONVIF defined generic parameters.
-A device signals via GetSupportedRules which parameters may be applied to its various rules. For all parameters a device should also signal their valid ranges via GetRuleOptions whether a rule supports these.
+A device signals via GetSupportedRules which parameters may be applied to its various rules. For all
+parameters a device should also signal their valid ranges via GetRuleOptions whether a rule supports these.
 In case of setting up any region based detection rule for event trigger (e.g. Field Detector, Loitering Detector,
-Declarative motion detector, Object Detection) rule should contain a parameter 'Field' ElementItem. The ElementItem identifies the region usually defined by a polygon for which the rule has been setup. The corresponding ElementItemDescription resembles the following:
+Declarative motion detector, Object Detection) rule should contain a parameter 'Field' ElementItem. The
+ElementItem identifies the region usually defined by a polygon for which the rule has been setup. The
+corresponding ElementItemDescription resembles the following:
 <tt:ElementItemDescription Name="Field" Type="tt:Polygon">
 
 If the rule supports activation and deactivation, the rule should contain a parameter 'Armed' SimpleItem. The
@@ -3600,7 +3638,7 @@ The following example shows how to apply the ClassFilter to the line detector ru
 
 – 47 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 </tt:RuleDescription>
 
@@ -3658,7 +3696,7 @@ See A.1.1
 
 – 48 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 DATA:
 See A.1.1
@@ -3726,7 +3764,7 @@ tns1:RuleEngine/FieldDetector/ObjectsInside
 
 – 49 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 </tt:ParentTopic>
 </tt:Messages>
@@ -3799,7 +3837,7 @@ One or more polylines used for detection.
 
 – 50 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 •
 
@@ -3877,7 +3915,7 @@ One or more polylines used for detection.
 
 – 51 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 •
 
@@ -3959,7 +3997,7 @@ See A.1.1
 
 – 52 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 DATA:
 
@@ -4007,10 +4045,11 @@ language parameter options defined in 6.1.3.2.
 </tan:GetRuleOptionsResponse>
 
 A.8 Object Abandoned
-The Object Abandoned rule is defined by a simple non-intersecting polygon as an area of interest and abandoned time threshold interval. The Object Abandoned detector continuously monitors an area to detect objects
-or items that have been abandoned in the scene beyond a certain threshold time. The Object Abandoned
-module looks for objects that are not part of the “normal” scene and issues real-time alerts upon detecting
-exceptions.
+The Object Abandoned rule is defined by a simple non-intersecting polygon as an area of interest and
+abandoned time threshold interval. The Object Abandoned detector continuously monitors an area to detect
+objects or items that have been abandoned in the scene beyond a certain threshold time. The Object
+Abandoned module looks for objects that are not part of the “normal” scene and issues real-time alerts upon
+detecting exceptions.
 Object Abandoned can be deployed at airports, train stations, national infrastructure facilities, public places,
 and other secure areas to detect unattended baggage and suspicious looking objects left in the scene.
 PARAMETERS:
@@ -4031,7 +4070,7 @@ Minimum duration the object should stay in the scene before it is judged to be a
 
 – 53 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Sensitivity [xs:float]
 This parameter allows to change the ratio between True and False detections. For "High" sensitivity
@@ -4059,7 +4098,7 @@ See below example for a Object Abandoned definition:
 <tt:SimpleItemDescription Name="TimeThreshold" Type="xs:duration"/>
 <tt:SimpleItemDescription Name="Sensitivity" Type="xs:float"/>
 </tt:Parameters>
-<tt:Messages IsProperty="true">
+<tt:Messages>
 <tt:Source>
 ...
 </tt:Source>
@@ -4100,6 +4139,8 @@ value there are more True positive events as well as False positives.
 
 – 54 –
 
+Analytics – Ver. 25.12
+
 TOPIC:
 
 •
@@ -4122,7 +4163,7 @@ See below example for a Object Removed definition:
 <tt:SimpleItemDescription Name="TimeThreshold" Type="xs:duration"/>
 <tt:SimpleItemDescription Name="Sensitivity" Type="xs:float"/>
 </tt:Parameters>
-<tt:Messages IsProperty="true">
+<tt:Messages>
 <tt:Source>
 ...
 </tt:Source>
@@ -4135,19 +4176,173 @@ tns1:RuleEngine/ObjectRemoved
 </tt:Messages>
 </tt:RuleDescription>
 
-Analytics – Ver. 24.12
+A.10 Object Track Aggregation
+This event is intended to describe an object throughout visible duration within a scene. The description should
+include aggregated or summarized information along with contextual data, such as images or bounding boxes,
+to assist clients in visualizing the object's trajectory. This event can complement per-frame, per-object scene
+description by providing a higher-level representation of the object’s trajectory, enhancing forensic analysis
+while optimizing bandwidth consumption.
+It is recommended to enable ObjectTrack data in sparsely crowded scenes to optimize data produced from
+the device.
+The process by which device aggregates object track data for a given object is out of scope of this specification.
+The Object Track Aggregation rule generates an object track aggregation event for below listed scenarios
+
+•
+
+When an object appears in the field of view, an Initial aggregation event may be sent.
+
+•
+
+While the object is present in the field of view, an Intermediate aggregation may be sent.
+
+•
+
+When the object is no longer visible in the field of view, a Final aggregation event shall be sent.
+
+Optionally, device may include additional object track data for e.g. snapshot image as configured in
+ObjectTrackDataFilter parameter. Devices may prune track information for objects with complex or long lasting
+motion patterns.
+If an initial or intermediate aggregation is sent for an object, Final aggregation event for that object shall be
+sent even if final classification does not meet class or threshold filters in rule configuration.
+Device should fill in aggregated tt:Object structure with data qualified as classifications for e.g. Vehicle or
+License plate and should not fill in temporal data as they are not meaningful in the aggregation context.
 
 ONVIF™
 
 – 55 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
+
+In order to reinforce aggregation data, Device should use ObjectTrack tt:Object structure to provide interesting
+observations captured at various time instances within the track duration like cropped object image etc.,
+Final aggregation event should include all the aggregated observations of the object, irrespective if such data
+is included in optional intermediate aggregation events.
+The data filled in ObjectTrack tt:Object can be sparse and can vary based on the data filter.
+PARAMETERS:
+
+•
+
+ClassFilter [tt:StringList]
+List of classes to be aggregated.
+
+•
+
+ConfidenceLevel - optional [xs:float]
+Minimum confidence level of object classification for generating aggregation event.
+
+•
+
+EarlyReport - optional [xs:boolean]
+Signals that a device shall send an intermediate report as soon as it has sufficient information.
+
+•
+
+ReportTimeInterval - optional [xs:duration]
+Optional time interval to request intermediate updates at a recurring rate. Reports may be omitted if
+the information hasn’t significantly changed. Details are implementation dependent and outside of the
+scope of this specification. The time interval is not intended as an exact clock and devices may adapt
+durations.
+
+•
+
+ObjectTrackDataFilter - optional [tt:StringList]
+Optional subset of XPath 1.0 filter relative to tt:Object for e.g. "Appearance/Image" so that device
+includes relevant elements in Object track data. If omitted, ObjectTrack shall not be provided.
+
+TOPIC:
+
+•
+
+tns1:RuleEngine/ObjectTrack/Aggregation
+
+SOURCE:
+See A.1.1
+DATA:
+
+•
+
+AggregationStart - mandatory [xs:dateTime]
+All aggregation events shall set object track start time as the AggregationStart time.
+
+•
+
+Object - mandatory [tt:Object]
+Track aggregation data of an object.
+
+•
+
+ObjectTrack - optional [tt:ObjectTrack]
+Optional additional description as a sequence of samples of an object to provide enriched context.
+
+•
+
+Final - optional [xs:boolean]
+Signals TRUE for final aggregation event for the detected object.
+
+See below example for an Object Track Aggregation definition:
+<tt:RuleDescription Name="tt:ObjectTrackAggregation">
+<tt:Parameters>
+<tt:SimpleItemDescription Name="ClassFilter" Type="tt:StringList"/>
+<tt:SimpleItemDescription Name="ConfidenceLevel" Type="xs:float"/>
+<tt:SimpleItemDescription Name="ReportTimeInterval" Type="xs:float"/>
+<tt:SimpleItemDescription Name="ObjectTrackDataFilter" Type="tt:StringList"/>
+</tt:Parameters>
+<tt:Messages>
+<tt:Source>
+...
+</tt:Source>
+
+ONVIF™
+
+– 56 –
+
+Analytics – Ver. 25.12
+
+<tt:Data>
+<tt:SimpleItemDescription Name="AggregationStart" Type="xs:dateTime"/>
+<tt:SimpleItemDescription Name="Final" Type="xs:boolean"/>
+<tt:ElementItemDescription Name="Object" Type="tt:Object"/>
+<tt:ElementItemDescription Name="ObjectTrack" Type="tt:ObjectTrack"/>
+</tt:Data>
+<tt:ParentTopic>tns1:RuleEngine/ObjectTrack/Aggregation</tt:ParentTopic>
+</tt:Messages>
+</tt:RuleDescription>
+
+The object types may differ between devices. See below for example rule options, based on the description
+language parameter options defined in 6.1.3.2.
+<tan:GetRuleOptionsResponse>
+<tan:RuleOptions Name="ClassFilter" RuleType="tt:ObjectTrackAggregation">
+<tt:StringList>Person Vehicle Face LicensePlate</tt:StringList>
+</tan:RuleOptions>
+<tan:RuleOptions Name="ConfidenceLevel" RuleType="tt:ObjectTrackAggregation">
+<tt:FloatRange>
+<tt:Min>0.0</tt:Min>
+<tt:Max>100.0</tt:Max>
+</tt:FloatRange>
+</tan:RuleOptions>
+<tan:RuleOptions Name="ReportTimeInterval" RuleType="tt:ObjectTrackAggregation">
+<tt:DurationRange >
+<tt:Min>PT1S</tt:Min>
+<tt:Max>PT1M</tt:Max>
+</tt:DurationRange>
+</tan:RuleOptions>
+<tan:RuleOptions Name="ObjectTrackDataFilter" RuleType="tt:ObjectTrackAggregation">
+<tt:StringList>Appearance/Image Appearance/Shape/BoundingBox</tt:StringList>
+</tan:RuleOptions>
+</tan:GetRuleOptionsResponse>
+
+ONVIF™
+
+– 57 –
+
+Analytics – Ver. 25.12
 
 Annex B.
 Cell motion detection (informative)
 B.1 Cell motion detector
-Cell motion detector rules process the output of cell motion analytics engine. The rule of type "tt:CellMotionDetector" consists of four parameters: "MinCount”, "AlarmOnDelay”, "AlarmOffDelay” and "ActiveCells” as listed
-in Table B.1.
+Cell motion detector rules process the output of cell motion analytics engine. The rule of type
+"tt:CellMotionDetector" consists of four parameters: "MinCount”, "AlarmOnDelay”, "AlarmOffDelay” and
+"ActiveCells” as listed in Table B.1.
 The parameter "MinCount” describes the minimum number of adjacent cells that a moving object shall cover
 in order to generate an alarm event.
 AlarmOnDelay and AlarmOffDelay are delay times in milliseconds. These delays should prevent alarm state
@@ -4156,8 +4351,8 @@ AlarmOffDelay will delay the transition from an activated alarm to an inactive a
 for at least AlarmOffDelay time to become inactive again.
 Each of the cells defined by the type "tt:CellLayout" in the AnalyticsModule, can be activated or deactivated
 individually. To exclude particular regions from being monitored owing to continuous movements (e.g. tree in
-the wind), the relevant cells can be deactivated. For a representation of the activated and deactivated cells a
-bitmask is used. For instance, if there are 1000 cells available, then 1000 bits need to be set. To efficiently
+the wind), the relevant cells can be deactivated. For a representation of the activated and deactivated cells
+a bitmask is used. For instance, if there are 1000 cells available, then 1000 bits need to be set. To efficiently
 encode this bitmask, the algorithm "Packbits” from ISO 12369 (TIFF, Version 6.0), which is a kind of run length
 encoder, is used. Afterwards the resulting output is stored as base64Binary.
 The rule definition is as follows:
@@ -4204,9 +4399,9 @@ on. This delay is intended to prevent very brief alarm events from triggering.
 
 ONVIF™
 
-– 56 –
+– 58 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Parameter Name
 
@@ -4219,7 +4414,7 @@ off. This delay is intended to prevent too many alarm changes.
 
 ActiveCells
 
-A "1” denotes an active cell and a "0” an inactive cell.
+A "1" denotes an active cell and a "0" an inactive cell.
 The first cell is in the upper left corner. Then the cell order goes first from left to right
 and then from up to down (see Figure B.1).
 If the number of cells is not a multiple of 8 the last byte is filled with zeros. The
@@ -4258,22 +4453,24 @@ B.2 Cell motion analytics engine
 A cell motion detector determines the motion in an image. For this, the image is subdivided into square or
 rectangle sensor fields, denoted as cells. A cell is based on a number of pixels, for example, an 5×5 cell is a
 cell of 25 pixels. The detector tries simply to estimate motion in each cell.
-A cell motion detector consists of two: units AnalyticsModule and Rule. AnalyticsModule consists of two parameters: "CellLayout” and "Sensitivity” as listed in Table B.3. The latter can adjust the motion detector to the
+A cell motion detector consists of two: units AnalyticsModule and Rule. AnalyticsModule consists of two
+parameters: "CellLayout" and "Sensitivity" as listed in Table B.3. The latter can adjust the motion detector to the
 environment to which the camera is subjected. For lower sensitivity values higher variations of the luminance
 values are needed to be identified as motion. Hence, a low sensitivity can be used to suppress estimated
 motion due to noise.
 The subdivision of the sensor fields depends on the analytics engine and cannot be modified by the user. The
 type "tt:CellLayout", which describes the cell structure, consists of the following three elements: "Columns",
 "Rows", and "Transformation". The first two parameters describe the number of cells in the X and Y directions.
-The first cell is located in the upperleft -hand corner and the last cell in the lower right-hand corner. The parameter "Transformation” maps the frame coordinate system (see5.2.2) to the cell grid. The origin of the new
+The first cell is located in the upperleft -hand corner and the last cell in the lower right-hand corner. The
+parameter "Transformation" maps the frame coordinate system (see5.2.2) to the cell grid. The origin of the new
 coordinate system is the upper left-hand corner of the upper left-hand cell. The unit dimension in X direction
 corresponds to the cell width and the unit dimension in Y direction corresponds to the cell height.
 
 ONVIF™
 
-– 57 –
+– 59 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 B.2.1 Module configuration
 Cell motion analytics engine module configuration is described by analytics module description language;
@@ -4342,9 +4539,9 @@ pixels and the size of the working area of the cell motion detector is 120×90 p
 
 ONVIF™
 
-– 58 –
+– 60 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 VideoImage (180x150 pixel)
 transformed coordinate system
@@ -4389,7 +4586,7 @@ Figure B.1: CellLayout of an 8×6 CellMotionEngine
 <tt:AnalyticsModule Name="MyCellMotion" Type="tt:CellMotionEngine">
 <tt:Parameters>
 <tt:SimpleItem Name="Sensitivity" Value="90"/>
-<tt:ElementItem Name=”Layout”>
+<tt:ElementItem Name="Layout">
 <tt:CellLayout Columns="8" Rows="6">
 <tt:Transformation>
 <tt:Translate x="-0.66666" y="0.6" />
@@ -4403,9 +4600,9 @@ Figure B.1: CellLayout of an 8×6 CellMotionEngine
 
 ONVIF™
 
-– 59 –
+– 61 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Annex C.
 Motion detection (normative)
@@ -4415,7 +4612,6 @@ an area (region of interest on the image source) which can be armed or disarmed.
 by a Polygon structure. Although this rule is defined within the context of the analytics service, it is intended to
 allow configuration of hardware motion detection as opposed to motion detection from scene description data.
 For a description of the parameters see Table C.1.
-
 <tt:RuleDescription Name="tt:MotionRegionDetector">
 <tt:Parameters>
 <tt:ElementItemDescription Name="MotionRegion" Type="axt:MotionRegionConfig"/>
@@ -4465,27 +4661,25 @@ PresetToken
 PTZ Preset position associated with the motion region defined by polygon. If no
 PresetToken is present the motion region shall behave as a screen element, and
 stay on the same screen coordinates as the PTZ moves (like a head up display
-mask). If PresetToken is present the motion region shall be active only when completely contained in the Field of View.
-Table C.2: Motion region detector rule configuration options
+mask). If PresetToken is present the motion region shall be active only when
+completely contained in the Field of View.
 
+ONVIF™
+
+– 62 –
+
+Analytics – Ver. 25.12
+
+Table C.2: Motion region detector rule configuration options
 Parameter Name
 
 Description
 
 MaxRegions
 
-The total number of Motion Region Detector rules that can be created on
-the device. This element is deprecated. maxInstances in the GetSupportedRules shall be used instead.
-
-ONVIF™
-
-– 60 –
-
-Analytics – Ver. 24.12
-
-Parameter Name
-
-Description
+The total number of Motion Region Detector rules that can be created
+on the device. This element is deprecated. maxInstances in the
+GetSupportedRules shall be used instead.
 
 DisarmSupport
 
@@ -4494,8 +4688,9 @@ True if the device supports disarming a Motion Region Detector rule.
 PolygonSupport
 
 True if the device supports defining a region using a Polygon instead of a
-rectangle. The rectangle points are still passed using a Polygon element if
-the device does not support polygon regions. In this case, the points provided in the Polygon element must represent a rectangle.
+rectangle. The rectangle points are still passed using a Polygon element
+if the device does not support polygon regions. In this case, the points
+provided in the Polygon element must represent a rectangle.
 
 PolygonLimits
 
@@ -4505,7 +4700,8 @@ in the Polygon.
 
 RuleNotification
 
-Indicates the device will supply the Name of the Rule that triggered the motion.
+Indicates the device will supply the Name of the Rule that triggered the
+motion.
 
 SingleSensitivitySupport
 
@@ -4529,9 +4725,9 @@ True (motion is detected) or False (motion is not detected)
 
 ONVIF™
 
-– 61 –
+– 63 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Annex D.
 Radiometry (normative)
@@ -4552,24 +4748,34 @@ This specification covers the two most common measurement modules offered by rad
 Spots and Boxes.
 A Spot Measurement Module shall provide the absolute temperature value for a point on the image (this could
 be a pixel, or small pixel cluster, depending on the lens/resolution of the device).
-A Box Measurement Module provides a number of different temperature values which are calculated based
-on the temperature values of the points contained in a rectangular area of the image. These BoxTemperatureTypes can be, for example, the Maximum temperature value for the points contained in the rectangular
-area, or the Minimum value, Average, Median, etc.
+A Box Measurement Module provides a number of different temperature values which are calculated
+based on the temperature values of the points contained in a rectangular area of the image. These
+BoxTemperatureTypes can be, for example, the Maximum temperature value for the points contained in the
+rectangular area, or the Minimum value, Average, Median, etc.
 A Temperature Measurement Module provides a generic configuration for Spot, Box and BodyTemperature
 measurement using the generic description language defined in section 5.3.13
-Radiometry Rules can be defined using the Rules Engine. These Rules trigger alarms based on TemperatureConditions of the output of their associated Analytics Module. Temperature Conditions supported by Devices can include, for example, LessThan (threshold), MoreThan, EqualTo, etc.
-This specification describes three very simple rules, the RadiometryTemperatureRule, a generic measurement rule TemperatureMeasurementRule and the BodyTemperatureRule. All these three rules are based
-on a single Measurement Analytics Module output. These rules shall provide an Event when the TemperatureCondition is met by the selected output (Temperature Value) of the Analytics Module on which they are defined.
-Radiometry Analytics Module Options are provided by the GetAnalyticsModuleOptions Response, as described in the Analytics Service. Options and Types are described in the Radiometry Schema, (radiometry.xsd), under /Analytics.
-Radiometry Rule Options are provided by the GetRuleOptions Response, as described in the Analytics Service. Options and Types for Radiometry Rules are also described in radiometry.xsd.
-The following diagram illustrates the different elements specified for Radiometry, and the relationships and data
-flows between the different Analytics Modules and Rules, Temperature Measurement Metadata and Temperature Alarm Events.
+Radiometry Rules can be defined using the Rules Engine. These Rules trigger alarms based on
+TemperatureConditions of the output of their associated Analytics Module. Temperature Conditions supported
+by Devices can include, for example, LessThan (threshold), MoreThan, EqualTo, etc.
+This specification describes three very simple rules, the RadiometryTemperatureRule, a generic
+measurement rule TemperatureMeasurementRule and the BodyTemperatureRule. All these three rules
+are based on a single Measurement Analytics Module output. These rules shall provide an Event when the
+TemperatureCondition is met by the selected output (Temperature Value) of the Analytics Module on which
+they are defined.
+Radiometry Analytics Module Options are provided by the GetAnalyticsModuleOptions Response, as
+described in the Analytics Service. Options and Types are described in the Radiometry Schema,
+(radiometry.xsd), under /Analytics.
+Radiometry Rule Options are provided by the GetRuleOptions Response, as described in the Analytics
+Service. Options and Types for Radiometry Rules are also described in radiometry.xsd.
+The following diagram illustrates the different elements specified for Radiometry, and the relationships and
+data flows between the different Analytics Modules and Rules, Temperature Measurement Metadata and
+Temperature Alarm Events.
 
 ONVIF™
 
-– 62 –
+– 64 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Figure D.1: Radiometry Analytics Modules, Rules, Metadata and Events
 The current specification covers three different types of Analytics Modules for Radiometry: Spot, Box and
@@ -4579,8 +4785,8 @@ elements, points/area in a specific location in the PTZ space around the Device.
 “Screen” Spots are defined using an (x,y) tt:Vector, which describes a point on the image. Similarly, “Screen”
 Boxes are defined using a tt:Rectangle, which describes a rectangle on the image. Its coordinates assume a
 normalized screen [(-1.0,1.0), (-1.0,1.0)], with the center at (0.0,0.0). In PTZ Devices, when the PTZ moves,
-these screen elements shall behave as OSD masks, and remain on the same relative position of the image as
-the PTZ moves. Temperature measurements require the image to stabilize, so valid temperature values will
+these screen elements shall behave as OSD masks, and remain on the same relative position of the image
+as the PTZ moves. Temperature measurements require the image to stabilize, so valid temperature values will
 normally only be produced and sent as Metadata a number of seconds after the PTZ stops. This acquisition
 time will vary among different Devices.
 “Geo-referenced” Spots can be defined using an (x,y) tt:Vector, together with a tt:PTZVector, and the “Distance
@@ -4596,17 +4802,19 @@ field of view: the Client can either provide individually a tt:Vector, or tt:Rec
 
 ONVIF™
 
-– 63 –
+– 65 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 previous case), or just provide the PTZVector (and Distance) , assuming the tt:Vector, or tt:Rectangle, to
 be centered in the image.
-For Screen Spot or Box Module creation, the Client shall just provide the tt:Vector, or tt:Rectangle, which
-defines the position of the element on the image, independently of the PTZStatus.
+For Screen Spot or Box Module creation, the Client shall just provide the tt:Vector, or tt:Rectangle, which defines
+the position of the element on the image, independently of the PTZStatus.
 
 D.1 Radiometry Analytics Modules
-Calling the GetAnalyticsModuleOptions operation with the ttr:RadiometryModule type shall return a ttr:RadiometryModuleConfigOptions, as well as ttr:RadiometrySpotModuleOptions and ttr:RadiometryBoxModuleOptions, if Spot and Box Modules are supported by the Device.
+Calling the GetAnalyticsModuleOptions operation with the ttr:RadiometryModule type shall
+return a ttr:RadiometryModuleConfigOptions, as well as ttr:RadiometrySpotModuleOptions and
+ttr:RadiometryBoxModuleOptions, if Spot and Box Modules are supported by the Device.
 Table D.1: Radiometry Module configuration options
 Parameter Name
 
@@ -4625,7 +4833,8 @@ to indicate no support for Spots.
 
 MaxScreenBoxes
 
-The total number of box measurement modules that can be loaded simultaneously on the screen by the device. A value of 0 shall be used
+The total number of box measurement modules that can be loaded
+simultaneously on the screen by the device. A value of 0 shall be used
 to indicate no support for Boxes.
 
 RadiometryParameterOptions
@@ -4666,24 +4875,28 @@ ExtOpticsTemperature
 ExtOpticsTransmittance
 
 D.1.1 Spot Measurement Module
-A Spot Measurement Analytics Module provides the temperature value for a point on the image of its radiometrically calibrated Video Source.
-As described in the introduction of this Annex, Spot Measurement Modules can be defined as “Screen” elements, points on the image, or as “Geo-referenced” elements, points in the PTZ space around the Device. The
-use of the “AbsoluteCoords” item will allow to differentiate this behaviour.
+A Spot Measurement Analytics Module provides the temperature value for a point on the image of its
+radiometrically calibrated Video Source.
+As described in the introduction of this Annex, Spot Measurement Modules can be defined as “Screen”
+elements, points on the image, or as “Geo-referenced” elements, points in the PTZ space around the Device.
+The use of the “AbsoluteCoords” item will allow to differentiate this behaviour.
 <tt:AnalyticsModuleDescription Name="ttr:RadiometrySpot">
 <tt:Parameters>
-<tt:ElementItemDescription Name="RadiometrySpot" Type="ttr:RadiometrySpotModuleConfig"/>
+<tt:ElementItemDescription Name="RadiometrySpot"
+Type="ttr:RadiometrySpotModuleConfig"/>
 </tt:Parameters>
 <tt:MessageDescription>
 <tt:Source>
-<tt:SimpleItemDescription Name="VideoSourceToken" Type="tt:ReferenceToken"/>
 
 ONVIF™
 
-– 64 –
+– 66 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
-<tt:SimpleItemDescription Name="VideoAnalyticsConfigurationToken" Type="tt:ReferenceToken"/>
+<tt:SimpleItemDescription Name="VideoSourceToken" Type="tt:ReferenceToken"/>
+<tt:SimpleItemDescription Name="VideoAnalyticsConfigurationToken"
+Type="tt:ReferenceToken"/>
 <tt:SimpleItemDescription Name="AnalyticsModuleName" Type="xs:string"/>
 </tt:Source>
 <tt:Data>
@@ -4697,7 +4910,9 @@ tns1:VideoAnalytics/Radiometry/SpotTemperatureReading
 </tt:AnalyticsModuleDescription>
 
 The above analytics module description defines that a Spot Module instance produces Measurement Events
-(when new temperature values are produced by the video source), attached to the topic tns1:VideoAnalytics/Radiometry/SpotTemperatureReading. These Temperature Measurement Events shall contain the following data payload:
+(when new temperature values are produced by the video source), attached to the topic tns1:VideoAnalytics/
+Radiometry/SpotTemperatureReading. These Temperature Measurement Events shall contain the
+following data payload:
 <xs:complexType name="SpotTemperatureReading">
 <xs:sequence>
 <xs:element name="RadiometryParameters" type="ttr:RadiometryParameters" minOccurs="0">
@@ -4725,7 +4940,8 @@ Unique identifier for this Temperature Measurement Analytics Module.
 
 Active
 
-Indicates if the Temperature Measurement Item is enabled to provide temperature readings.
+Indicates if the Temperature Measurement Item is enabled to provide
+temperature readings.
 
 ScreenCoords
 
@@ -4736,13 +4952,15 @@ AbsoluteCoords
 
 Absolute orientation of the PTZ Vector with the Spot on screen. If no PTZVector
 is present the spot shall behave as a screen element, and stay on the same
-screen coordinates as the PTZ moves (like a head up display mask). If PTZVector is present the Spot element shall appear on display only when contained in
-the Field of View. In this case SpotScreenCoords shall be reported as relative
-to PTZVector.
+screen coordinates as the PTZ moves (like a head up display mask). If
+PTZVector is present the Spot element shall appear on display only when
+contained in the Field of View. In this case SpotScreenCoords shall be reported
+as relative to PTZVector.
 
 RadiometryParameters
 
-Not present parameter means the Device shall use its value from Global Parameters in Thermal Service.
+Not present parameter means the Device shall use its value from Global
+Parameters in Thermal Service.
 
 Table D.3: Description of the Radiometry Spot Module event fields
 Parameter Name
@@ -4753,34 +4971,38 @@ SpotTemperatureReading
 
 Data structure with the different measurement parameters and the actual
 temperature measurement:
-ItemID
 
 ONVIF™
 Parameter Name
 
-– 65 –
+– 67 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Description
+ItemID
 SpotTemperature: Actual value of the measured Temperature.
-RadiometryParameters: Not present means Global Parameters from Thermal Service are being used.
+RadiometryParameters: Not present means Global Parameters from
+Thermal Service are being used.
 
 D.1.2 Box Measurement Module
-A Box Measurement Analytics Module provides several temperature values which are based on the temperature of the points contained within a rectangular region, defined on the image of its radiometrically calibrated
-Video Source.
+A Box Measurement Analytics Module provides several temperature values which are based on the
+temperature of the points contained within a rectangular region, defined on the image of its radiometrically
+calibrated Video Source.
 As Spots, Box Measurement Modules can also be defined as “Screen” elements, or fixed rectangle on the
 image, or as “Geo-referenced” elements, representing an area in the PTZ space around the Device. Again,
 the use of the tt:PTZVector shall define if the Box shall behave as a screen element, or if it is assigned to a
 specific PTZStatus.
 <tt:AnalyticsModuleDescription Name="ttr:RadiometryBox">
 <tt:Parameters>
-<tt:ElementItemDescription Name="RadiometryBox" Type="ttr:RadiometryBoxModuleConfig"/>
+<tt:ElementItemDescription Name="RadiometryBox"
+Type="ttr:RadiometryBoxModuleConfig"/>
 </tt:Parameters>
 <tt:MessageDescription>
 <tt:Source>
 <tt:SimpleItemDescription Name="VideoSourceToken" Type="tt:ReferenceToken"/>
-<tt:SimpleItemDescription Name="VideoAnalyticsConfigurationToken" Type="tt:ReferenceToken"/>
+<tt:SimpleItemDescription Name="VideoAnalyticsConfigurationToken"
+Type="tt:ReferenceToken"/>
 <tt:SimpleItemDescription Name="AnalyticsModuleName" Type="xs:string"/>
 </tt:Source>
 <tt:Data>
@@ -4793,32 +5015,37 @@ tns1:VideoAnalytics/Radiometry/BoxTemperatureReading
 </tt:MessageDescription>
 </tt:AnalyticsModuleDescription>
 
-The above analytics module description defines that a Box Module instance produces Measurement Events
-(when new temperature values are produced by the video source), attached to the topic tns1:VideoAnalytics/Radiometry/BoxTemperatureReading. These Temperature Measurement Events shall contain the following data payload:
+The above analytics module description defines that a Box Module instance produces Measurement
+Events (when new temperature values are produced by the video source), attached to the topic
+tns1:VideoAnalytics/Radiometry/BoxTemperatureReading. These Temperature Measurement Events
+shall contain the following data payload:
 <xs:complexType name="BoxTemperatureReading">
 <xs:sequence>
-<xs:element name="RadiometryParameters" type="ttr:RadiometryParameters" minOccurs="0">
+<xs:element name="RadiometryParameters" type="ttr:RadiometryParameters"
+minOccurs="0">
 <xs:annotation>
 <xs:documentation>
 Not present means Global Parameters from Thermal Service are being used.
 </xs:documentation>
 </xs:annotation>
 </xs:element>
-<xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+<xs:any namespace="##any" processContents="lax" minOccurs="0"
+maxOccurs="unbounded"/>
 </xs:sequence>
 <xs:attribute name="ItemID" type="tt:ReferenceToken" use="required"/>
 <xs:attribute name="MaxTemperature" type="xs:float" use="required"/>
 <xs:attribute name="MinTemperature" type="xs:float" use="required"/>
+
+ONVIF™
+
+– 68 –
+
+Analytics – Ver. 25.12
+
 <xs:attribute name="AverageTemperature" type="xs:float"/>
 <xs:atrribute name="MedianTemperature" type="xs:float"/>
 <xs:anyAttribute processContents="lax"/>
 </xs:complexType>
-
-ONVIF™
-
-– 66 –
-
-Analytics – Ver. 24.12
 
 Table D.4: RadiometryBox Analytics Module configuration
 parameters in ttr:RadiometryBoxModuleConfig
@@ -4832,23 +5059,27 @@ Unique identifier for this Temperature Measurement Analytics Module.
 
 Active
 
-Indicates if the Temperature Measurement Item is enabled to provide temperature readings.
+Indicates if the Temperature Measurement Item is enabled to provide
+temperature readings.
 
 ScreenCoords
 
-Screen coordinates, if box is currently completely contained on the screen. Assumes normalized screen limits (-1.0, 1.0).
+Screen coordinates, if box is currently completely contained on the screen.
+Assumes normalized screen limits (-1.0, 1.0).
 
 AbsoluteCoords
 
 Absolute orientation of the PTZ Vector with the Box on screen. If no PTZVector
 is present the box shall behave as a screen element, and stay on the same
-screen coordinates as the PTZ moves (like a head up display mask). If PTZVector is present the Box element shall appear on display only when completely
-contained in the Field of View. In this case BoxScreenCoords shall be reported
-as relative to PTZVector.
+screen coordinates as the PTZ moves (like a head up display mask). If
+PTZVector is present the Box element shall appear on display only when
+completely contained in the Field of View. In this case BoxScreenCoords shall
+be reported as relative to PTZVector.
 
 RadiometryParameters
 
-Not present parameter means the Device shall use its value from Global Parameters in Thermal Service.
+Not present parameter means the Device shall use its value from Global
+Parameters in Thermal Service.
 
 Table D.5: Description of the Radiometry Box Module event fields
 Parameter Name
@@ -4860,8 +5091,13 @@ BoxTemperatureReading
 Data structure with the different measurement parameters and the actual
 temperature measurement:
 ItemID
-Supported Temperature Values: MaxTemperature, MinTemperature, AverageTemperature, MedianTemperature.
-RadiometryParameters: Not present means Global Parameters from Thermal Service are being used.
+Supported Temperature Values: MaxTemperature,
+AverageTemperature, MedianTemperature.
+
+MinTemperature,
+
+RadiometryParameters: Not present means Global Parameters from
+Thermal Service are being used.
 
 D.1.3 Temperature Measurement Module
 Generic Temperature measurement module defined below can be used to configure any of the following: spot,
@@ -4879,18 +5115,18 @@ For options this module refers to the generic description language defined in 5.
 <tt:SimpleItemDescription name="AtmosphericTemperature" type="xs:float"/>
 <tt:SimpleItemDescription name="AtmosphericTransmittance" type="xs:float"/>
 <tt:SimpleItemDescription name="ExtOpticsTemperature" type="xs:float"/>
+
+ONVIF™
+
+– 69 –
+
+Analytics – Ver. 25.12
+
 <tt:SimpleItemDescription name="ExtOpticsTransmittance" type="xs:float"/>
 <tt:SimpleItemDescription name="PresetToken" type="xs:string"/>
 <tt:ElementItemDescription Name="MeasurementPoint" Type="tt:Rectangle"/>
 <tt:ElementItemDescription Name="MeasurementRegion" Type="tt:Polygon"/>
 </tt:Parameters>
-
-ONVIF™
-
-– 67 –
-
-Analytics – Ver. 24.12
-
 <tt:MessageDescription>
 <tt:Source>
 <tt:SimpleItemDescription Name="VideoSource" Type="tt:ReferenceToken"/>
@@ -4933,36 +5169,41 @@ would be listed in options
 Mandatory
 
 Radiometry
+Radiometry parameters, if this is not supported global
 parameters:
-ReflectedAmbientTemperature, Emissivity,DistanceToObject, RelativeHumidity,
+radiometry parameters are applicable
+ReflectedAmbientTemperature,
+Emissivity,DistanceToObject,
+RelativeHumidity,
 AtmosphericTemperature,
-AtmosphericTransmittance, ExtOpticsTemperature, ExtOpticsTransmittance
-
-Radiometry parameters, if this is not supported global radiometry parameters are applicable
+AtmosphericTransmittance,
+ExtOpticsTemperature,
+ExtOpticsTransmittance
 
 Optional
 
 PresetToken
 
-PTZ Preset position associated with spot, box or
-bodytemperature measurement location. If no PresetToken is present measurement location behaves as screen
-element, and stay on the same screen coordinates as the
-PTZ moves (like a head up display mask). If PresetToken
-is present the measurement location shall be active only
-when its completely contained in the Field of View
+PTZ Preset position associated with spot, box
+or bodytemperature measurement location. If no
+PresetToken is present measurement location behaves
+as screen element, and stay on the same screen
+coordinates as the PTZ moves (like a head up display
+mask). If PresetToken is present the measurement
+location shall be active only when its completely
+contained in the Field of View
 
 Optional
 
 MeasurementPoint
 
-Screen coordinates where temperature needs to be measured. Applicable when the mode is Spot temperature
-measurement.
+Screen coordinates where temperature needs to
+be measured. Applicable when the mode is Spot
+temperature measurement.
 
 Optional
 
-MeasurementRegion
-
-Polygon region where tempeature has to be measured.
+MeasurementRegion Polygon region where tempeature has to be measured.
 Applicable when the mode is box or body temperature
 measurement
 
@@ -4970,9 +5211,9 @@ Optional
 
 ONVIF™
 
-– 68 –
+– 70 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Table D.7: Description of the TemperatureReading meta event fields
 Parameter Name
@@ -4981,7 +5222,8 @@ Description
 
 SpotReading
 
-Provides the temperature of the configured screen coordinates in Kelvin, applicable only when the operating mode is set to Spot.
+Provides the temperature of the configured screen coordinates in Kelvin,
+applicable only when the operating mode is set to Spot.
 
 MinTemperature
 
@@ -4995,17 +5237,21 @@ applicable only when the operating mode is set to Box.
 
 AverageTemperature
 
-Provides the average temperature within the configured region in Kelvin, applicable only when the operating mode is set to Box.
+Provides the average temperature within the configured region in Kelvin,
+applicable only when the operating mode is set to Box.
 
 MedianTemperature
 
-Provides the median temperature within the configured region in Kelvin, applicable only when the operating mode is set to Box.
+Provides the median temperature within the configured region in Kelvin,
+applicable only when the operating mode is set to Box.
 
 D.2 Radiometry Rules
 Following radiometry rules are defined, RadiometryTemperatureRule and TemperatureMeasurementRule.
 
 D.2.1 RadiometryTemperatureRule
-Calling the GetRuleOptions operation with the ttr:RadiometryRule type shall return an ttr:RadiometryRuleConfigOptions, as well as ttr:RadiometryTemperatureRuleConfig, if Radiometry Rules are supported by the Device.
+Calling the GetRuleOptions operation with the ttr:RadiometryRule type shall return an
+ttr:RadiometryRuleConfigOptions, as well as ttr:RadiometryTemperatureRuleConfig, if Radiometry Rules are
+supported by the Device.
 Table D.8: Radiometry Rule configuration options
 Parameter Name
 
@@ -5030,33 +5276,40 @@ ThresholdTime
 
 HysteresisTemperature
 
-Specifies valid rule conditions for temperature comparisions in radiometric rules:
+Specifies valid rule conditions for temperature comparisions in
+radiometric rules:
 LessThan, MoreThan, EqualTo, Change
 
 TemperatureTypeOptions
 
-Specifies temperature measurement types provided by box measurement modules in the device:
-MaxTemperature, MinTemperature, StdDeviation, MedianTemperature, ISOCoverage
+Specifies temperature measurement types provided by box
+measurement modules in the device:
+MaxTemperature,
+MinTemperature,
+MedianTemperature, ISOCoverage
+
+StdDeviation,
 
 A Temperature Rule is the most basic rule in Radiometry. It evaluates one of the output temperature values
 of a single Analytics Module, to trigger Temperature Alarm events when it meets a certain condition. The Rule
 shall only apply when its associated Analytics Module is Active, and providing valid readings.
-
 <xs:RuleDescription Name="ttr:RadiometryTemperatureRule">
 <xs:Parameters>
-<xs:ElementItemDescription Name="RadiometryTemperatureRule" Type="ttr:RadiometryTemperatureRuleC
+<xs:ElementItemDescription Name="RadiometryTemperatureRule"
+Type="ttr:RadiometryTemperatureRuleConfig"/>
 </xs:Parameters>
 <xs:MessageDescription IsProperty="true">
 <xs:Source>
-<xs:SimpleItemDescription Name="VideoSourceToken" Type="tt:ReferenceToken"/>
 
 ONVIF™
 
-– 69 –
+– 71 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
-<xs:SimpleItemDescription Name="VideoAnalyticsConfigurationToken" Type="tt:ReferenceToken"/>
+<xs:SimpleItemDescription Name="VideoSourceToken" Type="tt:ReferenceToken"/>
+<xs:SimpleItemDescription Name="VideoAnalyticsConfigurationToken"
+Type="tt:ReferenceToken"/>
 <xs:SimpleItemDescription Name="RuleName" Type="xs:string"/>
 </xs:Source>
 <xs:Key>
@@ -5065,7 +5318,8 @@ Analytics – Ver. 24.12
 <xs:Data>
 <xs:SimpleItemDescription Name="AlarmActive" Type="xs:boolean"/>
 <tt:SimpleItemDescription Name="TimeStamp" Type="xs:dateTime"/>
-<xs:ElementItemDescription Name="AlarmGeoLocation" Type="tt:GeoLocation" minOccurs=0/>
+<xs:ElementItemDescription Name="AlarmGeoLocation" Type="tt:GeoLocation"
+minOccurs=0/>
 </xs:Data>
 <xs:ParentTopic>
 tns1:RuleEngine/Radiometry/TemperatureAlarm
@@ -5074,7 +5328,8 @@ tns1:RuleEngine/Radiometry/TemperatureAlarm
 </xs:RuleDescription>
 
 The above rule description defines that a Temperature Rule instance produces Temperature Alarm Events
-(when temperature conditions, as specified in the rule, are met), attached to the topic tns1:RuleEngine/Radiometry/TemperatureAlarm.
+(when temperature conditions, as specified in the rule, are met), attached to the topic tns1:RuleEngine/
+Radiometry/TemperatureAlarm.
 Table D.9: RadiometryTemperatureRule configuration
 parameters in ttr:RadiometryTemperatureRuleConfig
 Parameter Name
@@ -5089,7 +5344,8 @@ rule is defined.
 TemperatureType
 
 Indicates which of the temperature values provided by the Analytics Module
-shall be used by the rule. For Analitics Modules that provide a single Temperature output, this parameter shall be ignored, and therefore is optional.
+shall be used by the rule. For Analitics Modules that provide a single
+Temperature output, this parameter shall be ignored, and therefore is optional.
 
 RuleCondition
 
@@ -5106,7 +5362,8 @@ an event.
 
 HysteresisTemperature
 
-Indicates the width in Kelvin of the temerature hysteresis band to be considered by the rule.
+Indicates the width in Kelvin of the temerature hysteresis band to be
+considered by the rule.
 
 Enabled
 
@@ -5135,14 +5392,14 @@ rule works on the output of Temperature Measurement Module (D.1.3), when the mod
 or Box.
 TemperatureMeasurementRule and options follows the generic description language defined in 5.3.13. For
 description of parameters refer Table D.11.
-<xs:RuleDescription Name="ttr:TemperatureMeasurementRule">
 
 ONVIF™
 
-– 70 –
+– 72 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
+<xs:RuleDescription Name="ttr:TemperatureMeasurementRule">
 <xs:Parameters>
 <tt:SimpleItemDescription Name="TemperatureType" Type="xs:string"/>
 <tt:SimpleItemDescription Name="RuleCondition" Type="xs:string"/>
@@ -5158,7 +5415,8 @@ Analytics – Ver. 24.12
 </xs:Source>
 <xs:Data>
 <xs:SimpleItemDescription Name="AlarmActive" Type="xs:boolean"/>
-<xs:ElementItemDescription Name="AlarmGeoLocation" Type="tt:GeoLocation" minOccurs=0/>
+<xs:ElementItemDescription Name="AlarmGeoLocation" Type="tt:GeoLocation"
+minOccurs=0/>
 </xs:Data>
 <xs:ParentTopic>
 tns1:RuleEngine/Radiometry/TemperatureMeasurementAlarm
@@ -5174,31 +5432,24 @@ Description
 TemperatureType
 
 Indicates which of the temperature values provided by the input Analytics Module
-shall be used by the rule. In the case of Analytics Modules providing a single Temperature Value (e.g. Spot) this parameter is ignored, and is therefore optional.
+shall be used by the rule. In the case of Analytics Modules providing a single
+Temperature Value (e.g. Spot) this parameter is ignored, and is therefore optional.
 
 RuleCondition
 
 Configures the condition to check eg, LessThan, EqualTo etc., Actual supported
 values would be provided in options.
 
-ThresholdTemperature
-
-Indicates the temperature reference value the rule shall be checked against. In
+ThresholdTemperature Indicates the temperature reference value the rule shall be checked against. In
 Kelvin.
-
-HysteresisTemperature
-
-Indicates the width in Kelvin of the temerature hysteresis band to be considered by
+HysteresisTemperature Indicates the width in Kelvin of the temerature hysteresis band to be considered by
 the rule.
-
 Duration
 
 How long the configured condition should stay in same state to generate the event.
 
 TemperatureMeasurementModule
-
 Name of the analytics module providing the temperature on which rule is defined.
-
 Table D.12: Description of the TemperatureMeasurementAlarm event fields
 Parameter Name
 
@@ -5217,14 +5468,14 @@ BodyTemperatureRule rule works on the output of Temperature Measurement Module (
 is configured as BodyTemperature.
 BodyTemperatureRule and options follows the generic description language defined in 5.3.13. For description
 of parameters refer Table D.13.
-<tt:RuleDescription Name="tt:BodyTemperatureAlarm">
 
 ONVIF™
 
-– 71 –
+– 73 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
+<tt:RuleDescription Name="tt:BodyTemperatureAlarm">
 <tt:Parameters>
 <tt:SimpleItemDescription Name="ThresholdTemperature" Type="xs:float"/>
 <tt:SimpleItemDescription Name="RuleCondition" Type="xs:string"/>
@@ -5254,11 +5505,8 @@ Parameter Name
 
 Description
 
-ThresholdTemperature
-
-Indicates the temperature reference value the rule shall be checked against. In
+ThresholdTemperature Indicates the temperature reference value the rule shall be checked against. In
 Kelvin.
-
 RuleCondition
 
 Configures the condition to check eg, LessThan, EqualTo etc., Actual supported
@@ -5269,10 +5517,8 @@ Duration
 How long the configured condition should stay in same state to generate the event.
 
 TemperatureMeasurementModule
-
 Name of the analytics module providing the temperature on which rule is defined.
 Table D.14: Description of the BodyTemperature event fields
-
 Parameter Name
 
 Description
@@ -5312,9 +5558,9 @@ Optional , bounding box information of the object as normalized screen coordinat
 
 ONVIF™
 
-– 72 –
+– 74 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Annex E.
 Tampering Detection (normative)
@@ -5377,9 +5623,9 @@ It can generate any of the following events based on the Mode parameter,
 
 ONVIF™
 
-– 73 –
+– 75 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 <tt:SimpleItemDescription Type="xs:string“ Name=" RuleName" />
 </tt:Source>
@@ -5400,13 +5646,15 @@ Indicates any of the supported modes listed in the GetRuleOptionsResponse.
 
 Threshold
 
-Indicates the threshold level of the tampering detection algorithm, when the threshold crosses the specified value event is generated. The value is set according to
-the limits specified in the GetRuleOptionsResponse.
+Indicates the threshold level of the tampering detection algorithm, when the
+threshold crosses the specified value event is generated. The value is set according
+to the limits specified in the GetRuleOptionsResponse.
 
 Duration
 
-How long the detection values stays over the threshold to generate the event. This
-duration value is set according to the DurationRange specified in the GetRuleOptionsResponse.
+How long the detection values stays over the threshold to generate the event.
+This duration value is set according to the DurationRange specified in the
+GetRuleOptionsResponse.
 
 Sample options for the tampering detection, based on description language parameter options defined in
 6.1.3.2.
@@ -5436,9 +5684,9 @@ Sample options for the tampering detection, based on description language parame
 
 ONVIF™
 
-– 74 –
+– 76 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Annex F.
 Face metadata values samples (informative)
@@ -5465,9 +5713,9 @@ Sample
 
 ONVIF™
 
-– 75 –
+– 77 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Table F.2: Samples For HairStyle
 Feature
@@ -5491,10 +5739,10 @@ Sample
 ONVIF™
 Feature
 
-– 76 –
+– 78 –
 Value
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 Sample
 
 Ponytail
@@ -5528,9 +5776,9 @@ Sample
 
 ONVIF™
 
-– 77 –
+– 79 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Table F.5: Samples For Ear
 Feature
@@ -5551,9 +5799,9 @@ Sample
 
 ONVIF™
 
-– 78 –
+– 80 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Table F.6: Samples For NoseEnd
 Feature
@@ -5573,10 +5821,10 @@ Sample
 ONVIF™
 Feature
 
-– 79 –
+– 81 –
 Value
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 Sample
 
 Hooked
@@ -5610,10 +5858,10 @@ Sample
 ONVIF™
 Feature
 
-– 80 –
+– 82 –
 Value
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 Sample
 
 Pointed
@@ -5640,10 +5888,10 @@ Sample
 ONVIF™
 Feature
 
-– 81 –
+– 83 –
 Value
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 Sample
 
 Hijab
@@ -5668,20 +5916,20 @@ Sample
 ONVIF™
 Feature
 
-– 82 –
+– 84 –
 Value
 Tattoo
 
 Freckles
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 Sample
 
 ONVIF™
 
-– 83 –
+– 85 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Annex G.
 Recognition rule engines (normative)
@@ -5703,7 +5951,8 @@ Requirement Level
 
 IncludeImage
 
-Configures how recognized images should be conveyed as type tt:ImageSendingType.
+Configures how recognized images should be
+conveyed as type tt:ImageSendingType.
 
 Optional
 
@@ -5716,14 +5965,16 @@ the event payload.
 
 •
 
-LocalStorage: Include a local URI for the recognized image.
+LocalStorage: Include a local URI for the
+recognized image.
 
 •
 
 RemoteStorage: Include a remote URI for the
 recognized image.
 
-The level of confidence required for the detection/recognition.
+The level of confidence required for the detection/
+recognition.
 
 Optional
 
@@ -5749,13 +6000,16 @@ Optional
 
 ParentObjectID
 
-Parent Object ID of the recognized object of type tt:ObjectId
+Parent Object ID of the recognized object of type
+tt:ObjectId
 
 Optional
 
 BoundingBox
 
-Recognized object bounding box details. Area of recognized object in normalized screen coordinates (-1.0, 1.0).
+Recognized object bounding box details. Area of
+recognized object in normalized screen coordinates
+(-1.0, 1.0).
 
 Optional
 
@@ -5766,8 +6020,6 @@ Information regarding matching list.
 Optional
 
 Predefined values are:
-
-Image
 
 •
 
@@ -5781,21 +6033,24 @@ Blacklisted
 
 Temporary
 
-Base64 encoded binary image data of the recognized object
-
-Optional
-
 ONVIF™
 
-– 84 –
+– 86 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Event Field
 
 Description
 
 Requirement Level
+
+Image
+
+Base64 encoded binary image data of the recognized
+object
+
+Optional
 
 ImageUri
 
@@ -5816,12 +6071,12 @@ Recognition/Face. The Face Recognition rule engine triggers the event when the i
 a reference face image, which is described using the Rule Description Language as:
 <tt:RuleDescription Name="tt:FaceRecognition">
 <tt:Parameters>
-<tt:SimpleItemDescription Name="IncludeImage" Type=”xs:string"/>
+<tt:SimpleItemDescription Name="IncludeImage" Type="xs:string"/>
 </tt:Parameters>
 <tt:Messages>
 <tt:Source>
-<tt:SimpleItemDescription Name=”VideoSource” Type=”tt:ReferenceToken”/>
-<tt:SimpleItemDescription Name=”Rule” Type=”xs:string”/>
+<tt:SimpleItemDescription Name="VideoSource" Type="tt:ReferenceToken"/>
+<tt:SimpleItemDescription Name="Rule" Type="xs:string"/>
 </tt:Source>
 <tt:Data>
 <tt:SimpleItemDescription Name="Likelihood" Type="xs:float"/>
@@ -5857,32 +6112,34 @@ Mandatory
 
 RefImageUri
 
-URI of reference face image against which face recognition is successfully matched.
+URI of reference face image against which face
+recognition is successfully matched.
 
 Optional
 
 G.3 License Plate Recognition
-This section describes License Plate Recognition rule engine that produces an event with the topic
-“tns1:RuleEngine/Recognition/LicensePlate”. License Plate Recognition detects vehicles’ features or behav-
+This section describes License Plate Recognition rule engine that produces an event with the
+topic “tns1:RuleEngine/Recognition/LicensePlate". License Plate Recognition detects vehicles’ features or
 
 ONVIF™
 
-– 85 –
+– 87 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
-iours against specified region or direction. The rule can be configured to detect vehicle in lane/region or driving
-direction of interest on the image source.
-License Plate Recognition rule engine triggers an event which is described using the Rule Description Language as :
+behaviours against specified region or direction. The rule can be configured to detect vehicle in lane/region or
+driving direction of interest on the image source.
+License Plate Recognition rule engine triggers an event which is described using the Rule Description
+Language as :
 <tt:RuleDescription Name="tt:LicensePlateRecognition">
 <tt:Parameters>
-<tt:SimpleItemDescription Name="IncludeImage" Type=”xs:string"/>
+<tt:SimpleItemDescription Name="IncludeImage" Type="xs:string"/>
 <tt:SimpleItemDescription Name="PlateLocation" Type="xs:string"/>
 <tt:ElementItemDescription Name="Region" Type="tt:Polygon"/>
 <tt:ElementItemDescription Name="SnapLine" Type="tt:Polyline"/>
 <tt:SimpleItemDescription Name="Country" Type="xs:string"/>
 <tt:SimpleItemDescription Name="Sensitivity" Type="xs:float"/>
-<tt:SimpleItemDescription Name="Threshold” Type=”xs:float"/>
+<tt:SimpleItemDescription Name="Threshold" Type="xs:float"/>
 <tt:SimpleItemDescription Name="PlateMinWidth" Type="xs:float"/>
 <tt:SimpleItemDescription Name="PlateMaxWidth" Type="xs:float"/>
 <tt:SimpleItemDescription Name="EventInterval" Type="xs:int"/>
@@ -5890,7 +6147,7 @@ License Plate Recognition rule engine triggers an event which is described using
 <tt:Messages>
 <tt:Source>
 <tt:SimpleItemDescription Name="VideoSource" Type="tt:ReferenceToken"/>
-<tt:SimpleItemDescription Name="Rule” Type="xs:string"/>
+<tt:SimpleItemDescription Name="Rule" Type="xs:string"/>
 </tt:Source>
 <tt:Data>
 <tt:SimpleItemDescription name="Likelihood" Type="xs:float"/>
@@ -5958,10 +6215,10 @@ Optional
 ONVIF™
 Parameter Name
 
-– 86 –
+– 88 –
 Description
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 Requirement Level
 
 more License plates are detected at the cost of increasing
@@ -6044,9 +6301,9 @@ VehicleImageURI event field in the event message.
 
 ONVIF™
 
-– 87 –
+– 89 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Annex H.
 Audio analytics (normative)
@@ -6061,7 +6318,8 @@ A rule engine can send the following event for detected audio classes.
 <tt:MessageDescription IsProperty="false">
 <tt:Source>
 <tt:SimpleItemDescription Name="AudioSource" Type="tt:ReferenceToken"/>
-<tt:SimpleItemDescription Name="AnalyticsConfiguration" Type="tt:ReferenceToken"/>
+<tt:SimpleItemDescription Name="AnalyticsConfiguration"
+Type="tt:ReferenceToken"/>
 <tt:SimpleItemDescription Name="Rule" Type="xs:string"/>
 </tt:Source>
 <tt:Data>
@@ -6124,9 +6382,9 @@ Optional loudness of the detected sound in dB.
 
 ONVIF™
 
-– 88 –
+– 90 –
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Annex I.
 Revision History
@@ -6339,12 +6597,12 @@ license plate rule configuration.
 ONVIF™
 Rev.
 
-– 89 –
+– 91 –
 Date
 
 Editor
 
-Analytics – Ver. 24.12
+Analytics – Ver. 25.12
 
 Changes
 
@@ -6370,7 +6628,7 @@ Venki Aravapalli
 
 Addition of spherical coordinate descriptor, direction
 descriptor and barcode information. Rule additions for
-abondoned and removed objects.
+abandoned and removed objects.
 
 23.12
 
@@ -6404,5 +6662,28 @@ Bhetanabottla
 
 Add Object UUID as well as sign and label info. Extend
 LPR data fields for speed and direction.
+
+25.06
+
+Jun-2025
+
+Hans Busch,
+Sriram
+Bhetanabottla
+
+Introduce enhanced type Belongings and deprecate type
+Belonging. Add support for license plate colors. Clarify
+requirements for faults for rules and modules creation and
+modification.
+
+25.12
+
+Dec-2025
+
+Sriram
+Bhetanabottla,
+Hans Busch
+
+Add object track aggregation.
 
 
