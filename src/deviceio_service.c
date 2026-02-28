@@ -93,31 +93,20 @@ int deviceio_get_audio_outputs()
     }
 
     const char *token = service_ctx.audio.backchannel.token ? service_ctx.audio.backchannel.token : "";
-    const char *name = service_ctx.audio.backchannel.name ? service_ctx.audio.backchannel.name : "";
-    char output_level[8];
-    snprintf(output_level, sizeof(output_level), "%d", service_ctx.audio.backchannel.output_level);
 
     long size = cat(NULL,
                     "deviceio_service_files/GetAudioOutputs.xml",
-                    6,
+                    2,
                     "%AUDIO_OUTPUT_TOKEN%",
-                    token,
-                    "%AUDIO_OUTPUT_NAME%",
-                    name,
-                    "%AUDIO_OUTPUT_LEVEL%",
-                    output_level);
+                    token);
 
     output_http_headers(size);
 
     return cat("stdout",
                "deviceio_service_files/GetAudioOutputs.xml",
-               6,
+               2,
                "%AUDIO_OUTPUT_TOKEN%",
-               token,
-               "%AUDIO_OUTPUT_NAME%",
-               name,
-               "%AUDIO_OUTPUT_LEVEL%",
-               output_level);
+               token);
 }
 
 int deviceio_get_audio_sources()
