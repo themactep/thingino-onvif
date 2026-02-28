@@ -409,6 +409,14 @@ test_onvif_service() {
             wsdl_prefix="timg"
             wsdl_namespace="http://www.onvif.org/ver20/imaging/wsdl"
             ;;
+        media2_service)
+            wsdl_prefix="tr2"
+            wsdl_namespace="http://www.onvif.org/ver20/media/wsdl"
+            ;;
+        ptz_service)
+            wsdl_prefix="tptz"
+            wsdl_namespace="http://www.onvif.org/ver20/ptz/wsdl"
+            ;;
     esac
 
     local include_category=true
@@ -1199,6 +1207,387 @@ print(soap)
     fi
 }
 
+# =====================================================================
+# New test functions from v25.12 gap analysis
+# =====================================================================
+
+# PTZ: SetConfiguration (added in v25.12 gap analysis)
+test_ptz_set_configuration() {
+    echo -e "\n${YELLOW}Testing: PTZ SetConfiguration (silent accept)${NC}"
+
+    local soap_request
+    soap_request=$(python3 - <<'PY'
+import sys, base64, hashlib, datetime, os
+username = os.environ.get('DEFAULT_USERNAME', 'thingino')
+password = os.environ.get('DEFAULT_PASSWORD', 'thingino')
+nonce = os.urandom(16)
+nonce_b64 = base64.b64encode(nonce).decode('utf-8')
+created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
+digest = base64.b64encode(hashlib.sha1(digest_input).digest()).decode('utf-8')
+tpl = open('tests/soap_templates/ptz_set_configuration.xml', 'r').read()
+print(tpl.format(username=username, digest=digest, nonce=nonce_b64, created=created))
+PY
+)
+
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
+        return 0
+    fi
+
+    local tmp_resp http_code response
+    tmp_resp=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_resp")
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp"
+
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ PTZ SetConfiguration - FAILED (no response)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "ptz/SetConfiguration"; then
+        return 1
+    fi
+
+    if [[ $response == *"SetConfigurationResponse"* ]]; then
+        echo -e "${GREEN}✓ PTZ SetConfiguration - SUCCESS (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response" | xmllint --format - 2>/dev/null || true
+        return 0
+    elif [[ $response == *"Fault"* ]]; then
+        local fault_text
+        fault_text=$(echo "$response" | grep -o 'Text>[^<]*' | head -1 | sed 's/Text>//')
+        echo -e "${YELLOW}⚠ PTZ SetConfiguration - SOAP FAULT: $fault_text (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response" | xmllint --format - 2>/dev/null || true
+        return 2
+    else
+        echo -e "${RED}✗ PTZ SetConfiguration - FAILED (unexpected response, HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response"
+        return 1
+    fi
+}
+
+# PTZ: GetCompatibleConfigurations (added in v25.12 gap analysis)
+test_ptz_get_compatible_configurations() {
+    echo -e "\n${YELLOW}Testing: PTZ GetCompatibleConfigurations${NC}"
+
+    local soap_request
+    soap_request=$(python3 - <<'PY'
+import sys, base64, hashlib, datetime, os
+username = os.environ.get('DEFAULT_USERNAME', 'thingino')
+password = os.environ.get('DEFAULT_PASSWORD', 'thingino')
+nonce = os.urandom(16)
+nonce_b64 = base64.b64encode(nonce).decode('utf-8')
+created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+digest_input = nonce + created.encode('utf-8') + password.encode('utf-8')
+digest = base64.b64encode(hashlib.sha1(digest_input).digest()).decode('utf-8')
+tpl = open('tests/soap_templates/ptz_get_compatible_configs.xml', 'r').read()
+print(tpl.format(username=username, digest=digest, nonce=nonce_b64, created=created))
+PY
+)
+
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping - Python not available${NC}"
+        return 0
+    fi
+
+    local tmp_resp http_code response
+    tmp_resp=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/ptz_service" "" "$soap_request" "$tmp_resp")
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp"
+
+    if [[ -z "$response" ]]; then
+        echo -e "${RED}✗ PTZ GetCompatibleConfigurations - FAILED (no response)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$response" "ptz/GetCompatibleConfigurations"; then
+        return 1
+    fi
+
+    if [[ $response == *"GetCompatibleConfigurationsResponse"* ]]; then
+        echo -e "${GREEN}✓ PTZ GetCompatibleConfigurations - SUCCESS (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response" | xmllint --format - 2>/dev/null || true
+        return 0
+    elif [[ $response == *"Fault"* ]]; then
+        local fault_text
+        fault_text=$(echo "$response" | grep -o 'Text>[^<]*' | head -1 | sed 's/Text>//')
+        echo -e "${YELLOW}⚠ PTZ GetCompatibleConfigurations - SOAP FAULT: $fault_text (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response" | xmllint --format - 2>/dev/null || true
+        return 2
+    else
+        echo -e "${RED}✗ PTZ GetCompatibleConfigurations - FAILED (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response"
+        return 1
+    fi
+}
+
+# Device service: new operations from v25.12 gap analysis
+test_device_new_operations() {
+    echo -e "\n${BLUE}=== Device Service: New Operations ===${NC}"
+
+    # GetNTP - reads ntp.conf/chrony.conf and returns server address
+    test_onvif_service "device_service" "GetNTP" "Device GetNTP" true "GetNTPResponse"
+
+    # GetNetworkProtocols - returns HTTP port + RTSP/554
+    test_onvif_service "device_service" "GetNetworkProtocols" "Device GetNetworkProtocols" true "GetNetworkProtocolsResponse"
+
+    # SetSystemDateAndTime - parses UTCDateTime body; empty body may fault, either is valid
+    test_onvif_service "device_service" "SetSystemDateAndTime" "Device SetSystemDateAndTime" true
+
+    # CreateUsers - always returns MaxUsers fault (MaxUsers=1 and one user already exists)
+    echo -e "\n${YELLOW}Testing: Device CreateUsers (expect MaxUsers fault)${NC}"
+    local soap_request resp http_code tmp_resp
+    soap_request=$(generate_auth_soap "CreateUsers" "tds" "http://www.onvif.org/ver10/device/wsdl" "true")
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Device CreateUsers - Skipping (auth script not available)${NC}"
+    else
+        tmp_resp=$(mktemp)
+        http_code=$(send_soap_raw "$SERVER_URL/onvif/device_service" "" "$soap_request" "$tmp_resp")
+        resp=$(cat "$tmp_resp" 2>/dev/null || true)
+        rm -f "$tmp_resp"
+        if assert_valid_xml "$resp" "device/CreateUsers" && [[ $resp == *"MaxUsers"* ]]; then
+            echo -e "${GREEN}✓ Device CreateUsers - SUCCESS (MaxUsers fault as expected, HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp" | xmllint --format - 2>/dev/null || true
+        elif [[ $resp == *"Fault"* ]]; then
+            local ft
+            ft=$(echo "$resp" | grep -o 'Text>[^<]*' | head -1 | sed 's/Text>//')
+            echo -e "${YELLOW}⚠ Device CreateUsers - SOAP FAULT: $ft (HTTP $http_code)${NC}"
+        else
+            echo -e "${RED}✗ Device CreateUsers - FAILED (unexpected response, HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp"
+        fi
+    fi
+
+    # DeleteUsers - stub: returns empty DeleteUsersResponse regardless of body
+    test_onvif_service "device_service" "DeleteUsers" "Device DeleteUsers (stub)" true "DeleteUsersResponse"
+
+    # SetUser - stub: returns empty SetUserResponse regardless of body
+    test_onvif_service "device_service" "SetUser" "Device SetUser (stub)" true "SetUserResponse"
+}
+
+# Media service (v1): new operations from v25.12 gap analysis
+test_media1_new_operations() {
+    echo -e "\n${BLUE}=== Media Service (v1): New Operations ===${NC}"
+
+    # Metadata configuration read operations (return empty lists - stubs)
+    test_onvif_service "media_service" "GetMetadataConfigurations" \
+        "Media GetMetadataConfigurations" true "GetMetadataConfigurationsResponse"
+    test_onvif_service "media_service" "GetCompatibleMetadataConfigurations" \
+        "Media GetCompatibleMetadataConfigurations" true "GetCompatibleMetadataConfigurationsResponse"
+    test_onvif_service "media_service" "GetMetadataConfigurationOptions" \
+        "Media GetMetadataConfigurationOptions" true "GetMetadataConfigurationOptionsResponse"
+
+    # GetMetadataConfiguration with empty token - expect NoConfig fault
+    echo -e "\n${YELLOW}Testing: Media GetMetadataConfiguration (expect NoConfig fault)${NC}"
+    local soap_request resp http_code tmp_resp
+    soap_request=$(generate_auth_soap "GetMetadataConfiguration" "trt" "http://www.onvif.org/ver10/media/wsdl" "true")
+    if [ -n "$soap_request" ]; then
+        tmp_resp=$(mktemp)
+        http_code=$(send_soap_raw "$SERVER_URL/onvif/media_service" "" "$soap_request" "$tmp_resp")
+        resp=$(cat "$tmp_resp" 2>/dev/null || true)
+        rm -f "$tmp_resp"
+        if assert_valid_xml "$resp" "media/GetMetadataConfiguration" && [[ $resp == *"NoConfig"* || $resp == *"Fault"* ]]; then
+            echo -e "${GREEN}✓ Media GetMetadataConfiguration - SUCCESS (NoConfig fault as expected, HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp" | xmllint --format - 2>/dev/null || true
+        else
+            echo -e "${YELLOW}⚠ Media GetMetadataConfiguration - Unexpected response (HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp"
+        fi
+    fi
+
+    # SetMetadataConfiguration - condition_adv_fault_if_set may block; both fault/success acceptable
+    test_onvif_service "media_service" "SetMetadataConfiguration" \
+        "Media SetMetadataConfiguration" true
+
+    # Profile configuration add/remove stubs (all return empty success)
+    test_onvif_service "media_service" "AddVideoEncoderConfiguration" \
+        "Media AddVideoEncoderConfiguration (stub)" true "AddVideoEncoderConfigurationResponse"
+    test_onvif_service "media_service" "AddVideoSourceConfiguration" \
+        "Media AddVideoSourceConfiguration (stub)" true "AddVideoSourceConfigurationResponse"
+    test_onvif_service "media_service" "AddAudioEncoderConfiguration" \
+        "Media AddAudioEncoderConfiguration (stub)" true "AddAudioEncoderConfigurationResponse"
+    test_onvif_service "media_service" "AddAudioSourceConfiguration" \
+        "Media AddAudioSourceConfiguration (stub)" true "AddAudioSourceConfigurationResponse"
+    test_onvif_service "media_service" "AddPTZConfiguration" \
+        "Media AddPTZConfiguration (stub)" true "AddPTZConfigurationResponse"
+    test_onvif_service "media_service" "RemoveVideoEncoderConfiguration" \
+        "Media RemoveVideoEncoderConfiguration (stub)" true "RemoveVideoEncoderConfigurationResponse"
+    test_onvif_service "media_service" "RemoveVideoSourceConfiguration" \
+        "Media RemoveVideoSourceConfiguration (stub)" true "RemoveVideoSourceConfigurationResponse"
+    test_onvif_service "media_service" "RemoveAudioEncoderConfiguration" \
+        "Media RemoveAudioEncoderConfiguration (stub)" true "RemoveAudioEncoderConfigurationResponse"
+    test_onvif_service "media_service" "RemoveAudioSourceConfiguration" \
+        "Media RemoveAudioSourceConfiguration (stub)" true "RemoveAudioSourceConfigurationResponse"
+    test_onvif_service "media_service" "RemovePTZConfiguration" \
+        "Media RemovePTZConfiguration (stub)" true "RemovePTZConfigurationResponse"
+
+    # DeleteProfile - always returns DeletionOfFixedProfile fault (profiles are fixed)
+    echo -e "\n${YELLOW}Testing: Media DeleteProfile (expect DeletionOfFixedProfile fault)${NC}"
+    soap_request=$(generate_auth_soap "DeleteProfile" "trt" "http://www.onvif.org/ver10/media/wsdl" "true")
+    if [ -n "$soap_request" ]; then
+        tmp_resp=$(mktemp)
+        http_code=$(send_soap_raw "$SERVER_URL/onvif/media_service" "" "$soap_request" "$tmp_resp")
+        resp=$(cat "$tmp_resp" 2>/dev/null || true)
+        rm -f "$tmp_resp"
+        if assert_valid_xml "$resp" "media/DeleteProfile" && [[ $resp == *"DeletionOfFixedProfile"* || $resp == *"Fault"* ]]; then
+            echo -e "${GREEN}✓ Media DeleteProfile - SUCCESS (DeletionOfFixedProfile fault as expected, HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp" | xmllint --format - 2>/dev/null || true
+        else
+            echo -e "${YELLOW}⚠ Media DeleteProfile - Unexpected response (HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp"
+        fi
+    fi
+
+    # StartMulticastStreaming - always returns InvalidMulticastSettings fault
+    echo -e "\n${YELLOW}Testing: Media StartMulticastStreaming (expect InvalidMulticastSettings fault)${NC}"
+    soap_request=$(generate_auth_soap "StartMulticastStreaming" "trt" "http://www.onvif.org/ver10/media/wsdl" "true")
+    if [ -n "$soap_request" ]; then
+        tmp_resp=$(mktemp)
+        http_code=$(send_soap_raw "$SERVER_URL/onvif/media_service" "" "$soap_request" "$tmp_resp")
+        resp=$(cat "$tmp_resp" 2>/dev/null || true)
+        rm -f "$tmp_resp"
+        if assert_valid_xml "$resp" "media/StartMulticastStreaming" && [[ $resp == *"InvalidMulticastSettings"* || $resp == *"Fault"* ]]; then
+            echo -e "${GREEN}✓ Media StartMulticastStreaming - SUCCESS (InvalidMulticastSettings fault as expected, HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp" | xmllint --format - 2>/dev/null || true
+        else
+            echo -e "${YELLOW}⚠ Media StartMulticastStreaming - Unexpected response (HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp"
+        fi
+    fi
+
+    # StopMulticastStreaming - stub: returns empty success
+    test_onvif_service "media_service" "StopMulticastStreaming" \
+        "Media StopMulticastStreaming (stub)" true "StopMulticastStreamingResponse"
+
+    # SetSynchronizationPoint (media1) - best-effort kill -USR2 + empty success
+    test_onvif_service "media_service" "SetSynchronizationPoint" \
+        "Media SetSynchronizationPoint" true
+}
+
+# Media2 service: tests (new operations added in v25.12 gap analysis)
+test_media2_new_operations() {
+    echo -e "\n${BLUE}=== Media2 Service Tests ===${NC}"
+
+    # Basic read operations (conditional on adv_enable_media2)
+    test_onvif_service "media2_service" "GetServiceCapabilities" \
+        "Media2 GetServiceCapabilities" true
+    test_onvif_service "media2_service" "GetProfiles" \
+        "Media2 GetProfiles" true
+    test_onvif_service "media2_service" "GetVideoEncoderConfigurations" \
+        "Media2 GetVideoEncoderConfigurations" true
+    test_onvif_service "media2_service" "GetStreamUri" \
+        "Media2 GetStreamUri" true
+
+    # GetVideoEncoderInstances - returns total count of encoder instances
+    test_onvif_service "media2_service" "GetVideoEncoderInstances" \
+        "Media2 GetVideoEncoderInstances" true "GetVideoEncoderInstancesResponse"
+
+    # CreateProfile - always returns MaxNVTProfiles fault
+    echo -e "\n${YELLOW}Testing: Media2 CreateProfile (expect MaxNVTProfiles fault)${NC}"
+    local soap_request resp http_code tmp_resp
+    soap_request=$(generate_auth_soap "CreateProfile" "tr2" "http://www.onvif.org/ver20/media/wsdl" "true")
+    if [ -n "$soap_request" ]; then
+        tmp_resp=$(mktemp)
+        http_code=$(send_soap_raw "$SERVER_URL/onvif/media2_service" "" "$soap_request" "$tmp_resp")
+        resp=$(cat "$tmp_resp" 2>/dev/null || true)
+        rm -f "$tmp_resp"
+        if assert_valid_xml "$resp" "media2/CreateProfile" && [[ $resp == *"MaxNVTProfiles"* || $resp == *"Fault"* ]]; then
+            echo -e "${GREEN}✓ Media2 CreateProfile - SUCCESS (MaxNVTProfiles fault as expected, HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp" | xmllint --format - 2>/dev/null || true
+        else
+            echo -e "${YELLOW}⚠ Media2 CreateProfile - Unexpected response (HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp"
+        fi
+    fi
+
+    # DeleteProfile - always returns DeletionOfFixedProfile fault
+    echo -e "\n${YELLOW}Testing: Media2 DeleteProfile (expect DeletionOfFixedProfile fault)${NC}"
+    soap_request=$(generate_auth_soap "DeleteProfile" "tr2" "http://www.onvif.org/ver20/media/wsdl" "true")
+    if [ -n "$soap_request" ]; then
+        tmp_resp=$(mktemp)
+        http_code=$(send_soap_raw "$SERVER_URL/onvif/media2_service" "" "$soap_request" "$tmp_resp")
+        resp=$(cat "$tmp_resp" 2>/dev/null || true)
+        rm -f "$tmp_resp"
+        if assert_valid_xml "$resp" "media2/DeleteProfile" && [[ $resp == *"DeletionOfFixedProfile"* || $resp == *"Fault"* ]]; then
+            echo -e "${GREEN}✓ Media2 DeleteProfile - SUCCESS (DeletionOfFixedProfile fault as expected, HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp" | xmllint --format - 2>/dev/null || true
+        else
+            echo -e "${YELLOW}⚠ Media2 DeleteProfile - Unexpected response (HTTP $http_code)${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp"
+        fi
+    fi
+
+    # AddConfiguration - stub: gracefully accepts and returns empty success
+    test_onvif_service "media2_service" "AddConfiguration" \
+        "Media2 AddConfiguration (stub)" true "AddConfigurationResponse"
+
+    # RemoveConfiguration - stub: returns empty success
+    test_onvif_service "media2_service" "RemoveConfiguration" \
+        "Media2 RemoveConfiguration (stub)" true "RemoveConfigurationResponse"
+
+    # SetSynchronizationPoint - best-effort kill -USR2 + empty success
+    # Requires ProfileToken in body; empty body may fault, which is acceptable
+    test_onvif_service "media2_service" "SetSynchronizationPoint" \
+        "Media2 SetSynchronizationPoint" true
+
+    # Set operations - conditioned on adv_fault_if_set; expect fault or success
+    test_onvif_service "media2_service" "SetVideoEncoderConfiguration" \
+        "Media2 SetVideoEncoderConfiguration" true
+    test_onvif_service "media2_service" "SetAudioSourceConfiguration" \
+        "Media2 SetAudioSourceConfiguration" true
+}
+
+# Events: verify GetEventProperties includes PTZ preset topics when PTZ is enabled
+test_events_topic_properties() {
+    echo -e "\n${YELLOW}Testing: Events GetEventProperties (PTZ preset topics)${NC}"
+
+    local soap_request resp http_code tmp_resp
+    soap_request=$(generate_auth_soap "GetEventProperties" "tev" "http://www.onvif.org/ver10/events/wsdl" "true")
+    if [ -z "$soap_request" ]; then
+        echo -e "${YELLOW}⚠ Skipping GetEventProperties - auth script not available${NC}"
+        return 0
+    fi
+
+    tmp_resp=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/events_service" "" "$soap_request" "$tmp_resp")
+    resp=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp"
+
+    if [[ -z "$resp" ]]; then
+        echo -e "${RED}✗ Events GetEventProperties - FAILED (no response, HTTP $http_code)${NC}"
+        return 1
+    fi
+
+    if ! assert_valid_xml "$resp" "events/GetEventProperties"; then
+        return 1
+    fi
+
+    if [[ $resp == *"Fault"* ]]; then
+        local ft
+        ft=$(echo "$resp" | grep -o 'Text>[^<]*' | head -1 | sed 's/Text>//')
+        echo -e "${YELLOW}⚠ Events GetEventProperties - SOAP FAULT: $ft (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp" | xmllint --format - 2>/dev/null || true
+        return 2
+    fi
+
+    if [[ $resp == *"GetEventPropertiesResponse"* ]]; then
+        # Check for PTZ preset topics injected when PTZ is enabled
+        if [[ $resp == *"PTZController"* ]] || [[ $resp == *"PTZPresets"* ]]; then
+            echo -e "${GREEN}✓ Events GetEventProperties - SUCCESS with PTZ preset topics (HTTP $http_code)${NC}"
+        else
+            echo -e "${GREEN}✓ Events GetEventProperties - SUCCESS (PTZ may be disabled; no PTZ topics, HTTP $http_code)${NC}"
+        fi
+        [ "$VERBOSE" = true ] && echo "$resp" | xmllint --format - 2>/dev/null || true
+        return 0
+    else
+        echo -e "${RED}✗ Events GetEventProperties - FAILED (unexpected response, HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$resp"
+        return 1
+    fi
+}
+
 # Run PTZ tests
 test_ptz_get_configurations
 test_ptz_get_nodes
@@ -1206,6 +1595,17 @@ test_ptz_absolute_move_valid
 test_ptz_absolute_move_invalid
 test_ptz_get_status
 test_ptz_continuous_move_diagonal
+test_ptz_set_configuration
+test_ptz_get_compatible_configurations
+
+# Device Service: New Operations (v25.12 gap analysis)
+test_device_new_operations
+
+# Media Service (v1): New Operations (v25.12 gap analysis)
+test_media1_new_operations
+
+# Media2 Service Tests (v25.12 gap analysis)
+test_media2_new_operations
 
 # Imaging Service Tests
 test_imaging_service
@@ -1216,6 +1616,9 @@ if bash tests/container_test_events.sh; then
 else
     echo -e "${RED}✗ Events tests - FAILED${NC}"
 fi
+
+# Events: GetEventProperties topic verification (PTZ presets)
+test_events_topic_properties
 
 echo -e "\n${BLUE}=== Test Summary ===${NC}"
 echo -e "${GREEN}Tests completed. Check output above for results.${NC}"

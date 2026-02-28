@@ -25,6 +25,9 @@ sed -i 's/"ifs": "wlan0"/"ifs": "lo"/g' onvif.json
 # Enable PTZ
 sed -i 's/"enable": 0,/"enable": 1,/' onvif.json
 
+# Enable Media2 for full test coverage
+sed -i 's/"adv_enable_media2": false/"adv_enable_media2": true/' onvif.json
+
 # Fake motors response
 sed -i 's|"jump_to_abs": null|"jump_to_abs": "/bin/echo PTZ move to x=%f y=%f z=%f"|' onvif.json
 
