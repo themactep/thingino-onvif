@@ -167,6 +167,7 @@ clean:
 	rm -f $(OBJECTS_O) $(OBJECTS_O_DEBUG)
 	rm -f $(OBJECTS_N) $(OBJECTS_N_DEBUG)
 	rm -f $(OBJECTS_W) $(OBJECTS_W_DEBUG)
+	$(MAKE) -C libtomcrypt clean
 
 distclean: clean
 	@echo "Removing local development artifacts..."
