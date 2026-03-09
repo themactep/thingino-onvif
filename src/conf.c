@@ -792,9 +792,6 @@ int process_json_conf_file(char *file)
         service_ctx.audio.backchannel.receive_token = dup_cstring(DEFAULT_AUDIO_OUTPUT_RECEIVE_TOKEN);
     if (service_ctx.audio.backchannel.transport == NULL)
         service_ctx.audio.backchannel.transport = dup_cstring(DEFAULT_AUDIO_BACKCHANNEL_TRANSPORT);
-    if (service_ctx.audio.backchannel.uri == NULL && service_ctx.profiles_num > 0 && service_ctx.profiles[0].url != NULL) {
-        service_ctx.audio.backchannel.uri = dup_cstring(service_ctx.profiles[0].url);
-    }
     if (service_ctx.audio.backchannel.uri == NULL)
         service_ctx.audio.backchannel.uri = dup_cstring("rtsp://%s/ch0");
 
