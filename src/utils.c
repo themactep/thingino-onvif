@@ -343,7 +343,7 @@ void output_http_headers(long content_length)
     }
     fprintf(stdout, "Content-type: application/soap+xml\r\n");
     fprintf(stdout, "Content-Length: %ld\r\n", content_length);
-    fprintf(stdout, "Connection: close\r\n\r\n");
+    fprintf(stdout, "\r\n");
 }
 
 long cat_soap_fault(char *out, const char *fault_subcode, const char *fault_reason, const char *fault_detail)
