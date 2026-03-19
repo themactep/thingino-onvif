@@ -40,12 +40,12 @@ static void parse_field(JsonValue *fields, const char *name, prudynt_field_state
     if (value->type != JSON_NUMBER || min->type != JSON_NUMBER || max->type != JSON_NUMBER)
         return;
 
-    double raw_min = min->value.number;
-    double raw_max = max->value.number;
+    double raw_min = min->value.number.real;
+    double raw_max = max->value.number.real;
     if (raw_max <= raw_min)
         return;
 
-    double raw_value = value->value.number;
+    double raw_value = value->value.number.real;
 
     out->present = 1;
     out->value = (float) raw_value;

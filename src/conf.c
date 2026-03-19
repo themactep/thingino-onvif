@@ -98,7 +98,7 @@ static void parse_float_value(JsonValue *node, imaging_float_value_t *target)
 
     if (node->type == JSON_NUMBER) {
         target->present = 1;
-        target->value = (float) node->value.number;
+        target->value = (float) node->value.number.real;
         target->has_value = 1;
         return;
     }
@@ -110,19 +110,19 @@ static void parse_float_value(JsonValue *node, imaging_float_value_t *target)
 
     JsonValue *value = get_object_item(node, "value");
     if (value && value->type == JSON_NUMBER) {
-        target->value = (float) value->value.number;
+        target->value = (float) value->value.number.real;
         target->has_value = 1;
     }
 
     JsonValue *min = get_object_item(node, "min");
     if (min && min->type == JSON_NUMBER) {
-        target->min = (float) min->value.number;
+        target->min = (float) min->value.number.real;
         target->has_min = 1;
     }
 
     JsonValue *max = get_object_item(node, "max");
     if (max && max->type == JSON_NUMBER) {
-        target->max = (float) max->value.number;
+        target->max = (float) max->value.number.real;
         target->has_max = 1;
     }
 
@@ -343,7 +343,7 @@ void get_int_from_json(int *var, JsonValue *j, char *name)
     JsonValue *i = get_object_item(j, name);
 
     if (i && i->type == JSON_NUMBER) {
-        *var = (int) i->value.number;
+        *var = (int) i->value.number.integer;
     }
 }
 
@@ -352,7 +352,7 @@ void get_double_from_json(double *var, JsonValue *j, char *name)
     JsonValue *d = get_object_item(j, name);
 
     if (d && d->type == JSON_NUMBER) {
-        *var = d->value.number;
+        *var = d->value.number.real;
     }
 }
 
@@ -365,7 +365,7 @@ static int apply_loglevel_from_json(int *var, JsonValue *j, const char *name)
 
     if (l->type == JSON_NUMBER) {
         // Handle numeric log level (backward compatibility)
-        int level = (int) l->value.number;
+        int level = (int) l->value.number.integer;
         if (level >= LOG_LVL_FATAL && level <= LOG_LVL_TRACE) {
             *var = level;
         } else {
