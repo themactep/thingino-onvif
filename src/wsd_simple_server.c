@@ -579,7 +579,7 @@ int main(int argc, char **argv)
 
             // Check if the message is a response
             if (strstr(recv_buffer, "XAddrs") == NULL) {
-                const char *relates_to_uuid;
+                char *relates_to_uuid;
 
                 log_debug("Processing request from %s:%d", source_ip, ntohs(addr_in.sin_port));
                 log_debug("Request content: %s", recv_buffer);
@@ -602,13 +602,19 @@ int main(int argc, char **argv)
                 sprintf(s_tmp, "%d", msg_number);
                 gen_uuid(msg_uuid);
                 relates_to_uuid = NULL;
-
-                relates_to_uuid = get_element("MessageID", "Header");
+                {
+                    const char *raw_uuid = get_element("MessageID", "Header");
+                    close_xml();
+                    if (raw_uuid == NULL) {
+                        log_error("Cannot find MessageID.\n");
+                        continue;
+                    }
+                    relates_to_uuid = strdup(raw_uuid);
+                }
                 if (relates_to_uuid == NULL) {
-                    log_error("Cannot find MessageID.\n");
+                    log_error("Malloc error for MessageID.\n");
                     continue;
                 }
-                close_xml();
 
                 // Send ProbeMatches message
                 log_info("Sending ProbeMatches message.");
@@ -636,6 +642,7 @@ int main(int argc, char **argv)
                 message_loop = (char *) malloc((size + 1) * sizeof(char));
                 if (message_loop == NULL) {
                     log_error("Malloc error.\n");
+                    free(relates_to_uuid);
                     continue;
                 }
 
@@ -665,9 +672,11 @@ int main(int argc, char **argv)
                 if (sendto(sock, message_loop, strlen(message_loop), 0, (struct sockaddr *) &addr_in, sizeof(addr_in)) < 0) {
                     log_error("Error sending ProbeMatches message to %s:%d", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
                     free(message_loop);
+                    free(relates_to_uuid);
                     continue;
                 }
                 free(message_loop);
+                free(relates_to_uuid);
                 log_info("ProbeMatches sent to %s:%d", inet_ntoa(addr_in.sin_addr), ntohs(addr_in.sin_port));
             } else {
                 // This is a response message (contains XAddrs)
