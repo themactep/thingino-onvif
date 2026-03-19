@@ -604,12 +604,13 @@ int main(int argc, char **argv)
                 relates_to_uuid = NULL;
                 {
                     const char *raw_uuid = get_element("MessageID", "Header");
-                    close_xml();
                     if (raw_uuid == NULL) {
                         log_error("Cannot find MessageID.\n");
+                        close_xml();
                         continue;
                     }
                     relates_to_uuid = strdup(raw_uuid);
+                    close_xml();
                 }
                 if (relates_to_uuid == NULL) {
                     log_error("Malloc error for MessageID.\n");
