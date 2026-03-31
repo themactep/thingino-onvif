@@ -30,13 +30,14 @@
 #include <unistd.h>
 
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 
 extern service_context_t service_ctx;
 
 // Cached state to avoid repeated checks
-static int xml_logging_enabled = -1;     // -1 = not initialized, 0 = disabled, 1 = enabled
-static char current_timestamp[32] = {0}; // Shared timestamp for request/response pair
+static int xml_logging_enabled = -1;      // -1 = not initialized, 0 = disabled, 1 = enabled
+static char current_timestamp[64] = {0};  // Shared request identifier for request/response pair
 
 /**
  * Initialize XML logging system
@@ -175,15 +176,32 @@ int xml_error_log_destination_ready(int emit_warn)
 }
 
 /**
- * Generate timestamp for filename
- * Format: YYYYMMDD_HHMMSS
- * @param buffer Buffer to store timestamp (must be at least 16 bytes)
+ * Generate a per-request identifier for filenames.
+ * Format: YYYYMMDD_HHMMSS_mmm_pid-NNNN
+ * @param buffer Buffer to store identifier
  */
 static void generate_timestamp(char *buffer, size_t buffer_size)
 {
-    time_t now = time(NULL);
-    struct tm *tm_info = localtime(&now);
-    strftime(buffer, buffer_size, "%Y%m%d_%H%M%S", tm_info);
+    struct timeval tv;
+    struct tm tm_info;
+    char date_part[32];
+
+    if (gettimeofday(&tv, NULL) != 0) {
+        time_t now = time(NULL);
+        localtime_r(&now, &tm_info);
+        strftime(date_part, sizeof(date_part), "%Y%m%d_%H%M%S", &tm_info);
+        snprintf(buffer, buffer_size, "%s_000_pid-%ld", date_part, (long) getpid());
+        return;
+    }
+
+    localtime_r(&tv.tv_sec, &tm_info);
+    strftime(date_part, sizeof(date_part), "%Y%m%d_%H%M%S", &tm_info);
+    snprintf(buffer,
+             buffer_size,
+             "%s_%03ld_pid-%ld",
+             date_part,
+             (long) (tv.tv_usec / 1000),
+             (long) getpid());
 }
 
 /**
