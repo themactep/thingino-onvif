@@ -807,6 +807,15 @@ int ptz_get_presets()
                 fflush(stdout);
         }
 
+        if (service_ctx.ptz_node.goto_home_position != NULL) {
+            size = cat(dest, "ptz_service_files/GetPresets_2.xml", 10,
+                       "%TOKEN%", "home", "%NAME%", "home", "%X%", "0.0000", "%Y%", "0.0000", "%Z%", "0.0000");
+            if (c == 0)
+                total_size += size;
+            else
+                fflush(stdout);
+        }
+
         size = cat(dest, "ptz_service_files/GetPresets_3.xml", 0);
         if (c == 0)
             total_size += size;
@@ -848,6 +857,16 @@ int ptz_goto_preset()
     }
 
     preset_token = get_element("PresetToken", "Body");
+    if (strcasecmp(preset_token, "home") == 0) {
+        if (service_ctx.ptz_node.goto_home_position == NULL) {
+            send_action_failed_fault("ptz_service", -3);
+            return -3;
+        }
+        system(service_ctx.ptz_node.goto_home_position);
+        long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
+        output_http_headers(size);
+        return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
+    }
     if (sscanf(preset_token, "PresetToken_%d", &preset_number) != 1) {
         send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
         return -3;
