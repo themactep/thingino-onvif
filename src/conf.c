@@ -46,31 +46,31 @@ static char *dup_cstring(const char *src)
     return copy;
 }
 
-static void free_stream_profile_fields(stream_profile_t *profile)
+static int is_rtsp_profile_url(const char *url)
+{
+    if (!url)
+        return 0;
+
+    return (strncmp(url, "rtsp://", 7) == 0) || (strncmp(url, "rtsps://", 8) == 0);
+}
+
+static void free_stream_profile_strings(stream_profile_t *profile)
 {
     if (!profile)
         return;
 
-    free(profile->name);
-    profile->name = NULL;
-    free(profile->url);
-    profile->url = NULL;
-    free(profile->snapurl);
-    profile->snapurl = NULL;
-}
-
-static int is_usable_media_profile(const stream_profile_t *profile)
-{
-    if (!profile)
-        return 0;
-
-    if (!profile->name || profile->name[0] == '\0')
-        return 0;
-
-    if (profile->width <= 0 || profile->height <= 0)
-        return 0;
-
-    return 1;
+    if (profile->name) {
+        free(profile->name);
+        profile->name = NULL;
+    }
+    if (profile->url) {
+        free(profile->url);
+        profile->url = NULL;
+    }
+    if (profile->snapurl) {
+        free(profile->snapurl);
+        profile->snapurl = NULL;
+    }
 }
 
 static void free_imaging_string_list(imaging_string_list_t *list)
@@ -773,44 +773,30 @@ int process_json_conf_file(char *file)
                     profile.audio_decoder = AAC;
                 free(tmp);
             }
+            stream_profile_t *profile = &service_ctx.profiles[service_ctx.profiles_num - 1];
 
-            if (!is_usable_media_profile(&profile)) {
-                log_info("Skipping non-media profile '%s' (name=%s width=%d height=%d)",
-                         key ? key : "(null)",
-                         profile.name ? profile.name : "(null)",
-                         profile.width,
-                         profile.height);
-                free_stream_profile_fields(&profile);
+            if (!is_rtsp_profile_url(profile->url)) {
+                log_info("Skipping non-RTSP profile %s (url=%s)", key, profile->url ? profile->url : "(null)");
+                free_stream_profile_strings(profile);
+                service_ctx.profiles_num--;
                 kv = kv->next;
                 continue;
             }
 
-            if (service_ctx.profiles_num >= 2) {
-                log_warn("Ignoring extra media profile '%s': only two ONVIF stream profiles are supported",
-                         key ? key : "(null)");
-                free_stream_profile_fields(&profile);
+            if (service_ctx.profiles_num > 2) {
+                log_warn("Skipping extra RTSP profile %s; only two media profiles are currently supported", key);
+                free_stream_profile_strings(profile);
+                service_ctx.profiles_num--;
                 kv = kv->next;
                 continue;
             }
-
-            stream_profile_t *profiles = (stream_profile_t *) realloc(
-                service_ctx.profiles, (service_ctx.profiles_num + 1) * sizeof(stream_profile_t));
-            if (!profiles) {
-                log_error("Failed to allocate memory for profile '%s'", key ? key : "(null)");
-                free_stream_profile_fields(&profile);
-                return -1;
-            }
-
-            service_ctx.profiles = profiles;
-            service_ctx.profiles[service_ctx.profiles_num] = profile;
-            service_ctx.profiles_num++;
 
             log_debug("Profile %s (%d): %s %dx%d",
                       key,
                       service_ctx.profiles_num - 1,
-                      service_ctx.profiles[service_ctx.profiles_num - 1].name,
-                      service_ctx.profiles[service_ctx.profiles_num - 1].width,
-                      service_ctx.profiles[service_ctx.profiles_num - 1].height);
+                      profile->name ? profile->name : "(null)",
+                      profile->width,
+                      profile->height);
 
             kv = kv->next;
         }
