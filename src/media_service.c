@@ -194,7 +194,8 @@ int media_get_video_source_configuration_options()
         strncpy(token, service_ctx.profiles[0].name, 9);
     }
 
-    if ((strcasecmp(service_ctx.profiles[0].name, token) == 0) || (strcasecmp(service_ctx.profiles[1].name, token) == 0)
+    if ((strcasecmp(service_ctx.profiles[0].name, token) == 0)
+        || ((service_ctx.profiles_num > 1) && (strcasecmp(service_ctx.profiles[1].name, token) == 0))
         || (strcasecmp("VideoSourceConfigToken", token) == 0)) {
         sprintf(stmp_w, "%d", service_ctx.profiles[0].width);
         sprintf(stmp_h, "%d", service_ctx.profiles[0].height);
@@ -650,6 +651,14 @@ int media_get_video_encoder_configurations()
                    "%HEIGHT_LOW%",
                    stmp_h_l);
     }
+
+    send_fault("media_service",
+               "Sender",
+               "ter:InvalidArgVal",
+               "ter:NoConfig",
+               "No config",
+               "No supported video encoder configuration profiles are available");
+    return -1;
 }
 
 int media_get_video_encoder_configuration()
@@ -1031,7 +1040,8 @@ int media_get_stream_uri()
 
 int media_get_audio_sources()
 {
-    if ((service_ctx.profiles[0].audio_encoder != AUDIO_NONE) || (service_ctx.profiles[1].audio_encoder != AUDIO_NONE)) {
+    if ((service_ctx.profiles_num > 0 && service_ctx.profiles[0].audio_encoder != AUDIO_NONE)
+        || (service_ctx.profiles_num > 1 && service_ctx.profiles[1].audio_encoder != AUDIO_NONE)) {
         long size = cat(NULL, "media_service_files/GetAudioSources.xml", 0);
 
         output_http_headers(size);
@@ -1153,7 +1163,9 @@ int media_get_audio_source_configuration_options()
         strncpy(token, service_ctx.profiles[0].name, 9);
     }
 
-    if ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder == AUDIO_NONE)) {
+    if ((service_ctx.profiles_num <= 0)
+        || ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE)
+            && ((service_ctx.profiles_num < 2) || (service_ctx.profiles[1].audio_encoder == AUDIO_NONE)))) {
         send_fault("media_service",
                    "Receiver",
                    "ter:ActionNotSupported",
@@ -1242,7 +1254,9 @@ int media_get_audio_encoder_configurations()
     char audio_encoder_high[16];
     char audio_encoder_low[16];
 
-    if ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE) && (service_ctx.profiles[1].audio_encoder == AUDIO_NONE)) {
+    if ((service_ctx.profiles_num <= 0)
+        || ((service_ctx.profiles[0].audio_encoder == AUDIO_NONE)
+            && ((service_ctx.profiles_num < 2) || (service_ctx.profiles[1].audio_encoder == AUDIO_NONE)))) {
         send_fault("media_service",
                    "Receiver",
                    "ter:ActionNotSupported",
@@ -1358,6 +1372,14 @@ int media_get_audio_encoder_configurations()
             return -3;
         }
     }
+
+    send_fault("media_service",
+               "Sender",
+               "ter:InvalidArgVal",
+               "ter:NoConfig",
+               "No config",
+               "No supported audio encoder configuration profiles are available");
+    return -4;
 }
 
 int media_get_audio_encoder_configuration_options()

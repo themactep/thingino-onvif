@@ -46,6 +46,33 @@ static char *dup_cstring(const char *src)
     return copy;
 }
 
+static void free_stream_profile_fields(stream_profile_t *profile)
+{
+    if (!profile)
+        return;
+
+    free(profile->name);
+    profile->name = NULL;
+    free(profile->url);
+    profile->url = NULL;
+    free(profile->snapurl);
+    profile->snapurl = NULL;
+}
+
+static int is_usable_media_profile(const stream_profile_t *profile)
+{
+    if (!profile)
+        return 0;
+
+    if (!profile->name || profile->name[0] == '\0')
+        return 0;
+
+    if (profile->width <= 0 || profile->height <= 0)
+        return 0;
+
+    return 1;
+}
+
 static void free_imaging_string_list(imaging_string_list_t *list)
 {
     if (!list || list->count == 0 || list->items == NULL)
@@ -686,7 +713,8 @@ int process_json_conf_file(char *file)
         log_debug("username: %s", service_ctx.username);
         log_debug("password: %s", service_ctx.password ? service_ctx.password : "(null)");
     }
-    // Load profiles from main configuration file
+    // Load media profiles from main configuration file.
+    // Keep only ONVIF stream profiles (with valid dimensions) and cap at 2.
     value = get_object_item(json_file, "profiles");
     if (value && value->type == JSON_OBJECT) {
         JsonKeyValue *kv = value->value.object_head;
@@ -694,61 +722,89 @@ int process_json_conf_file(char *file)
             const char *key = kv->key;
             item = kv->value;
 
-            service_ctx.profiles_num++;
-            service_ctx.profiles = (stream_profile_t *) realloc(service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
-            // Init defaults
-            service_ctx.profiles[service_ctx.profiles_num - 1].name = NULL;
-            service_ctx.profiles[service_ctx.profiles_num - 1].width = 0;
-            service_ctx.profiles[service_ctx.profiles_num - 1].height = 0;
-            service_ctx.profiles[service_ctx.profiles_num - 1].url = NULL;
-            service_ctx.profiles[service_ctx.profiles_num - 1].snapurl = NULL;
-            service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
-            service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
-            service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
-            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].name), item, "name");
-            get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].width), item, "width");
-            get_int_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].height), item, "height");
-            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].url), item, "url");
-            get_string_from_json(&(service_ctx.profiles[service_ctx.profiles_num - 1].snapurl), item, "snapurl");
+            stream_profile_t profile;
+            memset(&profile, 0, sizeof(profile));
+            profile.type = H264;
+            profile.audio_encoder = AAC;
+            profile.audio_decoder = AUDIO_NONE;
+
+            get_string_from_json(&profile.name, item, "name");
+            get_int_from_json(&profile.width, item, "width");
+            get_int_from_json(&profile.height, item, "height");
+            get_string_from_json(&profile.url, item, "url");
+            get_string_from_json(&profile.snapurl, item, "snapurl");
+
             char *tmp = NULL;
             get_string_from_json(&tmp, item, "type");
             if (tmp) {
                 if (!strcasecmp(tmp, "JPEG"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].type = JPEG;
+                    profile.type = JPEG;
                 else if (!strcasecmp(tmp, "MPEG4"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].type = MPEG4;
+                    profile.type = MPEG4;
                 else if (!strcasecmp(tmp, "H264"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].type = H264;
+                    profile.type = H264;
                 else if (!strcasecmp(tmp, "H265"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].type = H265;
+                    profile.type = H265;
                 free(tmp);
             }
             tmp = NULL;
             get_string_from_json(&tmp, item, "audio_encoder");
             if (tmp) {
                 if (!strcasecmp(tmp, "NONE"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AUDIO_NONE;
+                    profile.audio_encoder = AUDIO_NONE;
                 else if (!strcasecmp(tmp, "G711"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G711;
+                    profile.audio_encoder = G711;
                 else if (!strcasecmp(tmp, "G726"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = G726;
+                    profile.audio_encoder = G726;
                 else if (!strcasecmp(tmp, "AAC"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_encoder = AAC;
+                    profile.audio_encoder = AAC;
                 free(tmp);
             }
             tmp = NULL;
             get_string_from_json(&tmp, item, "audio_decoder");
             if (tmp) {
                 if (!strcasecmp(tmp, "NONE"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AUDIO_NONE;
+                    profile.audio_decoder = AUDIO_NONE;
                 else if (!strcasecmp(tmp, "G711"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G711;
+                    profile.audio_decoder = G711;
                 else if (!strcasecmp(tmp, "G726"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = G726;
+                    profile.audio_decoder = G726;
                 else if (!strcasecmp(tmp, "AAC"))
-                    service_ctx.profiles[service_ctx.profiles_num - 1].audio_decoder = AAC;
+                    profile.audio_decoder = AAC;
                 free(tmp);
             }
+
+            if (!is_usable_media_profile(&profile)) {
+                log_info("Skipping non-media profile '%s' (name=%s width=%d height=%d)",
+                         key ? key : "(null)",
+                         profile.name ? profile.name : "(null)",
+                         profile.width,
+                         profile.height);
+                free_stream_profile_fields(&profile);
+                kv = kv->next;
+                continue;
+            }
+
+            if (service_ctx.profiles_num >= 2) {
+                log_warn("Ignoring extra media profile '%s': only two ONVIF stream profiles are supported",
+                         key ? key : "(null)");
+                free_stream_profile_fields(&profile);
+                kv = kv->next;
+                continue;
+            }
+
+            stream_profile_t *profiles = (stream_profile_t *) realloc(
+                service_ctx.profiles, (service_ctx.profiles_num + 1) * sizeof(stream_profile_t));
+            if (!profiles) {
+                log_error("Failed to allocate memory for profile '%s'", key ? key : "(null)");
+                free_stream_profile_fields(&profile);
+                return -1;
+            }
+
+            service_ctx.profiles = profiles;
+            service_ctx.profiles[service_ctx.profiles_num] = profile;
+            service_ctx.profiles_num++;
+
             log_debug("Profile %s (%d): %s %dx%d",
                       key,
                       service_ctx.profiles_num - 1,
