@@ -773,11 +773,20 @@ int process_json_conf_file(char *file)
                     profile.audio_decoder = AAC;
                 free(tmp);
             }
-            stream_profile_t *profile = &service_ctx.profiles[service_ctx.profiles_num - 1];
+            service_ctx.profiles_num++;
+            service_ctx.profiles = (stream_profile_t *) realloc(
+                service_ctx.profiles, service_ctx.profiles_num * sizeof(stream_profile_t));
+            if (!service_ctx.profiles) {
+                log_error("Failed to allocate memory for profile '%s'", key ? key : "(null)");
+                free_stream_profile_strings(&profile);
+                return -1;
+            }
+            service_ctx.profiles[service_ctx.profiles_num - 1] = profile;
+            stream_profile_t *profile_ptr = &service_ctx.profiles[service_ctx.profiles_num - 1];
 
-            if (!is_rtsp_profile_url(profile->url)) {
-                log_info("Skipping non-RTSP profile %s (url=%s)", key, profile->url ? profile->url : "(null)");
-                free_stream_profile_strings(profile);
+            if (!is_rtsp_profile_url(profile_ptr->url)) {
+                log_info("Skipping non-RTSP profile %s (url=%s)", key, profile_ptr->url ? profile_ptr->url : "(null)");
+                free_stream_profile_strings(profile_ptr);
                 service_ctx.profiles_num--;
                 kv = kv->next;
                 continue;
@@ -785,7 +794,7 @@ int process_json_conf_file(char *file)
 
             if (service_ctx.profiles_num > 2) {
                 log_warn("Skipping extra RTSP profile %s; only two media profiles are currently supported", key);
-                free_stream_profile_strings(profile);
+                free_stream_profile_strings(profile_ptr);
                 service_ctx.profiles_num--;
                 kv = kv->next;
                 continue;
@@ -794,9 +803,9 @@ int process_json_conf_file(char *file)
             log_debug("Profile %s (%d): %s %dx%d",
                       key,
                       service_ctx.profiles_num - 1,
-                      profile->name ? profile->name : "(null)",
-                      profile->width,
-                      profile->height);
+                      profile_ptr->name ? profile_ptr->name : "(null)",
+                      profile_ptr->width,
+                      profile_ptr->height);
 
             kv = kv->next;
         }
