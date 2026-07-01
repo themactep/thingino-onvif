@@ -1,0 +1,3 @@
+[submodule "docs/onvif-specs"]
+	path = docs/onvif-specs
+	url = https://github.com/onvif/specs
