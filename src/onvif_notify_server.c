@@ -47,13 +47,6 @@
 #define ALARM_OFF 0
 #define ALARM_ON 1
 
-#define BD_NO_CHDIR 01
-#define BD_NO_CLOSE_FILES 02
-#define BD_NO_REOPEN_STD_FDS 04
-
-#define BD_NO_UMASK0 010
-#define BD_MAX_CLOSE 8192
-
 #define PID_SIZE 32
 
 static int parse_reference_url(const char *reference, char *host, size_t host_len, char *page, size_t page_len, int *port_out)
@@ -138,60 +131,6 @@ int exit_main;
 sem_t *sem_shmem;
 subscription_shm_t saved_subscriptions[MAX_SUBSCRIPTIONS];
 static time_t last_emit_time[MAX_EVENTS]; // per-event debounce timestamp (seconds)
-
-int daemonize(int flags)
-{
-    int maxfd, fd;
-
-    switch (fork()) {
-    case -1:
-        return -1;
-    case 0:
-        break;
-    default:
-        _exit(EXIT_SUCCESS);
-    }
-
-    if (setsid() == -1)
-        return -1;
-
-    switch (fork()) {
-    case -1:
-        return -1;
-    case 0:
-        break;
-    default:
-        _exit(EXIT_SUCCESS);
-    }
-
-    if (!(flags & BD_NO_UMASK0))
-        umask(0);
-
-    if (!(flags & BD_NO_CHDIR))
-        chdir("/");
-
-    if (!(flags & BD_NO_CLOSE_FILES)) {
-        maxfd = sysconf(_SC_OPEN_MAX);
-        if (maxfd == -1)
-            maxfd = BD_MAX_CLOSE;
-        for (fd = 0; fd < maxfd; fd++)
-            close(fd);
-    }
-
-    if (!(flags & BD_NO_REOPEN_STD_FDS)) {
-        close(STDIN_FILENO);
-
-        fd = open("/dev/null", O_RDWR);
-        if (fd != STDIN_FILENO)
-            return -1;
-        if (dup2(STDIN_FILENO, STDOUT_FILENO) != STDOUT_FILENO)
-            return -2;
-        if (dup2(STDIN_FILENO, STDERR_FILENO) != STDERR_FILENO)
-            return -3;
-    }
-
-    return 0;
-}
 
 int check_pid(char *file_name)
 {
@@ -645,13 +584,12 @@ int handle_inotify_events(int fd, char *dir)
 
 void print_usage(char *progname)
 {
-    fprintf(stderr, "\nUsage: %s [-c JSON_CONF_FILE] [-p PID_FILE] [-f] [-d LEVEL]\n\n", progname);
+    fprintf(stderr, "\nUsage: %s [-c JSON_CONF_FILE] [-p PID_FILE] [-d LEVEL]\n\n", progname);
     fprintf(stderr, "\t-c JSON_CONF_FILE, --conf_file JSON_CONF_FILE\n");
     fprintf(stderr, "\t\tpath of the JSON configuration file (default %s)\n", DEFAULT_JSON_CONF_FILE);
     fprintf(stderr, "\t-p PID_FILE, --pid_file PID_FILE\n");
     fprintf(stderr, "\t\tpid file\n");
-    fprintf(stderr, "\t-f, --foreground\n");
-    fprintf(stderr, "\t\tdon't daemonize\n");
+
     fprintf(stderr, "\t-d LEVEL, --debug LEVEL\n");
     fprintf(stderr, "\t\tlog level: FATAL, ERROR, WARN, INFO, DEBUG, TRACE or 0-5 (default FATAL)\n");
     fprintf(stderr, "\t-h, --help\n");
@@ -664,7 +602,6 @@ int main(int argc, char **argv)
     char *endptr;
     int c, i, j, ret, itmp;
     char pid_file[1024];
-    int foreground;
     int debug_cli_set = 0;
 
     int fd = -1;
@@ -681,20 +618,18 @@ int main(int argc, char **argv)
     strcpy(conf_file, DEFAULT_JSON_CONF_FILE);
 
     strcpy(pid_file, DEFAULT_PID_FILE);
-    foreground = 0;
     debug = 0;
 
     while (1) {
         static struct option long_options[] = {{"conf_file", required_argument, 0, 'c'},
                                                {"pid_file", required_argument, 0, 'p'},
-                                               {"foreground", no_argument, 0, 'f'},
                                                {"debug", required_argument, 0, 'd'},
                                                {"help", no_argument, 0, 'h'},
                                                {0, 0, 0, 0}};
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "c:p:fd:h", long_options, &option_index);
+        c = getopt_long(argc, argv, "c:p:d:h", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -716,10 +651,6 @@ int main(int argc, char **argv)
         case 'p':
             if (strlen(optarg) < 1024)
                 strcpy(pid_file, optarg);
-            break;
-
-        case 'f':
-            foreground = 1;
             break;
 
         case 'd':
@@ -754,16 +685,6 @@ int main(int argc, char **argv)
     signal(SIGINT, signal_handler);
     signal(SIGUSR1, signal_handler);
 
-    if (foreground == 0) {
-        ret = daemonize(0);
-        if (ret) {
-            fprintf(stderr, "Error starting daemon.\n");
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        fprintf(stderr, "Don't daemonize\n");
-    }
-
     if (conf_file[0] == '\0') {
         print_usage(argv[0]);
         free(conf_file);
@@ -776,7 +697,7 @@ int main(int argc, char **argv)
     }
 
     // Open file log
-    log_init("onvif_notify_server", LOG_DAEMON, debug, foreground);
+    log_init("onvif_notify_server", LOG_DAEMON, debug, 1);
     log_info("Starting program.");
     log_debug("pid_file = %s", pid_file);
 
