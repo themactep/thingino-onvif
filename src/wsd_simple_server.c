@@ -152,24 +152,72 @@ int check_pid(char *file_name)
     return 0;
 }
 
-int create_pid(char *file_name)
+/*
+ * Atomically acquire the pid file.
+ *
+ * A separate check-then-create pid file sequence is a TOCTOU race: two
+ * instances started at the same time can both pass the check and both come
+ * up. O_CREAT|O_EXCL leaves only one winner. If the file already exists,
+ * check whether its owner is still alive: if yes, bail out; if not, take
+ * over the stale file (also left behind when the Bye path exits without
+ * cleaning up).
+ *
+ * Returns 0 if acquired, 1 if another instance is running, -1 on error.
+ */
+int acquire_pid_file(char *file_name)
 {
-    FILE *f;
+    int fd = -1;
+    int attempt, len;
     char pid_buffer[PID_SIZE];
 
-    f = fopen(file_name, "w");
-    if (f == NULL)
+    for (attempt = 0; attempt < 2; attempt++) {
+        fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+        if (fd >= 0)
+            break;
+        if (errno != EEXIST)
+            return -1;
+
+        // Pid file exists: is its owner still alive?
+        if (check_pid(file_name) == 1)
+            return 1;
+
+        // Stale file from a crashed instance: take it over
+        log_warn("Removing stale pid file %s", file_name);
+        if (unlink(file_name) < 0 && errno != ENOENT)
+            return -1;
+    }
+    if (fd < 0)
         return -1;
 
-    memset(pid_buffer, '\0', PID_SIZE);
-    sprintf(pid_buffer, "%ld\n", (long) getpid());
-    if (fwrite(pid_buffer, strlen(pid_buffer), 1, f) != 1) {
-        fclose(f);
-        return -2;
+    len = snprintf(pid_buffer, sizeof(pid_buffer), "%ld\n", (long) getpid());
+    if (len < 0 || len >= (int) sizeof(pid_buffer) || write(fd, pid_buffer, len) != len) {
+        close(fd);
+        unlink(file_name);
+        return -1;
     }
-    fclose(f);
+    close(fd);
 
     return 0;
+}
+
+/*
+ * Remove the pid file only if it still contains our own pid, so a
+ * slowly-exiting old instance cannot strip the guard of its replacement.
+ */
+void release_pid_file(char *file_name)
+{
+    FILE *f;
+    long pid = -1;
+
+    f = fopen(file_name, "r");
+    if (f == NULL)
+        return;
+    if (fscanf(f, "%ld", &pid) != 1)
+        pid = -1;
+    fclose(f);
+
+    if (pid == (long) getpid())
+        unlink(file_name);
 }
 
 void signal_handler(int signal)
@@ -418,12 +466,12 @@ int main(int argc, char **argv)
     log_debug("Argument pid_file = %s", pid_file);
     log_debug("Argument xaddr = %s", xaddr_s);
 
-    // Checking pid file
-    if (check_pid(pid_file) == 1) {
+    // Acquire pid file (atomic, with stale file takeover)
+    ret = acquire_pid_file(pid_file);
+    if (ret == 1) {
         log_fatal("Program is already running.\n");
         exit(EXIT_FAILURE);
-    }
-    if (create_pid(pid_file) < 0) {
+    } else if (ret != 0) {
         log_fatal("Error creating pid file %s\n", pid_file);
         exit(EXIT_FAILURE);
     }
@@ -691,7 +739,7 @@ int main(int argc, char **argv)
 
     log_info("Terminating program.");
 
-    unlink(pid_file);
+    release_pid_file(pid_file);
 
     return 0;
 }
