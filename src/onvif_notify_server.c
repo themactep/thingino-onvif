@@ -38,7 +38,9 @@
 #include <net/if.h>
 #include <sys/inotify.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #define DEFAULT_PID_FILE "/var/run/onvif_notify_server.pid"
 #define TEMPLATE_DIR "/var/www/onvif/notify_files"
@@ -48,6 +50,9 @@
 #define ALARM_ON 1
 
 #define PID_SIZE 32
+
+// Timeout for connect/send towards push notification subscribers
+#define NOTIFY_TIMEOUT_MS 5000
 
 static int parse_reference_url(const char *reference, char *host, size_t host_len, char *page, size_t page_len, int *port_out)
 {
@@ -159,27 +164,75 @@ int check_pid(char *file_name)
     return 0;
 }
 
-int create_pid(char *file_name)
+/*
+ * Atomically acquire the pid file.
+ *
+ * A separate check-then-create pid file sequence is a TOCTOU race: two
+ * instances started at the same time can both pass the check and both come
+ * up, fighting over the shared memory and sending duplicate notifies.
+ * O_CREAT|O_EXCL leaves only one winner. If the file already exists, check
+ * whether its owner is still alive: if yes, bail out; if not, take over the
+ * stale file.
+ *
+ * Returns 0 if acquired, 1 if another instance is running, -1 on error.
+ */
+int acquire_pid_file(char *file_name)
 {
-    FILE *f;
+    int fd = -1;
+    int attempt, len;
     char pid_buffer[PID_SIZE];
 
-    f = fopen(file_name, "w");
-    if (f == NULL)
+    for (attempt = 0; attempt < 2; attempt++) {
+        fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+        if (fd >= 0)
+            break;
+        if (errno != EEXIST)
+            return -1;
+
+        // Pid file exists: is its owner still alive?
+        if (check_pid(file_name) == 1)
+            return 1;
+
+        // Stale file from a crashed instance: take it over
+        log_warn("Removing stale pid file %s", file_name);
+        if (unlink(file_name) < 0 && errno != ENOENT)
+            return -1;
+    }
+    if (fd < 0)
         return -1;
 
-    memset(pid_buffer, '\0', PID_SIZE);
-    if (snprintf(pid_buffer, sizeof(pid_buffer), "%ld\n", (long) getpid()) >= (int) sizeof(pid_buffer)) {
-        fclose(f);
-        return -2;
+    len = snprintf(pid_buffer, sizeof(pid_buffer), "%ld\n", (long) getpid());
+    if (len < 0 || len >= (int) sizeof(pid_buffer) || write(fd, pid_buffer, len) != len) {
+        close(fd);
+        unlink(file_name);
+        return -1;
     }
-    if (fwrite(pid_buffer, strlen(pid_buffer), 1, f) != 1) {
-        fclose(f);
-        return -2;
-    }
-    fclose(f);
+    close(fd);
 
     return 0;
+}
+
+/*
+ * Remove the pid file only if it still contains our own pid.
+ *
+ * During a restart a slowly-exiting old instance used to unlink the fresh
+ * pid file already written by its replacement, leaving the new daemon
+ * unguarded — the next restart then piled up duplicate instances.
+ */
+void release_pid_file(char *file_name)
+{
+    FILE *f;
+    long pid = -1;
+
+    f = fopen(file_name, "r");
+    if (f == NULL)
+        return;
+    if (fscanf(f, "%ld", &pid) != 1)
+        pid = -1;
+    fclose(f);
+
+    if (pid == (long) getpid())
+        unlink(file_name);
 }
 
 void print_subscriptions()
@@ -229,6 +282,49 @@ void signal_handler(int signal)
     }
 }
 
+/*
+ * Connect with a timeout.
+ *
+ * A plain blocking connect() to an unreachable push subscriber stalls the
+ * notify loop (and daemon shutdown) for the kernel's full SYN retry cycle —
+ * up to ~2 minutes. Use a non-blocking connect + poll instead, then restore
+ * blocking mode for the caller.
+ */
+int connect_with_timeout(int sockfd, struct sockaddr *addr, socklen_t addrlen, int timeout_ms)
+{
+    int flags, res, so_error;
+    socklen_t so_len;
+    struct pollfd pfd;
+
+    flags = fcntl(sockfd, F_GETFL, 0);
+    if (flags < 0 || fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0)
+        return -1;
+
+    res = connect(sockfd, addr, addrlen);
+    if (res < 0) {
+        if (errno != EINPROGRESS)
+            return -1;
+
+        pfd.fd = sockfd;
+        pfd.events = POLLOUT;
+        do {
+            res = poll(&pfd, 1, timeout_ms);
+        } while (res < 0 && errno == EINTR && !exit_main);
+        if (res <= 0)
+            return -1; // timeout, error or shutdown requested
+
+        so_error = 0;
+        so_len = sizeof(so_error);
+        if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &so_error, &so_len) < 0 || so_error != 0)
+            return -1;
+    }
+
+    if (fcntl(sockfd, F_SETFL, flags) < 0)
+        return -1;
+
+    return 0;
+}
+
 int send_notify(char *reference, int alarm_index, time_t e_time, char *property, char *value)
 {
     char host[1024];
@@ -271,11 +367,17 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
         return -1;
     }
 
-    if (connect(sockfd, (struct sockaddr *) &remote, sizeof(remote)) != 0) {
-        log_error("Connection failed");
+    if (connect_with_timeout(sockfd, (struct sockaddr *) &remote, sizeof(remote), NOTIFY_TIMEOUT_MS) != 0) {
+        log_error("Connection to %s:%d failed or timed out", host, port);
         close(sockfd);
         return -2;
     }
+
+    // Bound the send as well, so a stalled subscriber cannot block the loop
+    struct timeval send_timeout;
+    send_timeout.tv_sec = NOTIFY_TIMEOUT_MS / 1000;
+    send_timeout.tv_usec = (NOTIFY_TIMEOUT_MS % 1000) * 1000;
+    setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &send_timeout, sizeof(send_timeout));
 
     // Get size of message content
     log_info("Sending Notify message.");
@@ -701,12 +803,12 @@ int main(int argc, char **argv)
     log_info("Starting program.");
     log_debug("pid_file = %s", pid_file);
 
-    // Checking pid file
-    if (check_pid(pid_file) == 1) {
+    // Acquire pid file (atomic, with stale file takeover)
+    ret = acquire_pid_file(pid_file);
+    if (ret == 1) {
         log_fatal("Program is already running.\n");
         exit(EXIT_FAILURE);
-    }
-    if (create_pid(pid_file) < 0) {
+    } else if (ret != 0) {
         log_fatal("Error creating pid file %s\n", pid_file);
         exit(EXIT_FAILURE);
     }
@@ -771,7 +873,7 @@ int main(int argc, char **argv)
     subs_evts = (shm_t *) create_shared_memory(1);
     if (subs_evts == NULL) {
         log_fatal("Unable to create shared memory.");
-        unlink(pid_file);
+        release_pid_file(pid_file);
         exit(EXIT_FAILURE);
     }
     sem_memory_wait();
@@ -791,7 +893,7 @@ int main(int argc, char **argv)
         } else {
             log_fatal("Unable to init inotify interface");
             destroy_shared_memory(subs_evts, 1);
-            unlink(pid_file);
+            release_pid_file(pid_file);
             exit(EXIT_FAILURE);
         }
     }
@@ -805,7 +907,7 @@ int main(int argc, char **argv)
             log_fatal("Cannot watch '%s': %s\n", INOTIFY_DIR, strerror(errno));
             close(fd);
             destroy_shared_memory(subs_evts, 1);
-            unlink(pid_file);
+            release_pid_file(pid_file);
             exit(EXIT_FAILURE);
         }
 
@@ -945,7 +1047,7 @@ int main(int argc, char **argv)
 
     destroy_shared_memory(subs_evts, 1);
 
-    unlink(pid_file);
+    release_pid_file(pid_file);
     log_info("Terminating program.");
 
     // free_conf_file(); // Let the system handle cleanup
