@@ -727,10 +727,14 @@ int process_json_conf_file(char *file)
             profile.type = H264;
             profile.audio_encoder = AAC;
             profile.audio_decoder = AUDIO_NONE;
+            profile.framerate = 30;
+            profile.bitrate = 5000;
 
             get_string_from_json(&profile.name, item, "name");
             get_int_from_json(&profile.width, item, "width");
             get_int_from_json(&profile.height, item, "height");
+            get_int_from_json(&profile.framerate, item, "framerate");
+            get_int_from_json(&profile.bitrate, item, "bitrate");
             get_string_from_json(&profile.url, item, "url");
             get_string_from_json(&profile.snapurl, item, "snapurl");
 

@@ -48,6 +48,8 @@ typedef struct {
     int type;
     int audio_encoder;
     int audio_decoder;
+    int framerate;
+    int bitrate;
 } stream_profile_t;
 
 typedef struct {

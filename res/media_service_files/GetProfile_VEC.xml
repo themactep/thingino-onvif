@@ -8,9 +8,9 @@
                     </tt:Resolution>
                     <tt:Quality>100</tt:Quality>
                     <tt:RateControl>
-                        <tt:FrameRateLimit>30</tt:FrameRateLimit>
+                        <tt:FrameRateLimit>%FRAMERATE%</tt:FrameRateLimit>
                         <tt:EncodingInterval>1</tt:EncodingInterval>
-                        <tt:BitrateLimit>5000</tt:BitrateLimit>
+                        <tt:BitrateLimit>%BITRATE%</tt:BitrateLimit>
                     </tt:RateControl>
                     <tt:H264>
                         <tt:GovLength>40</tt:GovLength>
