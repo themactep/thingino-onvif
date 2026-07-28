@@ -21,6 +21,7 @@
 #include "log.h"
 #include "mxml_wrapper.h"
 #include "onvif_simple_server.h"
+#include "ptz_service.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -260,7 +261,13 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 0);
+                        const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+                        const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
+                        const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 6,
+                                "%ZOOM_DEFAULT_SPACES%", zoom_def,
+                                "%ZOOM_SPEED%", zoom_spd,
+                                "%ZOOM_LIMITS%", zoom_lim);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
@@ -358,7 +365,13 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 0);
+                        const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+                        const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
+                        const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 6,
+                                "%ZOOM_DEFAULT_SPACES%", zoom_def,
+                                "%ZOOM_SPEED%", zoom_spd,
+                                "%ZOOM_LIMITS%", zoom_lim);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {
@@ -445,7 +458,13 @@ int media2_get_profiles()
                 }
                 if (typePTZ) {
                     if (service_ctx.ptz_node.enable == 1) {
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 0);
+                        const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+                        const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
+                        const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 6,
+                                "%ZOOM_DEFAULT_SPACES%", zoom_def,
+                                "%ZOOM_SPEED%", zoom_spd,
+                                "%ZOOM_LIMITS%", zoom_lim);
                     }
                 }
                 if (service_ctx.profiles[h].audio_decoder != AUDIO_NONE) {

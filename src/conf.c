@@ -559,6 +559,7 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.reverse_mode_on = 0;
     service_ctx.ptz_node.eflip_supported = 0;
     service_ctx.ptz_node.eflip_mode_on = 0;
+    service_ctx.ptz_node.zoom_enable = -1;
 
     if (camera_section && get_object_item(camera_section, "model"))
         get_string_from_json(&(service_ctx.model), camera_section, "model");
@@ -906,6 +907,15 @@ int process_json_conf_file(char *file)
         get_bool_from_json(&(service_ctx.ptz_node.reverse_supported), value, "reverse_supported");
         get_bool_from_json(&(service_ctx.ptz_node.eflip_supported), value, "eflip_supported");
 
+        JsonValue *zoom_val = get_object_item(value, "zoom");
+        if (zoom_val) {
+            if (zoom_val->type == JSON_BOOL) {
+                service_ctx.ptz_node.zoom_enable = zoom_val->value.boolean ? 1 : 0;
+            } else if (zoom_val->type == JSON_NUMBER) {
+                service_ctx.ptz_node.zoom_enable = zoom_val->value.number.integer ? 1 : 0;
+            }
+        }
+
         JsonValue *rev_mode = get_object_item(value, "reverse_mode");
         if (rev_mode && rev_mode->type == JSON_STRING) {
             service_ctx.ptz_node.reverse_mode_on = (strcasecmp(rev_mode->value.string, "ON") == 0);
@@ -919,6 +929,8 @@ int process_json_conf_file(char *file)
         } else {
             get_bool_from_json(&(service_ctx.ptz_node.eflip_mode_on), value, "eflip_mode_on");
         }
+
+        log_debug("zoom enable: %d", service_ctx.ptz_node.zoom_enable);
     }
 
     // Load relays configuration from main configuration file

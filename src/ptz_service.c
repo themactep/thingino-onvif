@@ -36,6 +36,27 @@
 extern service_context_t service_ctx;
 presets_t presets;
 
+int ptz_supports_zoom()
+{
+    if (service_ctx.ptz_node.enable == 0) {
+        return 0;
+    }
+    if (service_ctx.ptz_node.zoom_enable == 0) {
+        return 0;
+    }
+    if (service_ctx.ptz_node.zoom_enable == 1) {
+        return 1;
+    }
+    // Auto-detect: check if zoom commands or Z-axis ranges are configured
+    if (service_ctx.ptz_node.move_in != NULL || service_ctx.ptz_node.move_out != NULL) {
+        return 1;
+    }
+    if (service_ctx.ptz_node.min_step_z != 0.0 || service_ctx.ptz_node.max_step_z != 0.0) {
+        return 1;
+    }
+    return 0;
+}
+
 #define PTZ_URI_PANTILT_ABS_SPHERICAL "http://www.onvif.org/ver10/tptz/PanTiltSpaces/SphericalPositionSpace"
 #define PTZ_URI_PANTILT_ABS_GENERIC "http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace"
 #define PTZ_URI_ZOOM_ABS_GENERIC "http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace"
@@ -475,9 +496,13 @@ int ptz_get_configurations()
         sprintf(use_count, "0");
     }
 
+    const char *zoom_default = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+    const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
+    const char *zoom_limits = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
+
     long size = cat(NULL,
                     "ptz_service_files/GetConfigurations.xml",
-                    14,
+                    20,
                     "%USE_COUNT%",
                     use_count,
                     "%MIN_X%",
@@ -491,13 +516,19 @@ int ptz_get_configurations()
                     "%EFLIP_MODE%",
                     eflip_mode,
                     "%REVERSE_MODE%",
-                    reverse_mode);
+                    reverse_mode,
+                    "%ZOOM_DEFAULT_SPACES%",
+                    zoom_default,
+                    "%ZOOM_SPEED%",
+                    zoom_speed,
+                    "%ZOOM_LIMITS%",
+                    zoom_limits);
 
     output_http_headers(size);
 
     return cat("stdout",
                "ptz_service_files/GetConfigurations.xml",
-               14,
+               20,
                "%USE_COUNT%",
                use_count,
                "%MIN_X%",
@@ -511,7 +542,13 @@ int ptz_get_configurations()
                "%EFLIP_MODE%",
                eflip_mode,
                "%REVERSE_MODE%",
-               reverse_mode);
+               reverse_mode,
+               "%ZOOM_DEFAULT_SPACES%",
+               zoom_default,
+               "%ZOOM_SPEED%",
+               zoom_speed,
+               "%ZOOM_LIMITS%",
+               zoom_limits);
 }
 
 int ptz_get_configuration()
@@ -528,9 +565,13 @@ int ptz_get_configuration()
     snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
     snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
+    const char *zoom_default = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+    const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
+    const char *zoom_limits = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
+
     long size = cat(NULL,
                     "ptz_service_files/GetConfiguration.xml",
-                    12,
+                    18,
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -542,13 +583,19 @@ int ptz_get_configuration()
                     "%EFLIP_MODE%",
                     eflip_mode,
                     "%REVERSE_MODE%",
-                    reverse_mode);
+                    reverse_mode,
+                    "%ZOOM_DEFAULT_SPACES%",
+                    zoom_default,
+                    "%ZOOM_SPEED%",
+                    zoom_speed,
+                    "%ZOOM_LIMITS%",
+                    zoom_limits);
 
     output_http_headers(size);
 
     return cat("stdout",
                "ptz_service_files/GetConfiguration.xml",
-               12,
+               18,
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -560,7 +607,13 @@ int ptz_get_configuration()
                "%EFLIP_MODE%",
                eflip_mode,
                "%REVERSE_MODE%",
-               reverse_mode);
+               reverse_mode,
+               "%ZOOM_DEFAULT_SPACES%",
+               zoom_default,
+               "%ZOOM_SPEED%",
+               zoom_speed,
+               "%ZOOM_LIMITS%",
+               zoom_limits);
 }
 
 int ptz_get_configuration_options()
@@ -589,9 +642,14 @@ int ptz_get_configuration_options()
         strcpy(reverse_modes, "<tt:Mode>OFF</tt:Mode>");
     }
 
+    const char *zoom_abs = ptz_supports_zoom() ? ZOOM_ABS_SPACE_XML : "";
+    const char *zoom_rel = ptz_supports_zoom() ? ZOOM_REL_SPACE_XML : "";
+    const char *zoom_vel = ptz_supports_zoom() ? ZOOM_VEL_SPACE_XML : "";
+    const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_SPACE_XML : "";
+
     long size = cat(NULL,
                     "ptz_service_files/GetConfigurationOptions.xml",
-                    12,
+                    20,
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -603,13 +661,21 @@ int ptz_get_configuration_options()
                     "%EFLIP_MODES%",
                     eflip_modes,
                     "%REVERSE_MODES%",
-                    reverse_modes);
+                    reverse_modes,
+                    "%ZOOM_ABS_SPACE%",
+                    zoom_abs,
+                    "%ZOOM_REL_SPACE%",
+                    zoom_rel,
+                    "%ZOOM_VEL_SPACE%",
+                    zoom_vel,
+                    "%ZOOM_SPEED_SPACE%",
+                    zoom_speed);
 
     output_http_headers(size);
 
     return cat("stdout",
                "ptz_service_files/GetConfigurationOptions.xml",
-               12,
+               20,
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -621,7 +687,15 @@ int ptz_get_configuration_options()
                "%EFLIP_MODES%",
                eflip_modes,
                "%REVERSE_MODES%",
-               reverse_modes);
+               reverse_modes,
+               "%ZOOM_ABS_SPACE%",
+               zoom_abs,
+               "%ZOOM_REL_SPACE%",
+               zoom_rel,
+               "%ZOOM_VEL_SPACE%",
+               zoom_vel,
+               "%ZOOM_SPEED_SPACE%",
+               zoom_speed);
 }
 
 int ptz_get_nodes()
@@ -639,9 +713,14 @@ int ptz_get_nodes()
     char max_tours[16];
     sprintf(max_tours, "%d", service_ctx.ptz_node.max_preset_tours);
 
+    const char *zoom_abs = ptz_supports_zoom() ? ZOOM_ABS_SPACE_XML : "";
+    const char *zoom_rel = ptz_supports_zoom() ? ZOOM_REL_SPACE_XML : "";
+    const char *zoom_vel = ptz_supports_zoom() ? ZOOM_VEL_SPACE_XML : "";
+    const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_SPACE_XML : "";
+
     long size = cat(NULL,
                     "ptz_service_files/GetNodes.xml",
-                    10,
+                    18,
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -651,13 +730,21 @@ int ptz_get_nodes()
                     "%MAX_Y%",
                     tilt_max,
                     "%MAX_PRESET_TOURS%",
-                    max_tours);
+                    max_tours,
+                    "%ZOOM_ABS_SPACE%",
+                    zoom_abs,
+                    "%ZOOM_REL_SPACE%",
+                    zoom_rel,
+                    "%ZOOM_VEL_SPACE%",
+                    zoom_vel,
+                    "%ZOOM_SPEED_SPACE%",
+                    zoom_speed);
 
     output_http_headers(size);
 
     return cat("stdout",
                "ptz_service_files/GetNodes.xml",
-               10,
+               18,
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -667,7 +754,15 @@ int ptz_get_nodes()
                "%MAX_Y%",
                tilt_max,
                "%MAX_PRESET_TOURS%",
-               max_tours);
+               max_tours,
+               "%ZOOM_ABS_SPACE%",
+               zoom_abs,
+               "%ZOOM_REL_SPACE%",
+               zoom_rel,
+               "%ZOOM_VEL_SPACE%",
+               zoom_vel,
+               "%ZOOM_SPEED_SPACE%",
+               zoom_speed);
 }
 
 int ptz_get_node()
@@ -691,9 +786,14 @@ int ptz_get_node()
     char max_tours[16];
     sprintf(max_tours, "%d", service_ctx.ptz_node.max_preset_tours);
 
+    const char *zoom_abs = ptz_supports_zoom() ? ZOOM_ABS_SPACE_XML : "";
+    const char *zoom_rel = ptz_supports_zoom() ? ZOOM_REL_SPACE_XML : "";
+    const char *zoom_vel = ptz_supports_zoom() ? ZOOM_VEL_SPACE_XML : "";
+    const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_SPACE_XML : "";
+
     long size = cat(NULL,
                     "ptz_service_files/GetNode.xml",
-                    10,
+                    18,
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -703,13 +803,21 @@ int ptz_get_node()
                     "%MAX_Y%",
                     tilt_max,
                     "%MAX_PRESET_TOURS%",
-                    max_tours);
+                    max_tours,
+                    "%ZOOM_ABS_SPACE%",
+                    zoom_abs,
+                    "%ZOOM_REL_SPACE%",
+                    zoom_rel,
+                    "%ZOOM_VEL_SPACE%",
+                    zoom_vel,
+                    "%ZOOM_SPEED_SPACE%",
+                    zoom_speed);
 
     output_http_headers(size);
 
     return cat("stdout",
                "ptz_service_files/GetNode.xml",
-               10,
+               18,
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -719,7 +827,15 @@ int ptz_get_node()
                "%MAX_Y%",
                tilt_max,
                "%MAX_PRESET_TOURS%",
-               max_tours);
+               max_tours,
+               "%ZOOM_ABS_SPACE%",
+               zoom_abs,
+               "%ZOOM_REL_SPACE%",
+               zoom_rel,
+               "%ZOOM_VEL_SPACE%",
+               zoom_vel,
+               "%ZOOM_SPEED_SPACE%",
+               zoom_speed);
 }
 
 int ptz_get_presets()
@@ -1765,39 +1881,45 @@ int ptz_get_status()
         else
             strcpy(si, "IDLE");
 
-        long size = cat(NULL,
-                        "ptz_service_files/GetStatus.xml",
-                        12,
-                        "%X%",
-                        sx,
-                        "%Y%",
-                        sy,
-                        "%Z%",
-                        sz,
-                        "%MOVE_STATUS_PT%",
-                        si,
-                        "%MOVE_STATUS_ZOOM%",
-                        "IDLE",
-                        "%TIME%",
-                        utctime);
+        char *template = ptz_supports_zoom() ?
+            "ptz_service_files/GetStatus.xml" :
+            "ptz_service_files/GetStatus_nozoom.xml";
+        int nargs = ptz_supports_zoom() ? 12 : 8;
+
+        long size;
+        if (ptz_supports_zoom()) {
+            size = cat(NULL, template, 12,
+                    "%X%", sx,
+                    "%Y%", sy,
+                    "%Z%", sz,
+                    "%MOVE_STATUS_PT%", si,
+                    "%MOVE_STATUS_ZOOM%", "IDLE",
+                    "%TIME%", utctime);
+        } else {
+            size = cat(NULL, template, 8,
+                    "%X%", sx,
+                    "%Y%", sy,
+                    "%MOVE_STATUS_PT%", si,
+                    "%TIME%", utctime);
+        }
 
         output_http_headers(size);
 
-        return cat("stdout",
-                   "ptz_service_files/GetStatus.xml",
-                   12,
-                   "%X%",
-                   sx,
-                   "%Y%",
-                   sy,
-                   "%Z%",
-                   sz,
-                   "%MOVE_STATUS_PT%",
-                   si,
-                   "%MOVE_STATUS_ZOOM%",
-                   "IDLE",
-                   "%TIME%",
-                   utctime);
+        if (ptz_supports_zoom()) {
+            return cat("stdout", template, 12,
+                    "%X%", sx,
+                    "%Y%", sy,
+                    "%Z%", sz,
+                    "%MOVE_STATUS_PT%", si,
+                    "%MOVE_STATUS_ZOOM%", "IDLE",
+                    "%TIME%", utctime);
+        } else {
+            return cat("stdout", template, 8,
+                    "%X%", sx,
+                    "%Y%", sy,
+                    "%MOVE_STATUS_PT%", si,
+                    "%TIME%", utctime);
+        }
     } else {
         send_fault("ptz_service", "Receiver", "ter:Action", "ter:NoStatus", "No status", "No PTZ status is available in the requested Media Profile");
         return ret;

@@ -111,6 +111,7 @@
     "reverse_mode": "OFF",
     "eflip_supported": false,
     "eflip_mode": "OFF",
+    "zoom": false,
     "get_position": "/bin/motors -p",
     "is_moving": "/bin/motors -b",
     "move_x": "/bin/motors -d h -x %f",

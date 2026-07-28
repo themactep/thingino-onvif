@@ -7,11 +7,11 @@
             <tptz:PTZStatus>
                 <tt:Position>
                     <tt:PanTilt x="%X%" y="%Y%" space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/SphericalPositionSpace" />
-                    <tt:Zoom x="%Z%" space="http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace" />
+%ZOOM_POSITION%
                 </tt:Position>
                 <tt:MoveStatus>
                     <tt:PanTilt>%MOVE_STATUS_PT%</tt:PanTilt>
-                    <tt:Zoom>%MOVE_STATUS_ZOOM%</tt:Zoom>
+%ZOOM_MOVE_STATUS%
                 </tt:MoveStatus>
                 <tt:UtcTime>%TIME%</tt:UtcTime>
             </tptz:PTZStatus>

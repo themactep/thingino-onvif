@@ -63,4 +63,64 @@ int ptz_remove_preset_tour();
 
 int ptz_unsupported(const char *method);
 
+int ptz_supports_zoom();
+
+// Zoom template sections – passed as replacements for %ZOOM_*% placeholders.
+// When ptz_supports_zoom() is false, these expand to empty strings.
+#define ZOOM_DEFAULT_SPACES_XML \
+    "                <tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>\n" \
+    "                <tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>\n" \
+    "                <tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>"
+
+#define ZOOM_SPEED_XML \
+    "                    <tt:Zoom x=\"1.0\"\n" \
+    "                             space=\"http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace\"/>"
+
+#define ZOOM_LIMITS_XML \
+    "                <tt:ZoomLimits>\n" \
+    "                    <tt:Range>\n" \
+    "                        <tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>\n" \
+    "                        <tt:XRange>\n" \
+    "                            <tt:Min>0.0</tt:Min>\n" \
+    "                            <tt:Max>1.0</tt:Max>\n" \
+    "                        </tt:XRange>\n" \
+    "                    </tt:Range>\n" \
+    "                </tt:ZoomLimits>"
+
+#define ZOOM_ABS_SPACE_XML \
+    "                    <tt:AbsoluteZoomPositionSpace>\n" \
+    "                        <tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:URI>\n" \
+    "                        <tt:XRange>\n" \
+    "                            <tt:Min>0.0</tt:Min>\n" \
+    "                            <tt:Max>1.0</tt:Max>\n" \
+    "                        </tt:XRange>\n" \
+    "                    </tt:AbsoluteZoomPositionSpace>"
+
+#define ZOOM_REL_SPACE_XML \
+    "                    <tt:RelativeZoomTranslationSpace>\n" \
+    "                        <tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:URI>\n" \
+    "                        <tt:XRange>\n" \
+    "                            <tt:Min>-1.0</tt:Min>\n" \
+    "                            <tt:Max>1.0</tt:Max>\n" \
+    "                        </tt:XRange>\n" \
+    "                    </tt:RelativeZoomTranslationSpace>"
+
+#define ZOOM_VEL_SPACE_XML \
+    "                    <tt:ContinuousZoomVelocitySpace>\n" \
+    "                        <tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:URI>\n" \
+    "                        <tt:XRange>\n" \
+    "                            <tt:Min>-1.0</tt:Min>\n" \
+    "                            <tt:Max>1.0</tt:Max>\n" \
+    "                        </tt:XRange>\n" \
+    "                    </tt:ContinuousZoomVelocitySpace>"
+
+#define ZOOM_SPEED_SPACE_XML \
+    "                    <tt:ZoomSpeedSpace>\n" \
+    "                        <tt:URI>http://www.onvif.org/ver10/tptz/ZoomSpaces/ZoomGenericSpeedSpace</tt:URI>\n" \
+    "                        <tt:XRange>\n" \
+    "                            <tt:Min>0.0</tt:Min>\n" \
+    "                            <tt:Max>1.0</tt:Max>\n" \
+    "                        </tt:XRange>\n" \
+    "                    </tt:ZoomSpeedSpace>"
+
 #endif //PTZ_SERVICE_H

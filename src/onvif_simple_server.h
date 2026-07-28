@@ -103,6 +103,7 @@ typedef struct {
     int reverse_mode_on;
     int eflip_supported;
     int eflip_mode_on;
+    int zoom_enable;       // -1 = auto, 0 = no zoom, 1 = zoom
 } ptz_node_t;
 
 typedef struct {
