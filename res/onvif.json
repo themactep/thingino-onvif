@@ -1,27 +1,27 @@
 {
-  "audio": {
-    "output_enabled": true
-  },
   "adv_enable_media2": false,
   "adv_fault_if_set": false,
   "adv_fault_if_unknown": false,
   "adv_synology_nvr": false,
+  "audio": {
+    "output_enabled": true
+  },
   "aux": [
     {
-      "name": "IRLED ON",
-      "exec": "irled on"
+      "exec": "irled on",
+      "name": "IRLED ON"
     },
     {
-      "name": "IRLED OFF",
-      "exec": "irled off"
+      "exec": "irled off",
+      "name": "IRLED OFF"
     },
     {
-      "name": "COLOR ON",
-      "exec": "color on"
+      "exec": "color on",
+      "name": "COLOR ON"
     },
     {
-      "name": "COLOR OFF",
-      "exec": "color off"
+      "exec": "color off",
+      "name": "COLOR OFF"
     }
   ],
   "camera": {
@@ -31,116 +31,116 @@
     "model": "Model",
     "serial_num": "SN1234567890"
   },
-  "events_enable": 1,
   "events": [
     {
-      "topic": "tns1:VideoSource/MotionAlarm",
+      "input_file": "/run/motion/motion_alarm",
       "source_name": "VideoSourceConfigurationToken",
       "source_type": "tt:ReferenceToken",
       "source_value": "VideoSourceConfigToken",
-      "input_file": "/run/motion/motion_alarm"
+      "topic": "tns1:VideoSource/MotionAlarm"
     },
     {
-      "topic": "tns1:RuleEngine/CellMotionDetector/Motion",
+      "input_file": "/run/motion/motion_alarm",
       "source_name": "VideoSourceConfigurationToken",
       "source_type": "tt:ReferenceToken",
       "source_value": "VideoSourceConfigToken",
-      "input_file": "/run/motion/motion_alarm"
+      "topic": "tns1:RuleEngine/CellMotionDetector/Motion"
     },
     {
-      "topic": "tns1:Device/HardwareFailure",
+      "input_file": "/tmp/hardware_failure",
       "source_name": "Source",
       "source_type": "tt:ReferenceToken",
       "source_value": "HardwareId",
-      "input_file": "/tmp/hardware_failure"
+      "topic": "tns1:Device/HardwareFailure"
     }
   ],
+  "events_enable": 1,
   "imaging": [
     {
-      "video_source_token": "VideoSourceToken",
-      "ircut_state": "Auto",
+      "cmd_ircut_auto": "/sbin/ircut auto",
+      "cmd_ircut_off": "/sbin/ircut off",
+      "cmd_ircut_on": "/sbin/ircut on",
       "ircut_modes": [
         "On",
         "Off",
         "Auto"
       ],
-      "cmd_ircut_on": "/sbin/ircut on",
-      "cmd_ircut_off": "/sbin/ircut off",
-      "cmd_ircut_auto": "/sbin/ircut auto"
+      "ircut_state": "Auto",
+      "video_source_token": "VideoSourceToken"
     }
   ],
   "profiles": {
     "stream0": {
-      "name": "Profile_0",
-      "width": 1920,
+      "audio_decoder": "AAC",
+      "audio_encoder": "AAC",
       "height": 1080,
-      "url": "rtsp://%s/ch0",
+      "name": "Profile_0",
       "snapurl": "http://%s/x/ch0.jpg",
       "type": "H264",
-      "audio_encoder": "AAC",
-      "audio_decoder": "AAC"
+      "url": "rtsp://%s/ch0",
+      "width": 1920
     },
     "stream1": {
-      "name": "Profile_1",
-      "width": 640,
+      "audio_decoder": "AAC",
+      "audio_encoder": "AAC",
       "height": 360,
-      "url": "rtsp://%s/ch1",
+      "name": "Profile_1",
       "snapurl": "http://%s/x/ch1.jpg",
       "type": "H264",
-      "audio_encoder": "AAC",
-      "audio_decoder": "AAC"
+      "url": "rtsp://%s/ch1",
+      "width": 640
     }
   },
   "ptz": {
-    "enable": 1,
-    "min_step_x": 0,
-    "max_step_x": 4000,
-    "min_step_y": 0,
-    "max_step_y": 2000,
-    "min_step_z": 0,
-    "max_step_z": 0,
-    "pan_min": -180.0,
-    "pan_max": 180.0,
-    "tilt_min": -90.0,
-    "tilt_max": 90.0,
-    "fov_pan": 90.0,
-    "fov_tilt": 50.0,
-    "pan_inverted": false,
-    "tilt_inverted": false,
-    "reverse_supported": true,
-    "reverse_mode": "OFF",
-    "eflip_supported": false,
     "eflip_mode": "OFF",
-    "zoom": false,
+    "eflip_supported": false,
+    "enable": 1,
+    "fov_pan": 90,
+    "fov_tilt": 50,
     "get_position": "/bin/motors -p",
+    "get_presets": "/sbin/ptz_presets -g",
+    "goto_home_position": "/bin/motors -d b",
     "is_moving": "/bin/motors -b",
-    "move_x": "/bin/motors -d h -x %f",
-    "move_y": "/bin/motors -d h -y %f",
+    "jump_to_abs": "/bin/motors -d h -x %f -y %f",
+    "jump_to_rel": "/bin/motors -d g -x %f -y %f",
+    "max_step_x": 4000,
+    "max_step_y": 2000,
+    "max_step_z": 0,
+    "min_step_x": 0,
+    "min_step_y": 0,
+    "min_step_z": 0,
     "move_both": "/bin/motors -d h -x %f -y %f",
     "move_in": "/sbin/ptz_zoom_in",
     "move_out": "/sbin/ptz_zoom_out",
-    "move_stop": "/bin/motors -d s",
     "move_preset": "/sbin/ptz_presets %d > /dev/null",
-    "goto_home_position": "/bin/motors -d b",
-    "set_preset": "/sbin/ptz_presets -a %d %s > /dev/null",
-    "set_home_position": "/sbin/ptz_set_home",
+    "move_stop": "/bin/motors -d s",
+    "move_x": "/bin/motors -d h -x %f",
+    "move_y": "/bin/motors -d h -y %f",
+    "pan_inverted": false,
+    "pan_max": 180,
+    "pan_min": -180,
     "remove_preset": "/sbin/ptz_presets -r %d > /dev/null",
-    "jump_to_abs": "/bin/motors -d h -x %f -y %f",
-    "jump_to_rel": "/bin/motors -d g -x %f -y %f",
-    "get_presets": "/sbin/ptz_presets -g"
+    "reverse_mode": "OFF",
+    "reverse_supported": true,
+    "set_home_position": "/sbin/ptz_set_home",
+    "set_preset": "/sbin/ptz_presets -a %d %s > /dev/null",
+    "tilt_inverted": false,
+    "tilt_max": 90,
+    "tilt_min": -90,
+    "zoom": false
   },
   "relays": [
     {
-      "token": "IRCutFilter",
-      "idle_state": "close",
       "close": "ircut off",
-      "open": "ircut on"
+      "idle_state": "close",
+      "open": "ircut on",
+      "token": "IRCutFilter"
     },
     {
-      "token": "IRLEDs",
-      "idle_state": "close",
       "close": "irled off",
-      "open": "irled on"
+      "idle_state": "close",
+      "open": "irled on",
+      "token": "IRLEDs"
     }
   ],
   "scopes": [
