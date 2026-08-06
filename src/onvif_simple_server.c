@@ -510,7 +510,8 @@ int main(int argc, char **argv)
             pre_auth = 1;
         }
         if ((strcasecmp("events_service", prog_name) == 0)
-            && (strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("CreatePullPointSubscription", method) == 0
+            && (strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("GetEventProperties", method) == 0
+                || strcasecmp("CreatePullPointSubscription", method) == 0
                 || strcasecmp("PullMessages", method) == 0 || strcasecmp("Renew", method) == 0 || strcasecmp("Unsubscribe", method) == 0
                 || strcasecmp("SetSynchronizationPoint", method) == 0)) {
             /*
@@ -555,7 +556,8 @@ int main(int argc, char **argv)
      * Unsubscribe, SetSynchronizationPoint and GetServiceCapabilities.
      */
     if ((strcasecmp("events_service", prog_name) == 0)
-        && (strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("CreatePullPointSubscription", method) == 0
+        && (strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("GetEventProperties", method) == 0
+            || strcasecmp("CreatePullPointSubscription", method) == 0
             || strcasecmp("PullMessages", method) == 0 || strcasecmp("Renew", method) == 0 || strcasecmp("Unsubscribe", method) == 0
             || strcasecmp("SetSynchronizationPoint", method) == 0)) {
         auth_error = 0;
@@ -591,13 +593,12 @@ int main(int argc, char **argv)
 
     // Special case: Synology NVR CreateProfile bypass (before authentication)
     if ((service_ctx.adv_synology_nvr == 1) && (strcasecmp("media_service", prog_name) == 0) && (strcasecmp("CreateProfile", method) == 0)) {
-        log_debug("Synology NVR mode: bypassing authentication for CreateProfile");
-        send_fault("media_service",
-                   "Receiver",
-                   "ter:Action",
-                   "ter:MaxNVTProfiles",
-                   "Max profile number reached",
-                   "The maximum number of supported profiles supported by the device has been reached");
+        log_debug("Synology NVR mode: returning synthetic CreateProfile response");
+
+        long size = cat(NULL, "media_service_files/CreateProfile.xml", 0);
+        output_http_headers(size);
+        cat("stdout", "media_service_files/CreateProfile.xml", 0);
+
         close_xml();
         return 0;
     }
