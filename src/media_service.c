@@ -53,6 +53,17 @@ static int media_audio_output_supported()
     return 1;
 }
 
+/* Same predicate, but silent: GetProfiles/GetProfile use it to decide whether
+ * to include the AudioOutputConfiguration block in an otherwise valid answer.
+ * The faulting variant used to be called there too, which wrote a SOAP fault
+ * into the middle of every GetProfiles/GetProfile response as soon as audio
+ * output was disabled (audio.output_enabled=false or all audio_decoder=NONE),
+ * breaking profile discovery for every client. */
+static int media_audio_output_available()
+{
+    return service_ctx.audio.output_enabled && audio_decoder_profile_count() > 0;
+}
+
 int media_get_service_capabilities()
 {
     long size = cat(NULL, "media_service_files/GetServiceCapabilities.xml", 0);
@@ -305,7 +316,7 @@ int media_get_profiles()
                         "%ZOOM_LIMITS%", zoom_lim);
             }
 
-            if (media_audio_output_supported()) {
+            if (media_audio_output_available()) {
                 size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
@@ -382,7 +393,7 @@ int media_get_profiles()
                         "%ZOOM_LIMITS%", zoom_lim);
             }
 
-            if (media_audio_output_supported()) {
+            if (media_audio_output_available()) {
                 size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
@@ -446,7 +457,7 @@ int media_get_profiles()
                         "%ZOOM_LIMITS%", zoom_lim);
             }
 
-            if (media_audio_output_supported()) {
+            if (media_audio_output_available()) {
                 size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
@@ -563,7 +574,7 @@ int media_get_profile()
                         "%ZOOM_LIMITS%", zoom_lim);
             }
 
-            if (media_audio_output_supported()) {
+            if (media_audio_output_available()) {
                 size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
@@ -639,7 +650,7 @@ int media_get_profile()
                         "%ZOOM_LIMITS%", zoom_lim);
             }
 
-            if (media_audio_output_supported()) {
+            if (media_audio_output_available()) {
                 size += cat(dest, "media_service_files/GetProfile_AOC.xml", 10,
                     "%AUDIO_OUTPUT_CONFIG_TOKEN%", audio_output_config_token,
                     "%AUDIO_OUTPUT_NAME%", audio_output_name,
