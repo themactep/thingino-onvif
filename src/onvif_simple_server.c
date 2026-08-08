@@ -552,7 +552,7 @@ int main(int argc, char **argv)
 
     /* Events (tev): allow common subscription lifecycle methods as PRE_AUTH
      * when the service is running in anonymous mode (no username configured).
-     * This covers CreatePullPointSubscription, PullMessages, Renew,
+     * This covers CreatePullPointSubscription, PullMessages, Renew, GetEventProperties,
      * Unsubscribe, SetSynchronizationPoint and GetServiceCapabilities.
      */
     if ((strcasecmp("events_service", prog_name) == 0)
