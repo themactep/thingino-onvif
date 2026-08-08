@@ -511,9 +511,10 @@ int events_pull_messages()
                 if (service_ctx.events[i].topic != NULL && strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
                     strcpy(data_name, "LogicalState");
                 } else if (service_ctx.events[i].topic != NULL
-                           && (strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")
-                               || strstr(service_ctx.events[i].topic, "CellMotionDetector/Motion"))) {
-                    // Use IsMotion for motion topics to match common client expectations
+                           && strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")) {
+                    strcpy(data_name, "State");
+                } else if (service_ctx.events[i].topic != NULL
+                           && strstr(service_ctx.events[i].topic, "CellMotionDetector/Motion")) {
                     strcpy(data_name, "IsMotion");
                 } else {
                     strcpy(data_name, "State");
@@ -522,6 +523,10 @@ int events_pull_messages()
                 const char *safe_topic = service_ctx.events[i].topic ? service_ctx.events[i].topic : "Unknown";
                 const char *safe_source_name = service_ctx.events[i].source_name ? service_ctx.events[i].source_name : "Unknown";
                 const char *safe_source_value = service_ctx.events[i].source_value ? service_ctx.events[i].source_value : "Unknown";
+
+                if (strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")) {
+                    safe_source_name = "Source";
+                }
 
                 size = cat(dest,
                            "events_service_files/PullMessages_2.xml",
@@ -1019,8 +1024,18 @@ int events_get_event_properties()
 
             /* walk through other tokens */
             for (j = 0; j < 3; j++) {
-                sprintf(topic_ls[j], "<%s", token);
-                sprintf(topic_le[j], "</%s>", token);
+                /*
+                 * Topic paths commonly specify the namespace only on the
+                 * first component, such as tns1:VideoSource/MotionAlarm.
+                 * Keep every generated XML element in the topic namespace.
+                 */
+                if (strchr(token, ':') != NULL) {
+                    snprintf(topic_ls[j], sizeof(topic_ls[j]), "<%s", token);
+                    snprintf(topic_le[j], sizeof(topic_le[j]), "</%s>", token);
+                } else {
+                    snprintf(topic_ls[j], sizeof(topic_ls[j]), "<tns1:%s", token);
+                    snprintf(topic_le[j], sizeof(topic_le[j]), "</tns1:%s>", token);
+                }
 
                 token = strtok(NULL, "/");
                 if (token == NULL) {
@@ -1040,9 +1055,15 @@ int events_get_event_properties()
                 strcpy(data_name, "LogicalState");
                 strcpy(data_type, "tt:RelayLogicalState");
             } else if (service_ctx.events[i].topic != NULL
-                       && (strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")
-                           || strstr(service_ctx.events[i].topic, "CellMotionDetector/Motion"))) {
-                // Advertise IsMotion for motion topics
+                       && strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")) {
+                /*
+                 * Advertise the standard property schema expected by
+                 * Synology for VideoSource/MotionAlarm.
+                 */
+                strcpy(data_name, "State");
+                strcpy(data_type, "xsd:boolean");
+            } else if (service_ctx.events[i].topic != NULL
+                       && strstr(service_ctx.events[i].topic, "CellMotionDetector/Motion")) {
                 strcpy(data_name, "IsMotion");
                 strcpy(data_type, "xsd:boolean");
             } else {
@@ -1053,6 +1074,11 @@ int events_get_event_properties()
             // Ensure we have valid strings to prevent null pointer dereference
             const char *safe_source_name = service_ctx.events[i].source_name ? service_ctx.events[i].source_name : "Unknown";
             const char *safe_source_type = service_ctx.events[i].source_type ? service_ctx.events[i].source_type : "Unknown";
+
+            if (strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")) {
+                safe_source_name = "Source";
+                safe_source_type = "tt:ReferenceToken";
+            }
 
             size = cat(dest,
                        "events_service_files/GetEventProperties_2.xml",

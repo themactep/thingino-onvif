@@ -2252,7 +2252,17 @@ int media_set_audio_output_configuration()
 
 int media_delete_profile()
 {
-    // All profiles are fixed — deletion is not permitted
+    const char *token = get_element("ProfileToken", "Body");
+
+    if ((service_ctx.adv_synology_nvr == 1)
+        && (token != NULL)
+        && (strcasecmp(token, "SynoProfileToken") == 0)) {
+        long size = cat(NULL, "media_service_files/DeleteProfile.xml", 0);
+        output_http_headers(size);
+        return cat("stdout", "media_service_files/DeleteProfile.xml", 0);
+    }
+
+    // All real profiles are fixed — deletion is not permitted
     send_fault("media_service",
                "Sender",
                "ter:InvalidArgVal",
