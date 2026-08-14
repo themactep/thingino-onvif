@@ -1132,17 +1132,12 @@ int device_set_system_date_and_time()
             // Apply the requested time as local wall-clock time.  NVRs in the
             // field (including the one observed here) send their local time in
             // the UTCDateTime field rather than UTC, so interpret it as local.
-            // The NTP re-sync below corrects any offset this introduces.
-            snprintf(cmd, sizeof(cmd), "date -s \"%04d-%02d-%02d %02d:%02d:%02d\" > /dev/null 2>&1",
+            // timectl applies the hint and reconciles with NTP, so a client
+            // error (e.g. a DST-off NVR) is corrected rather than persisting.
+            snprintf(cmd, sizeof(cmd), "timectl set-time \"%04d-%02d-%02d %02d:%02d:%02d\" > /dev/null 2>&1",
                      year, month, day, hour, min, sec);
             log_info("SetSystemDateAndTime: setting time via: %s", cmd);
             system(cmd);
-            // Also sync hardware clock if available
-            system("hwclock -w > /dev/null 2>&1");
-            // Re-sync with NTP afterwards so a client-side error (e.g. a
-            // DST-off NVR sending a one-hour-off value) is corrected instead
-            // of persisting in the system clock.
-            system("ntpd -q -N > /dev/null 2>&1 &");
         } else {
             log_warn("SetSystemDateAndTime: missing date/time elements in request");
         }
