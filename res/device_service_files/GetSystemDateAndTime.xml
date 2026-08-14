@@ -8,7 +8,7 @@
                 <tt:DateTimeType>Manual</tt:DateTimeType>
                 <tt:DaylightSavings>%DST%</tt:DaylightSavings>
                 <tt:TimeZone>
-                    <tt:TZ>GMT0</tt:TZ>
+                    <tt:TZ>%TZ%</tt:TZ>
                 </tt:TimeZone>
                 <tt:UTCDateTime>
                     <tt:Time>

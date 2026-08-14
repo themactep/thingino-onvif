@@ -521,30 +521,47 @@ int device_get_device_information()
 int device_get_system_date_and_time()
 {
     time_t timestamp = time(NULL);
-    struct tm *tm = gmtime(&timestamp);
+    struct tm *ltm = localtime(&timestamp);
+    struct tm *utm = gmtime(&timestamp);
 
     char isfalse[] = "false";
     char istrue[] = "true";
     char *dst = isfalse;
+    char tz[64] = "GMT0";
     char hour[3];
     char minute[3];
     char second[3];
     char year[5];
     char month[3];
     char day[3];
+    FILE *fp;
+    size_t tzlen;
 
-    if (tm->tm_isdst)
+    // DST applies to local time; gmtime() never sets tm_isdst.
+    if (ltm && ltm->tm_isdst)
         dst = istrue;
-    sprintf(hour, "%d", tm->tm_hour);
-    sprintf(minute, "%d", tm->tm_min);
-    sprintf(second, "%d", tm->tm_sec);
-    sprintf(year, "%d", tm->tm_year + 1900);
-    sprintf(month, "%d", tm->tm_mon + 1);
-    sprintf(day, "%d", tm->tm_mday);
+
+    // Report the camera's real timezone instead of a hardcoded GMT0.
+    fp = fopen("/etc/TZ", "r");
+    if (fp) {
+        if (fgets(tz, sizeof(tz), fp)) {
+            tzlen = strlen(tz);
+            while (tzlen > 0 && (tz[tzlen - 1] == '\n' || tz[tzlen - 1] == '\r'))
+                tz[--tzlen] = '\0';
+        }
+        fclose(fp);
+    }
+
+    sprintf(hour, "%d", utm->tm_hour);
+    sprintf(minute, "%d", utm->tm_min);
+    sprintf(second, "%d", utm->tm_sec);
+    sprintf(year, "%d", utm->tm_year + 1900);
+    sprintf(month, "%d", utm->tm_mon + 1);
+    sprintf(day, "%d", utm->tm_mday);
 
     long size = cat(NULL,
                     "device_service_files/GetSystemDateAndTime.xml",
-                    14,
+                    16,
                     "%DST%",
                     dst,
                     "%HOUR%",
@@ -558,13 +575,15 @@ int device_get_system_date_and_time()
                     "%MONTH%",
                     month,
                     "%DAY%",
-                    day);
+                    day,
+                    "%TZ%",
+                    tz);
 
     output_http_headers(size);
 
     return cat("stdout",
                "device_service_files/GetSystemDateAndTime.xml",
-               14,
+               16,
                "%DST%",
                dst,
                "%HOUR%",
@@ -578,7 +597,9 @@ int device_get_system_date_and_time()
                "%MONTH%",
                month,
                "%DAY%",
-               day);
+               day,
+               "%TZ%",
+               tz);
 }
 
 int device_system_reboot()
@@ -1108,13 +1129,20 @@ int device_set_system_date_and_time()
             hour  = atoi(hour_s);
             min   = atoi(min_s);
             sec   = atoi(sec_s);
-            // date -s "YYYY-MM-DD HH:MM:SS" (BusyBox and GNU date compatible)
+            // Apply the requested time as local wall-clock time.  NVRs in the
+            // field (including the one observed here) send their local time in
+            // the UTCDateTime field rather than UTC, so interpret it as local.
+            // The NTP re-sync below corrects any offset this introduces.
             snprintf(cmd, sizeof(cmd), "date -s \"%04d-%02d-%02d %02d:%02d:%02d\" > /dev/null 2>&1",
                      year, month, day, hour, min, sec);
             log_info("SetSystemDateAndTime: setting time via: %s", cmd);
             system(cmd);
             // Also sync hardware clock if available
             system("hwclock -w > /dev/null 2>&1");
+            // Re-sync with NTP afterwards so a client-side error (e.g. a
+            // DST-off NVR sending a one-hour-off value) is corrected instead
+            // of persisting in the system clock.
+            system("ntpd -q -N > /dev/null 2>&1 &");
         } else {
             log_warn("SetSystemDateAndTime: missing date/time elements in request");
         }
