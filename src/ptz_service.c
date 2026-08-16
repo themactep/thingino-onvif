@@ -1881,45 +1881,33 @@ int ptz_get_status()
         else
             strcpy(si, "IDLE");
 
-        char *template = ptz_supports_zoom() ?
-            "ptz_service_files/GetStatus.xml" :
-            "ptz_service_files/GetStatus_nozoom.xml";
-        int nargs = ptz_supports_zoom() ? 12 : 8;
+        char zoom_pos[256] = "";
+        char zoom_move[64] = "";
 
-        long size;
         if (ptz_supports_zoom()) {
-            size = cat(NULL, template, 12,
-                    "%X%", sx,
-                    "%Y%", sy,
-                    "%Z%", sz,
-                    "%MOVE_STATUS_PT%", si,
-                    "%MOVE_STATUS_ZOOM%", "IDLE",
-                    "%TIME%", utctime);
-        } else {
-            size = cat(NULL, template, 8,
-                    "%X%", sx,
-                    "%Y%", sy,
-                    "%MOVE_STATUS_PT%", si,
-                    "%TIME%", utctime);
+            snprintf(zoom_pos, sizeof(zoom_pos),
+                     "                    <tt:Zoom x=\"%s\" space=\"http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace\" />",
+                     sz);
+            strcpy(zoom_move, "                    <tt:Zoom>IDLE</tt:Zoom>");
         }
+
+        long size = cat(NULL, "ptz_service_files/GetStatus.xml", 12,
+                "%X%", sx,
+                "%Y%", sy,
+                "%ZOOM_POSITION%", zoom_pos,
+                "%MOVE_STATUS_PT%", si,
+                "%ZOOM_MOVE_STATUS%", zoom_move,
+                "%TIME%", utctime);
 
         output_http_headers(size);
 
-        if (ptz_supports_zoom()) {
-            return cat("stdout", template, 12,
-                    "%X%", sx,
-                    "%Y%", sy,
-                    "%Z%", sz,
-                    "%MOVE_STATUS_PT%", si,
-                    "%MOVE_STATUS_ZOOM%", "IDLE",
-                    "%TIME%", utctime);
-        } else {
-            return cat("stdout", template, 8,
-                    "%X%", sx,
-                    "%Y%", sy,
-                    "%MOVE_STATUS_PT%", si,
-                    "%TIME%", utctime);
-        }
+        return cat("stdout", "ptz_service_files/GetStatus.xml", 12,
+                "%X%", sx,
+                "%Y%", sy,
+                "%ZOOM_POSITION%", zoom_pos,
+                "%MOVE_STATUS_PT%", si,
+                "%ZOOM_MOVE_STATUS%", zoom_move,
+                "%TIME%", utctime);
     } else {
         send_fault("ptz_service", "Receiver", "ter:Action", "ter:NoStatus", "No status", "No PTZ status is available in the requested Media Profile");
         return ret;
