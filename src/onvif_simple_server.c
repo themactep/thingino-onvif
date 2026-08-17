@@ -510,7 +510,8 @@ int main(int argc, char **argv)
             pre_auth = 1;
         }
         if ((strcasecmp("events_service", prog_name) == 0)
-            && (strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("CreatePullPointSubscription", method) == 0
+            && (strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("GetEventProperties", method) == 0
+                || strcasecmp("CreatePullPointSubscription", method) == 0
                 || strcasecmp("PullMessages", method) == 0 || strcasecmp("Renew", method) == 0 || strcasecmp("Unsubscribe", method) == 0
                 || strcasecmp("SetSynchronizationPoint", method) == 0)) {
             /*
@@ -551,11 +552,12 @@ int main(int argc, char **argv)
 
     /* Events (tev): allow common subscription lifecycle methods as PRE_AUTH
      * when the service is running in anonymous mode (no username configured).
-     * This covers CreatePullPointSubscription, PullMessages, Renew,
-     * Unsubscribe, SetSynchronizationPoint and GetServiceCapabilities.
+     * This covers GetEventProperties, CreatePullPointSubscription, PullMessages,
+     * Renew, Unsubscribe, SetSynchronizationPoint and GetServiceCapabilities.
      */
     if ((strcasecmp("events_service", prog_name) == 0)
-        && (strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("CreatePullPointSubscription", method) == 0
+        && (strcasecmp("GetServiceCapabilities", method) == 0 || strcasecmp("GetEventProperties", method) == 0
+            || strcasecmp("CreatePullPointSubscription", method) == 0
             || strcasecmp("PullMessages", method) == 0 || strcasecmp("Renew", method) == 0 || strcasecmp("Unsubscribe", method) == 0
             || strcasecmp("SetSynchronizationPoint", method) == 0)) {
         auth_error = 0;

@@ -520,26 +520,9 @@ int device_get_device_information()
 
 int device_get_system_date_and_time()
 {
-    time_t timestamp = time(NULL);
-    struct tm *ltm = localtime(&timestamp);
-    struct tm *utm = gmtime(&timestamp);
-
-    char isfalse[] = "false";
-    char istrue[] = "true";
-    char *dst = isfalse;
     char tz[64] = "GMT0";
-    char hour[3];
-    char minute[3];
-    char second[3];
-    char year[5];
-    char month[3];
-    char day[3];
     FILE *fp;
     size_t tzlen;
-
-    // DST applies to local time; gmtime() never sets tm_isdst.
-    if (ltm && ltm->tm_isdst)
-        dst = istrue;
 
     // Report the camera's real timezone instead of a hardcoded GMT0.
     fp = fopen("/etc/TZ", "r");
@@ -552,16 +535,55 @@ int device_get_system_date_and_time()
         fclose(fp);
     }
 
-    sprintf(hour, "%d", utm->tm_hour);
-    sprintf(minute, "%d", utm->tm_min);
-    sprintf(second, "%d", utm->tm_sec);
-    sprintf(year, "%d", utm->tm_year + 1900);
-    sprintf(month, "%d", utm->tm_mon + 1);
-    sprintf(day, "%d", utm->tm_mday);
+    // Make localtime() honor the camera timezone even if the CGI process
+    // environment does not carry TZ (e.g. when invoked via httpd).
+    setenv("TZ", tz, 1);
+    tzset();
+
+    time_t timestamp = time(NULL);
+    /* localtime()/gmtime() share a static buffer; use the _r variants so the
+     * local result is not clobbered by the gmtime() call below. */
+    struct tm ltm, utm;
+    localtime_r(&timestamp, &ltm);
+    gmtime_r(&timestamp, &utm);
+
+    char isfalse[] = "false";
+    char istrue[] = "true";
+    char *dst = isfalse;
+    char hour[3];
+    char minute[3];
+    char second[3];
+    char year[5];
+    char month[3];
+    char day[3];
+    char lhour[3];
+    char lminute[3];
+    char lsecond[3];
+    char lyear[5];
+    char lmonth[3];
+    char lday[3];
+
+    // DST applies to local time; gmtime() never sets tm_isdst.
+    if (ltm.tm_isdst)
+        dst = istrue;
+
+    sprintf(hour, "%d", utm.tm_hour);
+    sprintf(minute, "%d", utm.tm_min);
+    sprintf(second, "%d", utm.tm_sec);
+    sprintf(year, "%d", utm.tm_year + 1900);
+    sprintf(month, "%d", utm.tm_mon + 1);
+    sprintf(day, "%d", utm.tm_mday);
+
+    sprintf(lhour, "%d", ltm.tm_hour);
+    sprintf(lminute, "%d", ltm.tm_min);
+    sprintf(lsecond, "%d", ltm.tm_sec);
+    sprintf(lyear, "%d", ltm.tm_year + 1900);
+    sprintf(lmonth, "%d", ltm.tm_mon + 1);
+    sprintf(lday, "%d", ltm.tm_mday);
 
     long size = cat(NULL,
                     "device_service_files/GetSystemDateAndTime.xml",
-                    16,
+                    28,
                     "%DST%",
                     dst,
                     "%HOUR%",
@@ -577,13 +599,25 @@ int device_get_system_date_and_time()
                     "%DAY%",
                     day,
                     "%TZ%",
-                    tz);
+                    tz,
+                    "%LOCAL_HOUR%",
+                    lhour,
+                    "%LOCAL_MINUTE%",
+                    lminute,
+                    "%LOCAL_SECOND%",
+                    lsecond,
+                    "%LOCAL_YEAR%",
+                    lyear,
+                    "%LOCAL_MONTH%",
+                    lmonth,
+                    "%LOCAL_DAY%",
+                    lday);
 
     output_http_headers(size);
 
     return cat("stdout",
                "device_service_files/GetSystemDateAndTime.xml",
-               16,
+               28,
                "%DST%",
                dst,
                "%HOUR%",
@@ -599,7 +633,19 @@ int device_get_system_date_and_time()
                "%DAY%",
                day,
                "%TZ%",
-               tz);
+               tz,
+               "%LOCAL_HOUR%",
+               lhour,
+               "%LOCAL_MINUTE%",
+               lminute,
+               "%LOCAL_SECOND%",
+               lsecond,
+               "%LOCAL_YEAR%",
+               lyear,
+               "%LOCAL_MONTH%",
+               lmonth,
+               "%LOCAL_DAY%",
+               lday);
 }
 
 int device_system_reboot()
