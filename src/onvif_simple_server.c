@@ -591,18 +591,26 @@ int main(int argc, char **argv)
     // log_debug("Authentication completed, auth_error = %d", auth_error);
     // log_debug("About to process method: %s for service: %s", method ? method : "NULL", prog_name ? prog_name : "NULL");
 
-    // Special case: Synology NVR CreateProfile bypass (before authentication)
+#ifdef HAVE_SYNOLOGY_COMPAT
+    /* Synology Surveillance Station compatibility shim (deliberately
+     * non-compliant).  Synology always issues CreateProfile during camera
+     * setup even though this device uses fixed profiles.  Return a
+     * synthetic profile that does not exist, solely to let the setup flow
+     * proceed; it is deleted by Synology immediately afterwards (see
+     * media_delete_profile).  Compiled out of standard builds: CreateProfile
+     * then requires authentication and returns the spec-correct
+     * MaxNVTProfiles fault. */
     if ((service_ctx.adv_synology_nvr == 1) && (strcasecmp("media_service", prog_name) == 0) && (strcasecmp("CreateProfile", method) == 0)) {
-        log_debug("Synology NVR mode: bypassing authentication for CreateProfile");
-        send_fault("media_service",
-                   "Receiver",
-                   "ter:Action",
-                   "ter:MaxNVTProfiles",
-                   "Max profile number reached",
-                   "The maximum number of supported profiles supported by the device has been reached");
+        log_debug("Synology NVR mode: returning synthetic CreateProfile response");
+
+        long size = cat(NULL, "media_service_files/CreateProfile.xml", 0);
+        output_http_headers(size);
+        cat("stdout", "media_service_files/CreateProfile.xml", 0);
+
         close_xml();
         return 0;
     }
+#endif
 
     log_debug("Authentication check result: auth_error=%d", auth_error);
     if (auth_error == 0) {

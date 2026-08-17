@@ -55,6 +55,13 @@ LIBS_O		+= -ltomcrypt
 LIBS_N		+= -ltomcrypt
 LIBS_W		 = -Wl,--gc-sections -ltomcrypt
 endif
+
+# Synology Surveillance Station compatibility shims (non-compliant).
+# Compiled out of standard builds; enable only to please Synology's
+# non-standard camera setup flow (see BR2_PACKAGE_THINGINO_ONVIF_SYNOLOGY_COMPAT).
+ifdef HAVE_SYNOLOGY_COMPAT
+INCLUDE		+= -DHAVE_SYNOLOGY_COMPAT
+endif
 endif
 
 PKG_CONFIG	 ?= pkg-config
