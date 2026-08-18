@@ -441,6 +441,17 @@ void get_bool_from_json(int *var, JsonValue *j, char *name)
     }
 }
 
+// Same as get_bool_from_json but leaves *var untouched when the key is
+// absent, so callers can distinguish "not configured" from "false".
+static void get_bool_from_json_if_present(int *var, JsonValue *j, const char *name)
+{
+    JsonValue *b = get_object_item(j, name);
+
+    if (b && b->type == JSON_BOOL) {
+        *var = b->value.boolean ? 1 : 0;
+    }
+}
+
 static ircut_mode_t parse_ircut_mode_string(const char *value)
 {
     if (!value)
@@ -931,6 +942,63 @@ int process_json_conf_file(char *file)
         }
 
         log_debug("zoom enable: %d", service_ctx.ptz_node.zoom_enable);
+
+        // Sync PTZ geometry and axis orientation from the camera profile.
+        //
+        // /etc/thingino.json is the single source of truth for per-camera
+        // motor geometry (motors.steps_pan / motors.steps_tilt) and axis
+        // orientation (motors.invert_x / motors.invert_y). The generic
+        // onvif.json defaults (max_step_x=4000, max_step_y=2000,
+        // *_inverted=false) match no real camera, and every ONVIF verb
+        // (absolute/relative/continuous move, GetStatus/GetPosition) maps
+        // through them, so a wrong span or a mismatched inversion makes
+        // ONVIF act on a differently-scaled, mirrored coordinate space
+        // than the WebUI (which talks machine units directly):
+        //   - presets land at different spots on every call,
+        //   - ContinuousMove wedges the axis past its physical end stop
+        //     when max_step_y is larger than the real travel,
+        //   - tilt direction appears reversed/bouncing near edges.
+        // The motor daemon applies invert_x/invert_y by negating logical
+        // moves and reporting the raw kernel counter, i.e. machine units
+        // here must match the raw counter frame (which the WebUI uses).
+        JsonValue *thingino_json = load_config("/etc/thingino.json");
+        if (thingino_json) {
+            JsonValue *motors_conf = get_object_item(thingino_json, "motors");
+            if (motors_conf && motors_conf->type == JSON_OBJECT) {
+                int steps_pan = -1;
+                int steps_tilt = -1;
+                get_int_from_json(&steps_pan, motors_conf, "steps_pan");
+                get_int_from_json(&steps_tilt, motors_conf, "steps_tilt");
+                if (steps_pan > 0) {
+                    log_debug("ptz max_step_x %f -> %d (from thingino.json)",
+                              service_ctx.ptz_node.max_step_x, steps_pan);
+                    service_ctx.ptz_node.max_step_x = (double) steps_pan;
+                }
+                if (steps_tilt > 0) {
+                    log_debug("ptz max_step_y %f -> %d (from thingino.json)",
+                              service_ctx.ptz_node.max_step_y, steps_tilt);
+                    service_ctx.ptz_node.max_step_y = (double) steps_tilt;
+                }
+                int invert_pan = -1;
+                int invert_tilt = -1;
+                get_bool_from_json_if_present(&invert_pan, motors_conf, "invert_x");
+                get_bool_from_json_if_present(&invert_tilt, motors_conf, "invert_y");
+                if (invert_pan == 0 || invert_pan == 1) {
+                    log_debug("ptz pan_inverted %d -> %d (from thingino.json)",
+                              service_ctx.ptz_node.pan_inverted, invert_pan);
+                    service_ctx.ptz_node.pan_inverted = invert_pan;
+                }
+                if (invert_tilt == 0 || invert_tilt == 1) {
+                    log_debug("ptz tilt_inverted %d -> %d (from thingino.json)",
+                              service_ctx.ptz_node.tilt_inverted, invert_tilt);
+                    service_ctx.ptz_node.tilt_inverted = invert_tilt;
+                }
+                // Hardware GPIO line inversion (motors.gpio_invert) is a
+                // wire-level concern handled inside the kernel driver and
+                // the motor daemon; it does not affect the ONVIF mapping.
+            }
+            free_json_value(thingino_json);
+        }
     }
 
     // Load relays configuration from main configuration file
