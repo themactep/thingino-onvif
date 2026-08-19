@@ -22,10 +22,12 @@
 #include "onvif_simple_server.h"
 #include "utils.h"
 
-#include <pthread.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/reboot.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -648,10 +650,59 @@ int device_get_system_date_and_time()
                lday);
 }
 
+/**
+ * Schedule the reboot in a child process detached from the CGI.
+ *
+ * The ONVIF server runs as a per-request CGI under uhttpd.  uhttpd
+ * SIGKILLs the CGI process as soon as the client closes the connection,
+ * so the reboot must not run on a thread of the CGI process (the thread
+ * dies with the process before reboot() is reached).  Instead, fork a
+ * child that is reparented to init and performs the reboot itself.
+ *
+ * Returns in the parent immediately so the CGI can exit cleanly;
+ * never returns in the child (the child _exit()s after rebooting).
+ */
+static void schedule_reboot(void)
+{
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        /* fork() failed - fall back to an immediate reboot */
+        sync();
+        reboot(RB_AUTOBOOT);
+        return;
+    }
+
+    if (pid > 0)
+        return; /* parent: let the CGI process exit normally */
+
+    /* Child: detach from the CGI session and terminal. */
+    setsid();
+
+    /* Drop the inherited stdout pipe so uhttpd sees EOF on the CGI
+     * response once the parent exits, and ignore any further output. */
+    int devnull = open("/dev/null", O_RDWR);
+    if (devnull >= 0) {
+        dup2(devnull, STDIN_FILENO);
+        dup2(devnull, STDOUT_FILENO);
+        dup2(devnull, STDERR_FILENO);
+        if (devnull > STDERR_FILENO)
+            close(devnull);
+    }
+
+    /* Give the client a moment to receive the response before reboot. */
+    sync();
+    sleep(1);
+    sync();
+    reboot(RB_AUTOBOOT);
+
+    /* reboot() returns only on failure. */
+    _exit(1);
+}
+
 int device_system_reboot()
 {
     int ret;
-    pthread_t reboot_pthread;
 
     long size = cat(NULL, "device_service_files/SystemReboot.xml", 0);
 
@@ -659,10 +710,12 @@ int device_system_reboot()
 
     ret = cat("stdout", "device_service_files/SystemReboot.xml", 0);
     fflush(stdout);
-    sleep(1);
 
-    pthread_create(&reboot_pthread, NULL, reboot_thread, NULL);
-    pthread_join(reboot_pthread, NULL);
+    /* Schedule the reboot in a detached child (see schedule_reboot) and
+     * return at once: uhttpd kills the CGI process when the client
+     * closes the connection, which would otherwise take the reboot down
+     * with it before it runs. */
+    schedule_reboot();
 
     return ret;
 }

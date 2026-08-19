@@ -31,7 +31,6 @@
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-#include <sys/reboot.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1441,22 +1440,4 @@ int construct_uri_with_credentials(
     char *output_buffer, size_t buffer_size, const char *uri_template, const char *address, const char *username, const char *password)
 {
     return construct_uri_with_token(output_buffer, buffer_size, uri_template, address);
-}
-
-
-/**
- * Thread function to run a reboot
- * @param arg Not used
- * @return NULL
- */
-void *reboot_thread(void *arg)
-{
-    sync();
-    setuid(0);
-    sync();
-    sleep(3);
-    sync();
-    reboot(RB_AUTOBOOT);
-
-    return NULL;
 }

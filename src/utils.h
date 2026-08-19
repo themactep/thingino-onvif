@@ -113,6 +113,5 @@ int construct_uri_with_credentials(
 topic_expressions_t *parseTopicExpression(const char *input);
 void free_topic_expression(topic_expressions_t *p);
 int is_topic_in_expression(const char *topic_expression, char *topic);
-void *reboot_thread(void *arg);
 
 #endif //UTILS_H
