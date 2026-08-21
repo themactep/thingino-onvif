@@ -446,6 +446,26 @@ int main(int argc, char **argv)
         exit(EXIT_SUCCESS);
     }
 
+    // Model comes from the system itself when not passed with -m.
+    if (strcmp(model, "MODEL_NAME") == 0) {
+        FILE *f = fopen("/etc/os-release", "r");
+        if (f) {
+            char line[256];
+            while (fgets(line, sizeof(line), f)) {
+                if (strncmp(line, "IMAGE_ID=", 9) == 0) {
+                    char *val = line + 9;
+                    size_t len = strlen(val);
+                    while (len > 0 && (val[len - 1] == '\n' || val[len - 1] == '\r'))
+                        val[--len] = '\0';
+                    if (strlen(val) < sizeof(model))
+                        strcpy(model, val);
+                    break;
+                }
+            }
+            fclose(f);
+        }
+    }
+
     // Set signal handler
     signal(SIGTERM, signal_handler);
     signal(SIGINT, signal_handler);

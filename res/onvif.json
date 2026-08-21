@@ -24,33 +24,48 @@
       "name": "COLOR OFF"
     }
   ],
-  "camera": {
-    "firmware_ver": "0.0.1",
-    "hardware_id": "HWID",
-    "manufacturer": "Manufacturer",
-    "model": "Model",
-    "serial_num": "SN1234567890"
-  },
   "events": [
     {
       "input_file": "/run/motion/motion_alarm",
-      "source_name": "VideoSourceConfigurationToken",
-      "source_type": "tt:ReferenceToken",
-      "source_value": "VideoSourceConfigToken",
+      "sources": [
+        {
+          "name": "Source",
+          "type": "tt:ReferenceToken",
+          "value": "VideoSourceToken"
+        }
+      ],
       "topic": "tns1:VideoSource/MotionAlarm"
     },
     {
       "input_file": "/run/motion/motion_alarm",
-      "source_name": "VideoSourceConfigurationToken",
-      "source_type": "tt:ReferenceToken",
-      "source_value": "VideoSourceConfigToken",
+      "sources": [
+        {
+          "name": "VideoSourceConfigurationToken",
+          "type": "tt:ReferenceToken",
+          "value": "VideoSourceConfigToken"
+        },
+        {
+          "name": "VideoAnalyticsConfigurationToken",
+          "type": "tt:ReferenceToken",
+          "value": "VideoAnalyticsConfigToken"
+        },
+        {
+          "name": "Rule",
+          "type": "xsd:string",
+          "value": "MotionDetector"
+        }
+      ],
       "topic": "tns1:RuleEngine/CellMotionDetector/Motion"
     },
     {
       "input_file": "/tmp/hardware_failure",
-      "source_name": "Source",
-      "source_type": "tt:ReferenceToken",
-      "source_value": "HardwareId",
+      "sources": [
+        {
+          "name": "Source",
+          "type": "tt:ReferenceToken",
+          "value": "HardwareId"
+        }
+      ],
       "topic": "tns1:Device/HardwareFailure"
     }
   ],
@@ -154,8 +169,6 @@
     "log_directory": "",
     "log_level": "INFO",
     "log_on_error_only": false,
-    "password": "thingino",
-    "port": 80,
-    "username": "thingino"
+    "port": 80
   }
 }

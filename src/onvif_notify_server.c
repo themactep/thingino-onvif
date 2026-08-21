@@ -382,20 +382,31 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     // Get size of message content
     log_info("Sending Notify message.");
     sprintf(template_file, "%s/Notify.xml", TEMPLATE_DIR);
+    char sources_xml[512];
+    build_event_sources(sources_xml, sizeof(sources_xml), &service_ctx.events[alarm_index]);
+    char data_name[32];
+    const char *topic = service_ctx.events[alarm_index].topic ? service_ctx.events[alarm_index].topic : "";
+    if (strstr(topic, "tns1:Device/Trigger/Relay")) {
+        strcpy(data_name, "LogicalState");
+    } else if (strstr(topic, "CellMotionDetector/Motion")) {
+        strcpy(data_name, "IsMotion");
+    } else {
+        strcpy(data_name, "State");
+    }
     size = cat(NULL,
                template_file,
                12,
                "%TOPIC%",
-               service_ctx.events[alarm_index].topic,
+               topic,
                "%UTC_TIME%",
                utctime,
                "%PROPERTY%",
                property,
-               "%SOURCE_NAME%",
-               service_ctx.events[alarm_index].source_name,
-               "%SOURCE_VALUE%",
-               service_ctx.events[alarm_index].source_value,
-               "%VALUE%",
+               "%SOURCES%",
+               sources_xml,
+               "%DATA_NAME%",
+               data_name,
+               "%DATA_VALUE%",
                value);
     int size_len = snprintf(size_string, sizeof(size_string), "%d", size);
     if (size_len < 0 || size_len >= (int) sizeof(size_string)) {
@@ -437,16 +448,16 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
         template_file,
         12,
         "%TOPIC%",
-        service_ctx.events[alarm_index].topic,
+        topic,
         "%UTC_TIME%",
         utctime,
         "%PROPERTY%",
         property,
-        "%SOURCE_NAME%",
-        service_ctx.events[alarm_index].source_name,
-        "%SOURCE_VALUE%",
-        service_ctx.events[alarm_index].source_value,
-        "%VALUE%",
+        "%SOURCES%",
+        sources_xml,
+        "%DATA_NAME%",
+        data_name,
+        "%DATA_VALUE%",
         value);
 
     if (sendto(sockfd, message, strlen(message), 0, (struct sockaddr *) &remote, sizeof(remote)) < 0) {

@@ -1022,12 +1022,7 @@ static void execute_backend_command(const char *command)
     if (command == NULL || command[0] == '\0')
         return;
 
-    int ret = system(command);
-    if (ret == -1) {
-        log_error("Imaging command '%s' failed: %s", command, strerror(errno));
-    } else {
-        log_debug("Imaging command '%s' executed (rc=%d)", command, ret);
-    }
+    run_command_silent(command);
 }
 
 static const char *find_ircut_value(mxml_node_t *node)

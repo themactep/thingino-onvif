@@ -17,6 +17,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "onvif_simple_server.h"
+
 #include <semaphore.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -90,6 +92,9 @@ const char *response_buffer_get(size_t *size);
 void response_buffer_clear(void);
 int get_ip_address(char *address, char *netmask, char *name);
 int get_mac_address(char *address, char *name);
+void run_command_silent(const char *command);
+void build_event_sources(char *out, size_t outlen, const event_t *ev);
+void build_event_source_descriptions(char *out, size_t outlen, const event_t *ev);
 int netmask2prefixlen(char *netmask);
 int get_mtu(char *if_name);
 char *trim(char *s);

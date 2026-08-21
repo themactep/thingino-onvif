@@ -978,7 +978,7 @@ int ptz_goto_preset()
             send_action_failed_fault("ptz_service", -3);
             return -3;
         }
-        system(service_ctx.ptz_node.goto_home_position);
+        run_command_silent(service_ctx.ptz_node.goto_home_position);
         long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
         output_http_headers(size);
         return cat("stdout", "ptz_service_files/GotoPreset.xml", 0);
@@ -1009,7 +1009,7 @@ int ptz_goto_preset()
     }
 
     sprintf(sys_command, service_ctx.ptz_node.move_preset, preset_number);
-    system(sys_command);
+    run_command_silent(sys_command);
     long size = cat(NULL, "ptz_service_files/GotoPreset.xml", 0);
 
     output_http_headers(size);
@@ -1046,7 +1046,7 @@ int ptz_goto_home_position()
         send_action_failed_fault("ptz_service", -3);
         return -3;
     }
-    system(service_ctx.ptz_node.goto_home_position);
+    run_command_silent(service_ctx.ptz_node.goto_home_position);
 
     long size = cat(NULL, "ptz_service_files/GotoHomePosition.xml", 0);
 
@@ -1215,7 +1215,7 @@ int ptz_continuous_move()
         // Use single command for true diagonal movement
         sprintf(sys_command, service_ctx.ptz_node.move_both, x_target, y_target);
         log_debug("PTZ: Executing move_both command: %s", sys_command);
-        system(sys_command);
+        run_command_silent(sys_command);
         ret = 0;
     } else if (has_x_only) {
         // X movement only
@@ -1225,7 +1225,7 @@ int ptz_continuous_move()
         }
         sprintf(sys_command, service_ctx.ptz_node.move_x, x_target);
         log_debug("PTZ: Executing move_x command: %s", sys_command);
-        system(sys_command);
+        run_command_silent(sys_command);
         ret = 0;
     } else if (has_y_only) {
         // Y movement only
@@ -1235,7 +1235,7 @@ int ptz_continuous_move()
         }
         sprintf(sys_command, service_ctx.ptz_node.move_y, y_target);
         log_debug("PTZ: Executing move_y command: %s", sys_command);
-        system(sys_command);
+        run_command_silent(sys_command);
         ret = 0;
     }
 
@@ -1246,7 +1246,7 @@ int ptz_continuous_move()
                 return -7;
             }
             sprintf(sys_command, service_ctx.ptz_node.move_in, dz);
-            system(sys_command);
+            run_command_silent(sys_command);
             ret = 0;
         } else if (dz < 0.0) {
             if (service_ctx.ptz_node.move_out == NULL) {
@@ -1254,7 +1254,7 @@ int ptz_continuous_move()
                 return -8;
             }
             sprintf(sys_command, service_ctx.ptz_node.move_out, -dz);
-            system(sys_command);
+            run_command_silent(sys_command);
             ret = 0;
         }
     }
@@ -1263,13 +1263,13 @@ int ptz_continuous_move()
     if (pantilt_present && x != NULL && y != NULL && dx == 0.0 && dy == 0.0 && service_ctx.ptz_node.move_stop != NULL) {
         sprintf(sys_command, service_ctx.ptz_node.move_stop, "pantilt");
         log_debug("PTZ: Stopping pan/tilt due to zero velocity");
-        system(sys_command);
+        run_command_silent(sys_command);
         ret = 0;
     }
     if (zoom_present && z != NULL && dz == 0.0 && service_ctx.ptz_node.move_stop != NULL) {
         sprintf(sys_command, service_ctx.ptz_node.move_stop, "zoom");
         log_debug("PTZ: Stopping zoom due to zero velocity");
-        system(sys_command);
+        run_command_silent(sys_command);
         ret = 0;
     }
 
@@ -1492,7 +1492,7 @@ int ptz_relative_move()
     }
 
     if (ret == 0) {
-        system(sys_command);
+        run_command_silent(sys_command);
 
         long size = cat(NULL, "ptz_service_files/RelativeMove.xml", 0);
 
@@ -1704,7 +1704,7 @@ int ptz_absolute_move()
     }
 
     if (ret == 0) {
-        system(sys_command);
+        run_command_silent(sys_command);
 
         long size = cat(NULL, "ptz_service_files/AbsoluteMove.xml", 0);
 
@@ -1763,13 +1763,13 @@ int ptz_stop()
     if (pantilt && zoom) {
         sprintf(sys_command, service_ctx.ptz_node.move_stop, "all");
         log_debug("PTZ: Executing stop command: %s", sys_command);
-        system(sys_command);
+        run_command_silent(sys_command);
     } else if (pantilt) {
         sprintf(sys_command, service_ctx.ptz_node.move_stop, "pantilt");
-        system(sys_command);
+        run_command_silent(sys_command);
     } else if (zoom) {
         sprintf(sys_command, service_ctx.ptz_node.move_stop, "zoom");
-        system(sys_command);
+        run_command_silent(sys_command);
     }
 
     long size = cat(NULL, "ptz_service_files/Stop.xml", 0);
@@ -2082,7 +2082,7 @@ int ptz_set_preset()
 
     // Unhandled race condition
     sprintf(sys_command, service_ctx.ptz_node.set_preset, preset_number, (char *) preset_name_out);
-    system(sys_command);
+    run_command_silent(sys_command);
     sleep(1);
 
     init_presets();
@@ -2139,7 +2139,7 @@ int ptz_set_home_position()
     }
 
     strcpy(sys_command, service_ctx.ptz_node.set_home_position);
-    system(sys_command);
+    run_command_silent(sys_command);
 
     long size = cat(NULL, "ptz_service_files/SetHomePosition.xml", 0);
 
@@ -2489,7 +2489,7 @@ int ptz_operate_preset_tour()
         return -8;
     }
     if (ok) {
-        system(cmd);
+        run_command_silent(cmd);
         tours_save();
     }
     long size = cat(NULL, "ptz_service_files/OperatePresetTour.xml", 0);
@@ -2576,7 +2576,7 @@ int ptz_move_and_start_tracking()
         int preset_number = 0;
         if (sscanf(preset_token, "PresetToken_%d", &preset_number) == 1) {
             snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.move_preset, preset_number);
-            system(sys_command);
+            run_command_silent(sys_command);
         }
     } else {
         // Optional move to PTZVector position
@@ -2675,7 +2675,7 @@ int ptz_move_and_start_tracking()
             }
             if (pantilt_present || zoom_present) {
                 snprintf(sys_command, sizeof(sys_command), service_ctx.ptz_node.jump_to_abs, dx, dy, dz);
-                system(sys_command);
+                run_command_silent(sys_command);
             }
         }
     }
@@ -2683,7 +2683,7 @@ int ptz_move_and_start_tracking()
     // Start tracking
     strncpy(sys_command, service_ctx.ptz_node.start_tracking, sizeof(sys_command) - 1);
     sys_command[sizeof(sys_command) - 1] = '\0';
-    system(sys_command);
+    run_command_silent(sys_command);
 
     long size = cat(NULL, "ptz_service_files/MoveAndStartTracking.xml", 0);
 
@@ -2731,7 +2731,7 @@ int ptz_remove_preset()
     }
 
     sprintf(sys_command, service_ctx.ptz_node.remove_preset, preset_number);
-    system(sys_command);
+    run_command_silent(sys_command);
 
     long size = cat(NULL, "ptz_service_files/RemovePreset.xml", 0);
 

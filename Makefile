@@ -100,7 +100,7 @@ endif
 # For development builds, mxml is built locally via build.sh
 LIBS_O		+= -ljct -lpthread -lrt
 LIBS_N		+= -ljct -lpthread -lrt
-LIBS_W		+= -lpthread
+LIBS_W		+= -ljct -lpthread -lrt
 LIBS_O		+= $(MXML_LIBS)
 LIBS_N		+= $(MXML_LIBS)
 LIBS_W		+= $(MXML_LIBS)

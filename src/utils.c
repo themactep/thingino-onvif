@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
+#include <json_config.h>
 #include <limits.h>
 #include <netdb.h>
 #include <stdint.h>
@@ -554,6 +555,79 @@ int get_ip_address(char *address, char *netmask, char *name)
     return 0;
 }
 
+// Run a backend command with stdout silenced. The CGIs serve the HTTP response
+// on stdout; ircut/motors scripts print chatter that would corrupt the headers
+// (uhttpd then kills the CGI: "Bad Gateway").
+void run_command_silent(const char *command)
+{
+    int saved, nullfd;
+
+    if (!command || !command[0])
+        return;
+
+    saved = dup(STDOUT_FILENO);
+    if (saved < 0)
+        return;
+    nullfd = open("/dev/null", O_WRONLY);
+    if (nullfd < 0) {
+        close(saved);
+        return;
+    }
+    dup2(nullfd, STDOUT_FILENO);
+    (void) system(command);
+    dup2(saved, STDOUT_FILENO);
+    close(saved);
+    close(nullfd);
+}
+
+// Build the <tt:SimpleItem .../> fragment for an event notification's Source
+// list (one element per configured source, all on a single line for the
+// template engine).
+void build_event_sources(char *out, size_t outlen, const event_t *ev)
+{
+    size_t used = 0;
+
+    out[0] = '\0';
+    if (!ev)
+        return;
+
+    for (int i = 0; i < ev->sources_num; i++) {
+        const event_source_t *src = &ev->sources[i];
+        if (!src->name || !src->name[0] || !src->value || !src->value[0])
+            continue;
+        int n = snprintf(out + used, outlen - used,
+                         "<tt:SimpleItem Name=\"%s\" Value=\"%s\"/>",
+                         src->name, src->value);
+        if (n < 0 || (size_t) n >= outlen - used)
+            break;
+        used += (size_t) n;
+    }
+}
+
+// Build the <tt:SimpleItemDescription .../> fragment for GetEventProperties'
+// Source property list.
+void build_event_source_descriptions(char *out, size_t outlen, const event_t *ev)
+{
+    size_t used = 0;
+
+    out[0] = '\0';
+    if (!ev)
+        return;
+
+    for (int i = 0; i < ev->sources_num; i++) {
+        const event_source_t *src = &ev->sources[i];
+        if (!src->name || !src->name[0])
+            continue;
+        const char *type = (src->type && src->type[0]) ? src->type : "tt:ReferenceToken";
+        int n = snprintf(out + used, outlen - used,
+                         "<tt:SimpleItemDescription Name=\"%s\" Type=\"%s\"/>",
+                         src->name, type);
+        if (n < 0 || (size_t) n >= outlen - used)
+            break;
+        used += (size_t) n;
+    }
+}
+
 /**
  * Get the MAC address of an interface "name"
  * @param name The name of the interface
@@ -606,6 +680,24 @@ int get_mac_address(char *address, char *name)
                 (unsigned char) ifr.ifr_hwaddr.sa_data[4],
                 (unsigned char) ifr.ifr_hwaddr.sa_data[5]);
     } else {
+        // The interface is down or 'name' matches nothing: fall back to the
+        // persistent device MAC in /etc/thingino.json (eth.mac, written by
+        // S03mac from the silicon serial at first boot).
+        if (access("/etc/thingino.json", R_OK) == 0) {
+            JsonValue *config = load_config("/etc/thingino.json");
+            if (config) {
+                JsonValue *mac = get_nested_item(config, "eth.mac");
+                if (mac && mac->type == JSON_STRING && mac->value.string &&
+                    mac->value.string[0]) {
+                    snprintf(address, 18, "%s", mac->value.string);
+                    free_json_value(config);
+                    close(sock);
+                    log_debug("MAC address: <%s>", address);
+                    return 0;
+                }
+                free_json_value(config);
+            }
+        }
         log_error("Unable to get  mac address");
         close(sock);
         return -4;

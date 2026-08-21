@@ -457,6 +457,321 @@ static ircut_mode_t parse_ircut_mode_string(const char *value)
     return IRCUT_MODE_UNSPECIFIED;
 }
 
+// Read a KEY=VALUE field from /etc/os-release (the system's single source of
+// truth for camera identity) into buf. Returns 0 on success, -1 if the key is
+// missing or the file is unreadable.
+static int read_os_release(const char *key, char *buf, size_t buflen)
+{
+    FILE *file;
+    char line[256];
+    size_t keylen = strlen(key);
+    int found = 0;
+
+    file = fopen("/etc/os-release", "r");
+    if (!file)
+        return -1;
+
+    while (fgets(line, sizeof(line), file)) {
+        if (strncmp(line, key, keylen) != 0 || line[keylen] != '=')
+            continue;
+
+        char *val = line + keylen + 1;
+        size_t vlen = strlen(val);
+        while (vlen > 0 && (val[vlen - 1] == '\n' || val[vlen - 1] == '\r'))
+            val[--vlen] = '\0';
+
+        // os-release string values may be double-quoted
+        vlen = strlen(val);
+        if (vlen >= 2 && val[0] == '"' && val[vlen - 1] == '"') {
+            val[vlen - 1] = '\0';
+            val++;
+        }
+
+        snprintf(buf, buflen, "%s", val);
+        found = 1;
+        break;
+    }
+    fclose(file);
+
+    return found ? 0 : -1;
+}
+
+// Run cmd and capture its first stdout line into buf (trimmed).
+static void read_cmd_stdout(const char *cmd, char *buf, size_t buflen)
+{
+    FILE *p;
+    size_t len;
+
+    buf[0] = '\0';
+    p = popen(cmd, "r");
+    if (!p)
+        return;
+
+    if (fgets(buf, buflen, p) == NULL)
+        buf[0] = '\0';
+
+    pclose(p);
+
+    len = strlen(buf);
+    while (len > 0 && (buf[len - 1] == '\n' || buf[len - 1] == '\r' || buf[len - 1] == ' '))
+        buf[--len] = '\0';
+}
+
+// Config-file fallback for a camera identity field (explicit user override).
+static void get_camera_field(char **dst, JsonValue *camera_section, JsonValue *json_file, const char *name)
+{
+    if (camera_section && get_object_item(camera_section, name))
+        get_string_from_json(dst, camera_section, name);
+    else if (get_object_item(json_file, name))
+        get_string_from_json(dst, json_file, name);
+}
+
+// Camera identity is read from the system itself, not from a copy cached in
+// the config file that goes stale: NAME, IMAGE_ID and BUILD_ID come from
+// /etc/os-release, hardware_id is "ingenic_<soc model>" from soc(1), and
+// serial_num is the silicon serial number from `soc -s`. The config camera
+// section is only an explicit user override for fields the system cannot
+// provide (or on non-thingino systems that lack these sources).
+static void load_camera_identity_from_system(JsonValue *camera_section, JsonValue *json_file)
+{
+    char buf[256];
+
+    if (read_os_release("NAME", buf, sizeof(buf)) == 0)
+        service_ctx.manufacturer = dup_cstring(buf);
+
+    if (read_os_release("IMAGE_ID", buf, sizeof(buf)) == 0)
+        service_ctx.model = dup_cstring(buf);
+    if (read_os_release("BUILD_ID", buf, sizeof(buf)) == 0)
+        service_ctx.firmware_ver = dup_cstring(buf);
+
+    read_cmd_stdout("soc -m", buf, sizeof(buf));
+    if (buf[0]) {
+        char hwid[sizeof(buf) + 8];
+        snprintf(hwid, sizeof(hwid), "ingenic_%s", buf);
+        service_ctx.hardware_id = dup_cstring(hwid);
+    }
+
+    read_cmd_stdout("soc -s", buf, sizeof(buf));
+    // all-zero means the silicon carries no serial (same rule as
+    // lib-serial-mac), treat it as absent
+    if (buf[0] && strspn(buf, "0") != strlen(buf))
+        service_ctx.serial_num = dup_cstring(buf);
+
+    if (service_ctx.manufacturer == NULL)
+        get_camera_field(&service_ctx.manufacturer, camera_section, json_file, "manufacturer");
+    if (service_ctx.model == NULL)
+        get_camera_field(&service_ctx.model, camera_section, json_file, "model");
+    if (service_ctx.firmware_ver == NULL)
+        get_camera_field(&service_ctx.firmware_ver, camera_section, json_file, "firmware_ver");
+    if (service_ctx.hardware_id == NULL)
+        get_camera_field(&service_ctx.hardware_id, camera_section, json_file, "hardware_id");
+    if (service_ctx.serial_num == NULL)
+        get_camera_field(&service_ctx.serial_num, camera_section, json_file, "serial_num");
+}
+
+// Find the primary interface from the routing table (default route) - the
+// same choice S96's iface_default() made at boot, but evaluated fresh on
+// every config load instead of cached. IPv4 first, then IPv6.
+static int get_default_iface(char *buf, size_t buflen)
+{
+    FILE *file;
+    char line[256];
+
+    file = fopen("/proc/net/route", "r");
+    if (file) {
+        fgets(line, sizeof(line), file); // header
+        while (fgets(line, sizeof(line), file)) {
+            char iface[32];
+            unsigned int dest, flags, mask;
+            if (sscanf(line, "%31s %x %*x %x %*d %*d %*d %x", iface, &dest, &flags, &mask) == 4 &&
+                dest == 0 && mask == 0 && (flags & 1)) {
+                snprintf(buf, buflen, "%s", iface);
+                fclose(file);
+                return 0;
+            }
+        }
+        fclose(file);
+    }
+
+    file = fopen("/proc/net/ipv6_route", "r");
+    if (file) {
+        while (fgets(line, sizeof(line), file)) {
+            char iface[32], dest[33];
+            unsigned int plen;
+            if (sscanf(line, "%32s %2x %*s %*x %*s %*x %*x %*x %*x %31s", dest, &plen, iface) == 3) {
+                int allzero = 1;
+                for (size_t i = 0; i < 32; i++)
+                    if (dest[i] != '0') {
+                        allzero = 0;
+                        break;
+                    }
+                if (allzero && plen == 0) {
+                    snprintf(buf, buflen, "%s", iface);
+                    fclose(file);
+                    return 0;
+                }
+            }
+        }
+        fclose(file);
+    }
+
+    return -1;
+}
+
+// Read a numeric key from /etc/thingino.json (e.g. motors.steps_pan).
+// Returns 0 on success.
+static int read_thingino_double(const char *key, double *out)
+{
+    JsonValue *config, *item;
+
+    if (access("/etc/thingino.json", R_OK) != 0)
+        return -1;
+
+    config = load_config("/etc/thingino.json");
+    if (!config)
+        return -1;
+
+    item = get_nested_item(config, key);
+    if (!item || item->type != JSON_NUMBER) {
+        free_json_value(config);
+        return -1;
+    }
+
+    *out = item->value.number.real;
+    free_json_value(config);
+    return 0;
+}
+
+// Read "key = value" from a flat config (timps.conf style): strip trailing
+// whitespace and inline comments ("#..." after whitespace), unquote.
+static void read_key_value(const char *file, const char *key, char *buf, size_t buflen)
+{
+    FILE *f;
+    char line[256];
+    size_t keylen = strlen(key);
+
+    buf[0] = '\0';
+    f = fopen(file, "r");
+    if (!f)
+        return;
+
+    while (fgets(line, sizeof(line), f)) {
+        char *p = line;
+        while (*p == ' ' || *p == '\t')
+            p++;
+        if (strncmp(p, key, keylen) != 0)
+            continue;
+
+        char *eq = p + keylen;
+        while (*eq == ' ' || *eq == '\t')
+            eq++;
+        if (*eq != '=')
+            continue;
+
+        char *val = eq + 1;
+        while (*val == ' ' || *val == '\t')
+            val++;
+        size_t len = strlen(val);
+        while (len > 0 && (val[len - 1] == '\n' || val[len - 1] == '\r' || val[len - 1] == ' ' || val[len - 1] == '\t'))
+            val[--len] = '\0';
+        for (char *c = val; *c; c++) {
+            if (*c == '#' && c > val && (c[-1] == ' ' || c[-1] == '\t')) {
+                *c = '\0';
+                break;
+            }
+        }
+        len = strlen(val);
+        while (len > 0 && (val[len - 1] == ' ' || val[len - 1] == '\t'))
+            val[--len] = '\0';
+        if (len >= 2 && ((val[0] == '"' && val[len - 1] == '"') || (val[0] == '\'' && val[len - 1] == '\''))) {
+            val[len - 1] = '\0';
+            val++;
+        }
+
+        snprintf(buf, buflen, "%s", val);
+        break;
+    }
+    fclose(f);
+}
+
+// First non-empty string among dotted keys in a JSON document.
+static void get_first_string(char **dst, JsonValue *root, const char *keys[])
+{
+    for (int i = 0; keys[i]; i++) {
+        JsonValue *item = get_nested_item(root, keys[i]);
+        if (item && item->type == JSON_STRING && item->value.string && item->value.string[0]) {
+            *dst = dup_cstring(item->value.string);
+            return;
+        }
+    }
+}
+
+// The ONVIF credentials mirror the streamer's RTSP auth (same user/pass for
+// SOAP and streams). Read them from the installed streamer's own config
+// instead of a copy cached in onvif.json: prudynt.json and strero's
+// streamer.d/rtsp.json are JSON, timps.conf is flat key=value, and
+// raptor.conf is queried through raptorctl.
+static void load_streamer_auth(void)
+{
+    JsonValue *cfg;
+    char buf[256];
+
+    if (access("/etc/prudynt.json", R_OK) == 0) {
+        cfg = load_config("/etc/prudynt.json");
+        if (cfg) {
+            const char *user_keys[] = {"rtsp.username", NULL};
+            const char *pass_keys[] = {"rtsp.password", NULL};
+            get_first_string(&service_ctx.username, cfg, user_keys);
+            get_first_string(&service_ctx.password, cfg, pass_keys);
+            free_json_value(cfg);
+        }
+        return;
+    }
+
+    if (access("/etc/streamer.d/rtsp.json", R_OK) == 0) {
+        cfg = load_config("/etc/streamer.d/rtsp.json");
+        if (cfg) {
+            const char *user_keys[] = {"username", "auth.username", "rtsp.username", NULL};
+            const char *pass_keys[] = {"password", "auth.password", "rtsp.password", NULL};
+            get_first_string(&service_ctx.username, cfg, user_keys);
+            get_first_string(&service_ctx.password, cfg, pass_keys);
+            free_json_value(cfg);
+        }
+        return;
+    }
+
+    if (access("/etc/timps.conf", R_OK) == 0) {
+        read_key_value("/etc/timps.conf", "rtsp.user", buf, sizeof(buf));
+        if (buf[0])
+            service_ctx.username = dup_cstring(buf);
+        read_key_value("/etc/timps.conf", "rtsp.pass", buf, sizeof(buf));
+        if (buf[0])
+            service_ctx.password = dup_cstring(buf);
+        return;
+    }
+
+    if (access("/etc/raptor.conf", R_OK) == 0) {
+        read_cmd_stdout("raptorctl config get rtsp username", buf, sizeof(buf));
+        if (buf[0])
+            service_ctx.username = dup_cstring(buf);
+        read_cmd_stdout("raptorctl config get rtsp password", buf, sizeof(buf));
+        if (buf[0])
+            service_ctx.password = dup_cstring(buf);
+    }
+}
+
+static void event_set_source(event_t *ev, int idx, const char *name, const char *type, const char *value)
+{
+    if (!ev || idx < 0 || idx >= MAX_EVENT_SOURCES)
+        return;
+
+    ev->sources[idx].name = dup_cstring(name);
+    ev->sources[idx].type = dup_cstring(type);
+    ev->sources[idx].value = dup_cstring(value);
+    if (idx >= ev->sources_num)
+        ev->sources_num = idx + 1;
+}
+
 int process_json_conf_file(char *file)
 {
     JsonValue *value, *item;
@@ -561,35 +876,20 @@ int process_json_conf_file(char *file)
     service_ctx.ptz_node.eflip_mode_on = 0;
     service_ctx.ptz_node.zoom_enable = -1;
 
-    if (camera_section && get_object_item(camera_section, "model"))
-        get_string_from_json(&(service_ctx.model), camera_section, "model");
-    else
-        get_string_from_json(&(service_ctx.model), json_file, "model");
+    // Camera identity comes from the system itself (single source of truth);
+    // the config camera section is only an explicit user override.
+    load_camera_identity_from_system(camera_section, json_file);
 
-    if (camera_section && get_object_item(camera_section, "manufacturer"))
-        get_string_from_json(&(service_ctx.manufacturer), camera_section, "manufacturer");
-    else
-        get_string_from_json(&(service_ctx.manufacturer), json_file, "manufacturer");
-
-    if (camera_section && get_object_item(camera_section, "firmware_ver"))
-        get_string_from_json(&(service_ctx.firmware_ver), camera_section, "firmware_ver");
-    else
-        get_string_from_json(&(service_ctx.firmware_ver), json_file, "firmware_ver");
-
-    if (camera_section && get_object_item(camera_section, "hardware_id"))
-        get_string_from_json(&(service_ctx.hardware_id), camera_section, "hardware_id");
-    else
-        get_string_from_json(&(service_ctx.hardware_id), json_file, "hardware_id");
-
-    if (camera_section && get_object_item(camera_section, "serial_num"))
-        get_string_from_json(&(service_ctx.serial_num), camera_section, "serial_num");
-    else
-        get_string_from_json(&(service_ctx.serial_num), json_file, "serial_num");
-
-    if (server_section && get_object_item(server_section, "ifs"))
+    // The primary interface is whatever the routing table says right now
+    // (per request for the CGI, at start for the notify daemon); the config
+    // server.ifs is only a fallback when there is no default route.
+    if (get_default_iface(stmp, sizeof(stmp)) == 0) {
+        service_ctx.ifs = dup_cstring(stmp);
+    } else if (server_section && get_object_item(server_section, "ifs")) {
         get_string_from_json(&(service_ctx.ifs), server_section, "ifs");
-    else
+    } else {
         get_string_from_json(&(service_ctx.ifs), json_file, "ifs");
+    }
 
     if (server_section && get_object_item(server_section, "port"))
         get_int_from_json(&(service_ctx.port), server_section, "port");
@@ -650,15 +950,23 @@ int process_json_conf_file(char *file)
             }
         }
     }
-    if (server_section && get_object_item(server_section, "username"))
-        get_string_from_json(&(service_ctx.username), server_section, "username");
-    else
-        get_string_from_json(&(service_ctx.username), json_file, "username");
-
-    if (server_section && get_object_item(server_section, "password"))
-        get_string_from_json(&(service_ctx.password), server_section, "password");
-    else
-        get_string_from_json(&(service_ctx.password), json_file, "password");
+    // RTSP credentials are the single source of truth: the installed
+    // streamer's own config decides ONVIF auth, so a password change on the
+    // streamer applies immediately. The server section in onvif.json is only
+    // a fallback for hosts without a streamer config.
+    load_streamer_auth();
+    if (service_ctx.username == NULL) {
+        if (server_section && get_object_item(server_section, "username"))
+            get_string_from_json(&(service_ctx.username), server_section, "username");
+        else
+            get_string_from_json(&(service_ctx.username), json_file, "username");
+    }
+    if (service_ctx.password == NULL) {
+        if (server_section && get_object_item(server_section, "password"))
+            get_string_from_json(&(service_ctx.password), server_section, "password");
+        else
+            get_string_from_json(&(service_ctx.password), json_file, "password");
+    }
     get_bool_from_json(&(service_ctx.adv_enable_media2), json_file, "adv_enable_media2");
     get_bool_from_json(&(service_ctx.adv_fault_if_unknown), json_file, "adv_fault_if_unknown");
     get_bool_from_json(&(service_ctx.adv_fault_if_set), json_file, "adv_fault_if_set");
@@ -862,14 +1170,19 @@ int process_json_conf_file(char *file)
     log_debug("audio.backchannel token: %s", service_ctx.audio.backchannel.token);
     log_debug("audio.backchannel uri: %s", service_ctx.audio.backchannel.uri);
 
-    // Load PTZ configuration from main configuration file
+    // Load PTZ configuration from main configuration file. The step range
+    // comes from the system (thingino.json motors.steps_pan/tilt, the same
+    // source S96 used to copy into this section) and enable mirrors the
+    // presence of /bin/motors; the config keys are only fallbacks.
     value = get_object_item(json_file, "ptz");
     if (value) {
-        get_int_from_json(&(service_ctx.ptz_node.enable), value, "enable");
+        service_ctx.ptz_node.enable = (access("/bin/motors", F_OK) == 0) ? 1 : 0;
+        if (read_thingino_double("motors.steps_pan", &(service_ctx.ptz_node.max_step_x)) != 0)
+            get_double_from_json(&(service_ctx.ptz_node.max_step_x), value, "max_step_x");
+        if (read_thingino_double("motors.steps_tilt", &(service_ctx.ptz_node.max_step_y)) != 0)
+            get_double_from_json(&(service_ctx.ptz_node.max_step_y), value, "max_step_y");
         get_double_from_json(&(service_ctx.ptz_node.min_step_x), value, "min_step_x");
-        get_double_from_json(&(service_ctx.ptz_node.max_step_x), value, "max_step_x");
         get_double_from_json(&(service_ctx.ptz_node.min_step_y), value, "min_step_y");
-        get_double_from_json(&(service_ctx.ptz_node.max_step_y), value, "max_step_y");
         get_double_from_json(&(service_ctx.ptz_node.min_step_z), value, "min_step_z");
         get_double_from_json(&(service_ctx.ptz_node.max_step_z), value, "max_step_z");
         get_double_from_json(&(service_ctx.ptz_node.pan_min), value, "pan_min");
@@ -997,16 +1310,60 @@ int process_json_conf_file(char *file)
                 break;
             }
             service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
-            service_ctx.events[service_ctx.events_num - 1].topic = NULL;
-            service_ctx.events[service_ctx.events_num - 1].source_name = NULL;
-            service_ctx.events[service_ctx.events_num - 1].source_type = NULL;
-            service_ctx.events[service_ctx.events_num - 1].source_value = NULL;
-            service_ctx.events[service_ctx.events_num - 1].input_file = NULL;
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].topic), item, "topic");
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_name), item, "source_name");
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_type), item, "source_type");
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].source_value), item, "source_value");
-            get_string_from_json(&(service_ctx.events[service_ctx.events_num - 1].input_file), item, "input_file");
+            event_t *ev = &service_ctx.events[service_ctx.events_num - 1];
+            ev->topic = NULL;
+            ev->input_file = NULL;
+            ev->sources_num = 0;
+            for (int s = 0; s < MAX_EVENT_SOURCES; s++) {
+                ev->sources[s].name = NULL;
+                ev->sources[s].type = NULL;
+                ev->sources[s].value = NULL;
+            }
+            get_string_from_json(&(ev->topic), item, "topic");
+            get_string_from_json(&(ev->input_file), item, "input_file");
+
+            // Event sources: the "sources" array (name/type/value each) is the
+            // spec-shaped form (CellMotionDetector carries three);
+            // source_name/source_type/source_value remain as the single-item
+            // shorthand for existing configs.
+            JsonValue *sources = get_object_item(item, "sources");
+            if (sources && sources->type == JSON_ARRAY) {
+                int snum = get_array_size(sources);
+                if (snum > MAX_EVENT_SOURCES)
+                    snum = MAX_EVENT_SOURCES;
+                for (int s = 0; s < snum; s++) {
+                    JsonValue *sitem = get_array_item(sources, s);
+                    if (!sitem || sitem->type != JSON_OBJECT)
+                        continue;
+                    char *name = NULL, *type = NULL, *value = NULL;
+                    get_string_from_json(&name, sitem, "name");
+                    get_string_from_json(&type, sitem, "type");
+                    get_string_from_json(&value, sitem, "value");
+                    if (name && name[0])
+                        event_set_source(ev, s, name, type, value);
+                    free(name);
+                    free(type);
+                    free(value);
+                }
+            } else {
+                char *name = NULL, *type = NULL, *value = NULL;
+                get_string_from_json(&name, item, "source_name");
+                get_string_from_json(&type, item, "source_type");
+                get_string_from_json(&value, item, "source_value");
+                if (name && name[0])
+                    event_set_source(ev, 0, name, type, value);
+                free(name);
+                free(type);
+                free(value);
+            }
+
+            // Spec: tns1:VideoSource/MotionAlarm's Source item is named
+            // "Source" (the video source token), whatever the config says.
+            if (ev->topic && strstr(ev->topic, "VideoSource/MotionAlarm") && ev->sources_num > 0) {
+                char *name = dup_cstring("Source");
+                free(ev->sources[0].name);
+                ev->sources[0].name = name;
+            }
         }
     }
 
@@ -1164,22 +1521,24 @@ int process_json_conf_file(char *file)
 
             log_debug("Adding event for relay output %d", i);
             service_ctx.events = (event_t *) realloc(service_ctx.events, service_ctx.events_num * sizeof(event_t));
-            service_ctx.events[service_ctx.events_num - 1].topic = (char *) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].topic, "tns1:Device/Trigger/Relay");
+            event_t *ev = &service_ctx.events[service_ctx.events_num - 1];
+            ev->topic = (char *) malloc(strlen("tns1:Device/Trigger/Relay") + 1);
+            strcpy(ev->topic, "tns1:Device/Trigger/Relay");
             log_debug("topic: tns1:Device/Trigger/Relay");
-            service_ctx.events[service_ctx.events_num - 1].source_name = (char *) malloc(strlen("RelayToken") + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].source_name, "RelayToken");
-            log_debug("source_name: RelayToken");
-            service_ctx.events[service_ctx.events_num - 1].source_type = (char *) malloc(strlen("tt:ReferenceToken") + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].source_type, "tt:ReferenceToken");
-            log_debug("source_type: tt:ReferenceToken");
+            ev->sources_num = 0;
+            for (int s = 0; s < MAX_EVENT_SOURCES; s++) {
+                ev->sources[s].name = NULL;
+                ev->sources[s].type = NULL;
+                ev->sources[s].value = NULL;
+            }
             sprintf(stmp, "RelayOutputToken_%d", i);
-            service_ctx.events[service_ctx.events_num - 1].source_value = (char *) malloc(strlen(stmp) + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].source_value, stmp);
+            event_set_source(ev, 0, "RelayToken", "tt:ReferenceToken", stmp);
+            log_debug("source_name: RelayToken");
+            log_debug("source_type: tt:ReferenceToken");
             log_debug("source_value: %s", stmp);
             sprintf(stmp, "/tmp/onvif_notify_server/relay_output_%d", i);
-            service_ctx.events[service_ctx.events_num - 1].input_file = (char *) malloc(strlen(stmp) + 1);
-            strcpy(service_ctx.events[service_ctx.events_num - 1].input_file, stmp);
+            ev->input_file = (char *) malloc(strlen(stmp) + 1);
+            strcpy(ev->input_file, stmp);
             log_debug("input_file: %s", stmp);
         }
     }
@@ -1217,12 +1576,11 @@ void free_conf_file()
         for (i = service_ctx.events_num - 1; i >= 0; i--) {
             if (service_ctx.events[i].input_file != NULL)
                 free(service_ctx.events[i].input_file);
-            if (service_ctx.events[i].source_value != NULL)
-                free(service_ctx.events[i].source_value);
-            if (service_ctx.events[i].source_type != NULL)
-                free(service_ctx.events[i].source_type);
-            if (service_ctx.events[i].source_name != NULL)
-                free(service_ctx.events[i].source_name);
+            for (int s = 0; s < MAX_EVENT_SOURCES; s++) {
+                free(service_ctx.events[i].sources[s].name);
+                free(service_ctx.events[i].sources[s].type);
+                free(service_ctx.events[i].sources[s].value);
+            }
             if (service_ctx.events[i].topic != NULL)
                 free(service_ctx.events[i].topic);
         }

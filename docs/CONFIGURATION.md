@@ -1,26 +1,12 @@
-# Configuration Guide (Modular JSON)
+# Configuration Guide
 
-The ONVIF Simple Server uses a modular JSON configuration split between a main file and feature3pecific files.
-
-- Main config: `/etc/onvif.json`
-- Modular directory: `/etc/onvif.d/`
-  - `profiles.json`  Media profiles and stream URLs
-  - `ptz.json`  PTZ control and command hooks
-  - `relays.json`  Relay outputs behavior and shell commands
-  - `events.json`  Events support and filedriven inputs
-
-The main config can reference an alternate directory via `conf_dir` (defaults to `/etc/onvif.d`).
+The ONVIF Simple Server reads a single JSON config file: `/etc/onvif.json`.
+The only other file it touches is `/etc/onvif.d/preset_tours.json`, which holds
+PTZ preset tours created at runtime.
 
 ## /etc/onvif.json (main)
 ```
 {
-  "camera": {
-    "firmware_ver": "0.0.1",
-    "hardware_id": "HWID",
-    "manufacturer": "Manufacturer",
-    "model": "Model",
-    "serial_num": "SN1234567890"
-  },
   "server": {
     "ifs": "wlan0",
     "log_directory": "/var/www/onvif/raw",
@@ -30,121 +16,62 @@ The main config can reference an alternate directory via `conf_dir` (defaults to
     "username": "",
     "password": ""
   },
-  "conf_dir": "/etc/onvif.d"       // where to load modular JSON files from
+  "scopes": [
+    "onvif://www.onvif.org/Profile/Streaming",
+    "onvif://www.onvif.org/Profile/T",
+    "onvif://www.onvif.org/hardware",
+    "onvif://www.onvif.org/name"
+  ],
+  "profiles": { ... },   // media profiles and stream URLs
+  "ptz": { ... },        // PTZ control and command hooks
+  "relays": [ ... ],     // relay outputs behavior and shell commands
+  "imaging": [ ... ],    // imaging/IR-cut configuration
+  "events": [ ... ]      // events support and file-driven inputs
 }
-```
-Notes:
-- `camera` groups immutable device identity reported through Device service calls.
-- `server` contains runtime/service parameters such as network interface, credentials, and XML logging tweaks.
-- `server.username`/`server.password` are optional. If set, the server expects digest auth in SOAP headers and embeds them in RTSP URLs.
-- `server.ifs` selects the network interface used for discovery and address resolution.
-
-## /etc/onvif.d/profiles.json
-An array of media profiles. The URL templates use `%s` placeholder for device IP/host.
-```
-[
-  {
-    "name": "Profile_0",
-    "width": 1920,
-    "height": 1080,
-    "url": "rtsp://%s/ch0_0.h264",
-    "snapurl": "http://%s/cgi-bin/snapshot.sh",
-    "type": "H264",               // JPEG|MPEG4|H264
-    "audio_encoder": "AAC",       // NONE|AAC|G711
-    "audio_decoder": "G711"       // NONE|G711
-  }
-]
-```
-
-## /etc/onvif.d/ptz.json
-```
-{
-  "enable": 1,
-  "min_step_x": 0.0,
-  "max_step_x": 360.0,
-  "min_step_y": 0.0,
-  "max_step_y": 180.0,
-  "get_position": "/usr/local/bin/get_position",
-  "is_moving": "/usr/local/bin/is_moving",
-  "move_left": "/usr/local/bin/ptz_move -m left -s %f",
-  "move_right": "/usr/local/bin/ptz_move -m right -s %f",
-  "move_up": "/usr/local/bin/ptz_move -m up -s %f",
-  "move_down": "/usr/local/bin/ptz_move -m down -s %f",
-  "move_in": "/usr/local/bin/ptz_move -m in -s %f",
-  "move_out": "/usr/local/bin/ptz_move -m out -s %f",
-  "move_stop": "/usr/local/bin/ptz_move -m stop -t %s",
-  "move_preset": "/usr/local/bin/ptz_move -p %d",
-  "goto_home_position": "/usr/local/bin/ptz_move -h",
-  "set_preset": "/usr/local/bin/ptz_presets.sh -a add_preset -n %d -m %s",
-  "set_home_position": "/usr/local/bin/ptz_presets.sh -a set_home_position",
-  "remove_preset": "/usr/local/bin/ptz_presets.sh -a del_preset -n %d",
-  "jump_to_abs": "/usr/local/bin/ptz_move -j %f,%f,%f",
-  "jump_to_rel": "/usr/local/bin/ptz_move -J %f,%f,%f",
-  "get_presets": "/usr/local/bin/ptz_presets.sh -a get_presets"
-}
-```
-
-## /etc/onvif.d/relays.json
-```
-[
-  {
-    "idle_state": "open",  // open|close
-    "close": "/usr/local/bin/set_relay -n 0 -a close",
-    "open":  "/usr/local/bin/set_relay -n 0 -a open"
-  }
-]
-```
-
-## Imaging configuration (optional block in /etc/onvif.json)
-```
-"imaging": [
-  {
-    "video_source_token": "VideoSourceToken",
-    "ircut_state": "Auto",            // Initial state: On|Off|Auto
-    "ircut_modes": ["On", "Off", "Auto"],
-    "cmd_ircut_on": "ircut on",       // Shell command invoked for SetImagingSettings (optional)
-    "cmd_ircut_off": "ircut off",
-    "cmd_ircut_auto": ""
-  }
-]
 ```
 
 Notes:
-- If `ircut_modes` is omitted, On/Off are assumed. Include `Auto` when hardware supports it.
-- Commands are optional; when omitted, the server still reports/updates the cached state.
-- Configure one block per ONVIF video source. The Imaging service is advertised only when at least one block is present.
+- Camera identity (manufacturer, model, firmware_ver, hardware_id, serial_num)
+  is read from the system itself - /etc/os-release (NAME, IMAGE_ID, BUILD_ID),
+  `soc -m` and `soc -s` - so it never goes stale. An optional `camera`
+  section in this file overrides fields the system cannot provide.
+- `server.ifs` is normally ignored: the primary interface is taken from the
+  routing table (default route) at config load. This key is only a fallback
+  when no default route exists.
+- `server.username`/`server.password` are only a fallback: by default the
+  credentials are read from the installed streamer's own config
+  (/etc/prudynt.json, /etc/streamer.d/rtsp.json, /etc/timps.conf or
+  /etc/raptor.conf), so ONVIF auth always matches RTSP auth. When the streamer
+  has no RTSP user configured, ONVIF stays open.
+- `server.port` selects the ONVIF listen port (usually 80, behind the web server).
+- `server.log_directory` enables raw SOAP request/response XML logging; empty
+  disables it.
 
-## /etc/onvif.d/events.json
+Events are file-driven: the notify daemon watches `input_file` and emits a
+notification when it appears/disappears. Each event carries one or more Source
+items (the ONVIF catalog defines up to three, e.g. CellMotionDetector:
+`VideoSourceConfigurationToken`, `VideoAnalyticsConfigurationToken`, `Rule`)
+plus a Data item. The legacy single-item keys `source_name`/`source_type`/
+`source_value` are still accepted.
 ```
-{
-  "enable": 3,  // 0=None, 1=PullPoint, 2=BaseSubscription, 3=Both
-  "events": [
-    {
-      "topic": "tns1:VideoSource/MotionAlarm",
-      "source_name": "VideoSourceConfigurationToken",
-      "source_type": "tt:ReferenceToken",
-      "source_value": "VideoSourceConfigToken",
-      "input_file": "/tmp/onvif_notify_server/motion_alarm"
-    }
-  ]
-}
-
-Note: Global debounce for events can be configured in /etc/onvif.json using key "events_min_interval_ms" (milliseconds). Set to 0 to disable.
-
+"events": [
+  {
+    "input_file": "/run/motion/motion_alarm",
+    "sources": [
+      { "name": "Source", "type": "tt:ReferenceToken", "value": "VideoSourceToken" }
+    ],
+    "topic": "tns1:VideoSource/MotionAlarm"
+  }
+]
 ```
+
+## /etc/onvif.d/preset_tours.json
+Created and updated by the PTZ service at runtime (`ptz_service.c`). Holds the
+preset tour definitions for `PresetTour` operations.
 
 ## Using jct (JSON Config Tool)
-The Thingino init scripts use `jct` to create/update JSON entries on boot.
-Examples:
+The Thingino init scripts use `jct` to create/update JSON entries.
 ```
 jct /etc/onvif.json create
-jct /etc/onvif.json set conf_dir /etc/onvif.d
-jct /etc/onvif.d/ptz.json create
-jct /etc/onvif.d/ptz.json set enable 1
+jct /etc/onvif.json set scopes '["onvif://www.onvif.org/Profile/Streaming"]'
 ```
-
-## Migration Notes
-- The legacy monolithic `onvif_simple_server.json.example` has been removed.
-- All keys are now split between the main file and the modular files as above.
-- Paths are fixed under `/etc/onvif.json` and `/etc/onvif.d/` and can be adjusted by `conf_dir` only if needed.
-

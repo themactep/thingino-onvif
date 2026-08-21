@@ -391,8 +391,16 @@ int main(int argc, char **argv)
     if (method == NULL) {
         log_fatal("XML parsing error");
         close_xml();
-        // Don't free static buffer: free(input);
-        // Don't free static buffer: free(conf_file);
+        // Reply with a SOAP fault instead of dying silently: a truncated or
+        // malformed request body (e.g. a POST cut short on a flaky link)
+        // would otherwise leave uhttpd with no response at all and the
+        // client with an opaque "Bad Gateway".
+        send_fault(prog_name,
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:InvalidArgVal",
+                   "Malformed request",
+                   "The SOAP request could not be parsed");
         exit(EXIT_FAILURE);
     }
 

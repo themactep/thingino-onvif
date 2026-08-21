@@ -523,27 +523,20 @@ int events_pull_messages()
                 }
                 // Ensure we have valid strings to prevent null pointer dereference
                 const char *safe_topic = service_ctx.events[i].topic ? service_ctx.events[i].topic : "Unknown";
-                const char *safe_source_name = service_ctx.events[i].source_name ? service_ctx.events[i].source_name : "Unknown";
-                const char *safe_source_value = service_ctx.events[i].source_value ? service_ctx.events[i].source_value : "Unknown";
-
-                // ONVIF event catalog: VideoSource/MotionAlarm source is "Source"
-                if (strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")) {
-                    safe_source_name = "Source";
-                }
+                char sources_xml[512];
+                build_event_sources(sources_xml, sizeof(sources_xml), &service_ctx.events[i]);
 
                 size = cat(dest,
                            "events_service_files/PullMessages_2.xml",
-                           14,
+                           12,
                            "%TOPIC%",
                            safe_topic,
                            "%UTC_TIME%",
                            iso_str_3,
                            "%PROPERTY%",
                            property,
-                           "%SOURCE_NAME%",
-                           safe_source_name,
-                           "%SOURCE_VALUE%",
-                           safe_source_value,
+                           "%SOURCES%",
+                           sources_xml,
                            "%DATA_NAME%",
                            data_name,
                            "%DATA_VALUE%",
@@ -1074,28 +1067,20 @@ int events_get_event_properties()
             }
 
             // Ensure we have valid strings to prevent null pointer dereference
-            const char *safe_source_name = service_ctx.events[i].source_name ? service_ctx.events[i].source_name : "Unknown";
-            const char *safe_source_type = service_ctx.events[i].source_type ? service_ctx.events[i].source_type : "Unknown";
-
-            // ONVIF event catalog: VideoSource/MotionAlarm source is "Source" (tt:ReferenceToken)
-            if (strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")) {
-                safe_source_name = "Source";
-                safe_source_type = "tt:ReferenceToken";
-            }
+            char sources_xml[512];
+            build_event_source_descriptions(sources_xml, sizeof(sources_xml), &service_ctx.events[i]);
 
             size = cat(dest,
                        "events_service_files/GetEventProperties_2.xml",
-                       20,
+                       18,
                        "%TOPIC_L1_START%",
                        topic_ls[0],
                        "%TOPIC_L2_START%",
                        topic_ls[1],
                        "%TOPIC_L3_START%",
                        topic_ls[2],
-                       "%SOURCE_NAME%",
-                       safe_source_name,
-                       "%SOURCE_TYPE%",
-                       safe_source_type,
+                       "%SOURCES%",
+                       sources_xml,
                        "%DATA_NAME%",
                        data_name,
                        "%DATA_TYPE%",
@@ -1120,23 +1105,23 @@ int events_get_event_properties()
             strcpy(topic_le[1], "</MotionAlarm>");
             topic_ls[2][0] = '\0';
             topic_le[2][0] = '\0';
-            strcpy(data_name, "IsMotion");
+            strcpy(data_name, "State");
             strcpy(data_type, "xsd:boolean");
-            const char *safe_source_name = "VideoSourceConfigurationToken";
-            const char *safe_source_type = "tt:ReferenceToken";
+            // Spec: MotionAlarm source is "Source" (the video source token)
+            char sources_xml[512];
+            snprintf(sources_xml, sizeof(sources_xml),
+                     "<tt:SimpleItemDescription Name=\"Source\" Type=\"tt:ReferenceToken\"/>");
             size = cat(dest,
                        "events_service_files/GetEventProperties_2.xml",
-                       20,
+                       18,
                        "%TOPIC_L1_START%",
                        topic_ls[0],
                        "%TOPIC_L2_START%",
                        topic_ls[1],
                        "%TOPIC_L3_START%",
                        "",
-                       "%SOURCE_NAME%",
-                       safe_source_name,
-                       "%SOURCE_TYPE%",
-                       safe_source_type,
+                       "%SOURCES%",
+                       sources_xml,
                        "%DATA_NAME%",
                        data_name,
                        "%DATA_TYPE%",

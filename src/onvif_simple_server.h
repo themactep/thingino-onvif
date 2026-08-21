@@ -106,11 +106,21 @@ typedef struct {
     int zoom_enable;       // -1 = auto, 0 = no zoom, 1 = zoom
 } ptz_node_t;
 
+// An event notification carries one or more Source items (the ONVIF catalog
+// defines up to three, e.g. CellMotionDetector: VideoSourceConfigurationToken,
+// VideoAnalyticsConfigurationToken, Rule).
+#define MAX_EVENT_SOURCES 4
+
+typedef struct {
+    char *name;
+    char *type;
+    char *value;
+} event_source_t;
+
 typedef struct {
     char *topic;
-    char *source_name;
-    char *source_type;
-    char *source_value;
+    event_source_t sources[MAX_EVENT_SOURCES];
+    int sources_num;
     char *input_file;
 } event_t;
 
