@@ -65,6 +65,16 @@ int ptz_unsupported(const char *method);
 
 int ptz_supports_zoom();
 
+#define PANTILT_RELATIVE_GENERIC_SPACE_URI \
+    "http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace"
+#define PANTILT_RELATIVE_FOV_SPACE_URI \
+    "http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationSpaceFov"
+
+static inline const char *ptz_default_relative_pantilt_space(double fov_pan, double fov_tilt)
+{
+    return fov_pan > 0.0 && fov_tilt > 0.0 ? PANTILT_RELATIVE_FOV_SPACE_URI : PANTILT_RELATIVE_GENERIC_SPACE_URI;
+}
+
 // Zoom template sections – passed as replacements for %ZOOM_*% placeholders.
 // When ptz_supports_zoom() is false, these expand to empty strings.
 #define ZOOM_DEFAULT_SPACES_XML \

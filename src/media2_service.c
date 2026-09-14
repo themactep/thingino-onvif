@@ -264,7 +264,9 @@ int media2_get_profiles()
                         const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
                         const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
                         const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 6,
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 8,
+                                "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+                                ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                                 "%ZOOM_DEFAULT_SPACES%", zoom_def,
                                 "%ZOOM_SPEED%", zoom_spd,
                                 "%ZOOM_LIMITS%", zoom_lim);
@@ -368,7 +370,9 @@ int media2_get_profiles()
                         const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
                         const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
                         const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 6,
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 8,
+                                "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+                                ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                                 "%ZOOM_DEFAULT_SPACES%", zoom_def,
                                 "%ZOOM_SPEED%", zoom_spd,
                                 "%ZOOM_LIMITS%", zoom_lim);
@@ -461,7 +465,9 @@ int media2_get_profiles()
                         const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
                         const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
                         const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
-                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 6,
+                        size += cat(dest, "media2_service_files/GetProfiles_PTZ.xml", 8,
+                                "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+                                ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                                 "%ZOOM_DEFAULT_SPACES%", zoom_def,
                                 "%ZOOM_SPEED%", zoom_spd,
                                 "%ZOOM_LIMITS%", zoom_lim);

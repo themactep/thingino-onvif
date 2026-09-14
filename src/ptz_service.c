@@ -500,9 +500,9 @@ int ptz_get_configurations()
     const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
     const char *zoom_limits = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
 
-    long size = cat(NULL,
-                    "ptz_service_files/GetConfigurations.xml",
-                    20,
+    long size = cat(NULL, "ptz_service_files/GetConfigurations.xml", 22,
+                    "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+                    ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                     "%USE_COUNT%",
                     use_count,
                     "%MIN_X%",
@@ -526,9 +526,9 @@ int ptz_get_configurations()
 
     output_http_headers(size);
 
-    return cat("stdout",
-               "ptz_service_files/GetConfigurations.xml",
-               20,
+    return cat("stdout", "ptz_service_files/GetConfigurations.xml", 22,
+               "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+               ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                "%USE_COUNT%",
                use_count,
                "%MIN_X%",
@@ -569,9 +569,9 @@ int ptz_get_configuration()
     const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
     const char *zoom_limits = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
 
-    long size = cat(NULL,
-                    "ptz_service_files/GetConfiguration.xml",
-                    18,
+    long size = cat(NULL, "ptz_service_files/GetConfiguration.xml", 20,
+                    "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+                    ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                     "%MIN_X%",
                     pan_min,
                     "%MAX_X%",
@@ -593,9 +593,9 @@ int ptz_get_configuration()
 
     output_http_headers(size);
 
-    return cat("stdout",
-               "ptz_service_files/GetConfiguration.xml",
-               18,
+    return cat("stdout", "ptz_service_files/GetConfiguration.xml", 20,
+               "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+               ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                "%MIN_X%",
                pan_min,
                "%MAX_X%",
@@ -2778,9 +2778,13 @@ int ptz_get_compatible_configurations()
         sprintf(use_count, "0");
     }
 
-    long size = cat(NULL, "ptz_service_files/GetCompatibleConfigurations.xml", 2,
+    long size = cat(NULL, "ptz_service_files/GetCompatibleConfigurations.xml", 4,
+                    "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+                    ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                     "%USE_COUNT%", use_count);
     output_http_headers(size);
-    return cat("stdout", "ptz_service_files/GetCompatibleConfigurations.xml", 2,
+    return cat("stdout", "ptz_service_files/GetCompatibleConfigurations.xml", 4,
+               "%PANTILT_RELATIVE_DEFAULT_SPACE%",
+               ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                "%USE_COUNT%", use_count);
 }

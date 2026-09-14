@@ -4,7 +4,7 @@
                     <tt:NodeToken>PTZNodeToken</tt:NodeToken>
                     <tt:DefaultAbsolutePantTiltPositionSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace</tt:DefaultAbsolutePantTiltPositionSpace>
 %ZOOM_DEFAULT_SPACES%
-                    <tt:DefaultRelativePanTiltTranslationSpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/TranslationGenericSpace</tt:DefaultRelativePanTiltTranslationSpace>
+                    <tt:DefaultRelativePanTiltTranslationSpace>%PANTILT_RELATIVE_DEFAULT_SPACE%</tt:DefaultRelativePanTiltTranslationSpace>
                     <tt:DefaultContinuousPanTiltVelocitySpace>http://www.onvif.org/ver10/tptz/PanTiltSpaces/VelocityGenericSpace</tt:DefaultContinuousPanTiltVelocitySpace>
                     <tt:DefaultPTZSpeed>
                         <tt:PanTilt x="1.0" y="1.0" space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/GenericSpeedSpace"/>
