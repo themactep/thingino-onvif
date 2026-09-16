@@ -1190,7 +1190,11 @@ int ptz_continuous_move()
     int has_x_only = (x != NULL && dx != 0.0 && (y == NULL || dy == 0.0));
     int has_y_only = (y != NULL && dy != 0.0 && (x == NULL || dx == 0.0));
 
-    // Calculate target positions based on velocity direction
+    // Calculate target positions based on velocity direction.
+    // dx/dy were already converted to the machine (raw counter) frame by
+    // ptz_onvif_to_machine_units(), which mirrors/negates for inverted
+    // axes, so their sign alone picks the correct machine-frame end of
+    // travel: positive -> steps_max, negative -> steps_min.
     double x_target = 0.0;
     double y_target = 0.0;
 
@@ -1391,20 +1395,25 @@ int ptz_relative_move()
                 double tilt_onvif = atof(y);
                 // Apply reverse if needed (in ONVIF space before conversion)
                 ptz_apply_reverse(&pan_onvif, &tilt_onvif);
-                // Convert from ONVIF delta to machine delta
+                // Convert from ONVIF delta to machine delta.
+                // The jump_to_rel backend (/bin/motors -d g) takes a
+                // LOGICAL-frame delta: the motor daemon applies the axis
+                // inversion itself, so this layer must NOT mirror the
+                // value again (unlike the absolute/continuous paths,
+                // which target the raw counter frame of -d h).
                 dx = ptz_onvif_to_machine_units(pan_onvif,
                                                 service_ctx.ptz_node.min_step_x,
                                                 service_ctx.ptz_node.max_step_x,
                                                 service_ctx.ptz_node.pan_min,
                                                 service_ctx.ptz_node.pan_max,
-                                                service_ctx.ptz_node.pan_inverted,
+                                                false,
                                                 true);
                 dy = ptz_onvif_to_machine_units(tilt_onvif,
                                                 service_ctx.ptz_node.min_step_y,
                                                 service_ctx.ptz_node.max_step_y,
                                                 service_ctx.ptz_node.tilt_min,
                                                 service_ctx.ptz_node.tilt_max,
-                                                service_ctx.ptz_node.tilt_inverted,
+                                                false,
                                                 true);
                 pantilt_present = 1;
             }
@@ -1421,20 +1430,24 @@ int ptz_relative_move()
                     ret = -10;
                 }
                 if (ret == 0) {
+                    // FOV translation also feeds jump_to_rel (/bin/motors -d g),
+                    // which takes a logical-frame delta: the motor daemon
+                    // applies the axis inversion itself, so do not mirror
+                    // the value here (see generic space handling above).
                     dx = ptz_fov_to_machine_units(dx,
                                                   service_ctx.ptz_node.min_step_x,
                                                   service_ctx.ptz_node.max_step_x,
                                                   service_ctx.ptz_node.pan_min,
                                                   service_ctx.ptz_node.pan_max,
                                                   service_ctx.ptz_node.fov_pan,
-                                                  service_ctx.ptz_node.pan_inverted);
+                                                  false);
                     dy = ptz_fov_to_machine_units(dy,
                                                   service_ctx.ptz_node.min_step_y,
                                                   service_ctx.ptz_node.max_step_y,
                                                   service_ctx.ptz_node.tilt_min,
                                                   service_ctx.ptz_node.tilt_max,
                                                   service_ctx.ptz_node.fov_tilt,
-                                                  service_ctx.ptz_node.tilt_inverted);
+                                                  false);
                     ptz_apply_reverse(&dx, &dy);
                     pantilt_present = 1;
                 }
