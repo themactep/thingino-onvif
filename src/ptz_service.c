@@ -156,12 +156,13 @@ int init_presets()
     int i, num;
     double x, y, z;
     char name[MAX_LEN];
-    char *p;
 
     presets.count = 0;
     presets.items = (preset_t *) malloc(sizeof(preset_t));
 
-    // Run command that returns to stdout the list of the presets in the form number=name,pan,tilt,zoom (zoom is optional)
+    // Run command that returns to stdout the list of the presets in the form
+    // number,pan,tilt,description. The description is last so it may contain
+    // spaces and commas.
     if (service_ctx.ptz_node.get_presets == NULL) {
         return -1;
     }
@@ -170,29 +171,24 @@ int init_presets()
         return -2;
     } else {
         while (fgets(out, sizeof(out), fp)) {
-            p = out;
             name[0] = '\0';
             x = -1.0;
             y = -1.0;
             z = 1.0;
-            while ((p = strchr(p, ',')) != NULL) {
-                *p++ = ' ';
+            if (sscanf(out, "%d,%lf,%lf,%[^\n]", &num, &x, &y, name) < 3) {
+                continue;
             }
-            if (sscanf(out, "%d=%s %lf %lf %lf", &num, name, &x, &y, &z) == 0) {
-                pclose(fp);
-                return -3;
-            } else {
-                if (strlen(name) != 0) {
-                    presets.count++;
-                    presets.items = (preset_t *) realloc(presets.items, sizeof(preset_t) * presets.count);
-                    presets.items[presets.count - 1].name = (char *) malloc(strlen(name) + 1);
-                    strcpy(presets.items[presets.count - 1].name, name);
-                    presets.items[presets.count - 1].number = num;
-                    presets.items[presets.count - 1].x = x;
-                    presets.items[presets.count - 1].y = y;
-                    presets.items[presets.count - 1].z = z;
-                }
+            if (name[0] == '\0') {
+                snprintf(name, sizeof(name), "Preset %d", num);
             }
+            presets.count++;
+            presets.items = (preset_t *) realloc(presets.items, sizeof(preset_t) * presets.count);
+            presets.items[presets.count - 1].name = (char *) malloc(strlen(name) + 1);
+            strcpy(presets.items[presets.count - 1].name, name);
+            presets.items[presets.count - 1].number = num;
+            presets.items[presets.count - 1].x = x;
+            presets.items[presets.count - 1].y = y;
+            presets.items[presets.count - 1].z = z;
         }
         pclose(fp);
     }
@@ -838,14 +834,79 @@ int ptz_get_node()
                zoom_speed);
 }
 
+// Escape XML metacharacters and clamp the result to the tt:Name limit of 64
+// characters, never cutting a UTF-8 sequence in half.
+static void xml_escape_preset_name(const char *src, char *dst, size_t dst_size)
+{
+    size_t used = 0;
+    int chars = 0;
+    const unsigned char *s = (const unsigned char *) src;
+
+    while (*s != '\0' && chars < 64) {
+        int len = 1;
+        const char *rep = NULL;
+
+        if (*s >= 0x80) {
+            if ((*s & 0xE0) == 0xC0) {
+                len = 2;
+            } else if ((*s & 0xF0) == 0xE0) {
+                len = 3;
+            } else if ((*s & 0xF8) == 0xF0) {
+                len = 4;
+            }
+            for (int k = 1; k < len; k++) {
+                if ((s[k] & 0xC0) != 0x80) {
+                    len = 1;
+                    break;
+                }
+            }
+        }
+
+        switch (*s) {
+        case '&':
+            rep = "&amp;";
+            break;
+        case '<':
+            rep = "&lt;";
+            break;
+        case '>':
+            rep = "&gt;";
+            break;
+        case '"':
+            rep = "&quot;";
+            break;
+        case '\'':
+            rep = "&apos;";
+            break;
+        default:
+            break;
+        }
+
+        size_t need = rep ? strlen(rep) : (size_t) len;
+        if (used + need >= dst_size) {
+            break;
+        }
+        if (rep) {
+            memcpy(dst + used, rep, need);
+        } else {
+            memcpy(dst + used, s, len);
+        }
+        used += need;
+        s += len;
+        chars++;
+    }
+    dst[used] = '\0';
+}
+
 int ptz_get_presets()
 {
     mxml_node_t *node;
     int i, c;
     char dest_a[] = "stdout";
     char *dest;
-    char token[16];
+    char token[32];
     char sx[16], sy[16], sz[16];
+    char name_xml[MAX_LEN];
     long size, total_size;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
@@ -915,8 +976,11 @@ int ptz_get_presets()
             snprintf(sx, sizeof(sx), "%.4f", pan_onvif);
             snprintf(sy, sizeof(sy), "%.4f", tilt_onvif);
             snprintf(sz, sizeof(sz), "%.4f", zoom_onvif);
+            // tt:Name is the user-facing description; the token stays derived
+            // from the preset id.
+            xml_escape_preset_name(presets.items[i].name, name_xml, sizeof(name_xml));
             size = cat(
-                dest, "ptz_service_files/GetPresets_2.xml", 10, "%TOKEN%", token, "%NAME%", presets.items[i].name, "%X%", sx, "%Y%", sy, "%Z%", sz);
+                dest, "ptz_service_files/GetPresets_2.xml", 10, "%TOKEN%", token, "%NAME%", name_xml, "%X%", sx, "%Y%", sy, "%Z%", sz);
             if (c == 0)
                 total_size += size;
             else
@@ -1927,15 +1991,42 @@ int ptz_get_status()
     }
 }
 
+// Wrap a value in single quotes for /bin/sh so names with spaces or shell
+// metacharacters survive system() as a single argument.
+static void shell_single_quote(const char *src, char *dst, size_t dst_size)
+{
+    size_t used = 0;
+
+    if (dst_size == 0)
+        return;
+    if (used + 1 < dst_size)
+        dst[used++] = '\'';
+    for (const char *p = src; *p != '\0'; p++) {
+        if (*p == '\'') {
+            if (used + 4 >= dst_size)
+                break;
+            memcpy(dst + used, "'\\''", 4);
+            used += 4;
+        } else {
+            if (used + 2 >= dst_size)
+                break;
+            dst[used++] = *p;
+        }
+    }
+    if (used + 1 < dst_size)
+        dst[used++] = '\'';
+    dst[used] = '\0';
+}
+
 int ptz_set_preset()
 {
     int i;
     char sys_command[MAX_LEN];
     const char *preset_name;
-    char preset_name_out[UUID_LEN + 8];
+    char preset_name_out[128];
     const char *preset_token;
     mxml_node_t *node;
-    char preset_token_out[16];
+    char preset_token_out[32];
     int preset_number = -1;
     // Validate ProfileToken maps to an existing profile
     const char *profile_token = get_element("ProfileToken", "Body");
@@ -1974,7 +2065,6 @@ int ptz_set_preset()
 
     int preset_found;
     int presets_total_number;
-    char name_uuid[UUID_LEN + 1];
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
     if (node == NULL) {
@@ -1994,43 +2084,52 @@ int ptz_set_preset()
 
     preset_name = get_element("PresetName", "Body");
     preset_token = get_element("PresetToken", "Body");
+    if ((preset_name != NULL) && (preset_name[0] == '\0')) {
+        // An empty PresetName is the same as no name at all.
+        preset_name = NULL;
+    }
     init_presets();
     presets_total_number = presets.count;
 
     if (preset_token == NULL) {
-        // Add new preset
-        if (preset_name == NULL) {
-            // No name and no token, how to identify it? Create a random name.
-            gen_uuid(name_uuid);
-            sprintf(preset_name_out, "Preset_%s", name_uuid);
-        } else {
-            strcpy(preset_name_out, preset_name);
+        // Add new preset: pick the first free id so the resulting token is
+        // known before the backend runs, and pass it explicitly.
+        preset_number = 0;
+        for (i = 0; i < presets.count; i++) {
+            if (presets.items[i].number == preset_number) {
+                preset_number++;
+                i = -1;
+            }
         }
 
-        if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) == 0) || (strlen(preset_name_out) > 64)) {
-            destroy_presets();
-            send_fault("ptz_service",
-                       "Sender",
-                       "ter:InvalidArgVal",
-                       "ter:InvalidPresetName",
-                       "Invalid preset name",
-                       "The preset name is either too long or contains invalid characters");
-            return -3;
-        }
-        for (i = 0; i < presets.count; i++) {
-            if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
+        if (preset_name == NULL) {
+            // No name given: let the backend label the slot ("Preset N").
+            preset_name_out[0] = '\0';
+        } else {
+            if ((strlen(preset_name) == 0) || (strlen(preset_name) > 64)) {
                 destroy_presets();
                 send_fault("ptz_service",
                            "Sender",
                            "ter:InvalidArgVal",
-                           "ter:PresetExist",
-                           "Preset exists",
-                           "The requested name already exist for another preset");
-                return -4;
+                           "ter:InvalidPresetName",
+                           "Invalid preset name",
+                           "The preset name is either too long or contains invalid characters");
+                return -3;
+            }
+            snprintf(preset_name_out, sizeof(preset_name_out), "%s", preset_name);
+            for (i = 0; i < presets.count; i++) {
+                if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
+                    destroy_presets();
+                    send_fault("ptz_service",
+                               "Sender",
+                               "ter:InvalidArgVal",
+                               "ter:PresetExist",
+                               "Preset exists",
+                               "The requested name already exist for another preset");
+                    return -4;
+                }
             }
         }
-
-        preset_number = -1;
 
     } else {
         // Update existing preset
@@ -2043,7 +2142,6 @@ int ptz_set_preset()
         preset_found = 0;
         for (i = 0; i < presets.count; i++) {
             if (presets.items[i].number == preset_number) {
-                strcpy(preset_name_out, presets.items[i].name);
                 preset_found = 1;
                 break;
             }
@@ -2054,33 +2152,32 @@ int ptz_set_preset()
             return -6;
         }
 
-        if (preset_name != NULL) {
-            // Overwrite the name with the new one
-            memset(preset_name_out, '\0', sizeof(preset_name_out));
-            strncpy(preset_name_out, preset_name, strlen(preset_name));
-        }
-
-        if ((strchr(preset_name_out, ' ') != NULL) || (strlen(preset_name_out) == 0) || (strlen(preset_name_out) > 64)) {
-            destroy_presets();
-            send_fault("ptz_service",
-                       "Sender",
-                       "ter:InvalidArgVal",
-                       "ter:InvalidPresetName",
-                       "Invalid preset name",
-                       "The preset name is either too long or contains invalid characters");
-            return -7;
-        }
-
-        for (i = 0; i < presets.count; i++) {
-            if ((presets.items[i].number != preset_number) && (strcasecmp(presets.items[i].name, preset_name_out) == 0)) {
+        if (preset_name == NULL) {
+            // No name given: keep whatever description is stored.
+            preset_name_out[0] = '\0';
+        } else {
+            if ((strlen(preset_name) == 0) || (strlen(preset_name) > 64)) {
                 destroy_presets();
                 send_fault("ptz_service",
                            "Sender",
                            "ter:InvalidArgVal",
-                           "ter:PresetExist",
-                           "Preset exists",
-                           "The requested name already exist for another preset");
-                return -8;
+                           "ter:InvalidPresetName",
+                           "Invalid preset name",
+                           "The preset name is either too long or contains invalid characters");
+                return -7;
+            }
+            snprintf(preset_name_out, sizeof(preset_name_out), "%s", preset_name);
+            for (i = 0; i < presets.count; i++) {
+                if ((presets.items[i].number != preset_number) && (strcasecmp(presets.items[i].name, preset_name_out) == 0)) {
+                    destroy_presets();
+                    send_fault("ptz_service",
+                               "Sender",
+                               "ter:InvalidArgVal",
+                               "ter:PresetExist",
+                               "Preset exists",
+                               "The requested name already exist for another preset");
+                    return -8;
+                }
             }
         }
     }
@@ -2093,8 +2190,11 @@ int ptz_set_preset()
 
     destroy_presets();
 
+    char quoted_name[MAX_LEN];
+    shell_single_quote(preset_name_out, quoted_name, sizeof(quoted_name));
+
     // Unhandled race condition
-    sprintf(sys_command, service_ctx.ptz_node.set_preset, preset_number, (char *) preset_name_out);
+    sprintf(sys_command, service_ctx.ptz_node.set_preset, preset_number, quoted_name);
     run_command_silent(sys_command);
     sleep(1);
 
@@ -2106,7 +2206,7 @@ int ptz_set_preset()
     }
     preset_token_out[0] = '\0';
     for (i = 0; i < presets.count; i++) {
-        if (strcasecmp(presets.items[i].name, preset_name_out) == 0) {
+        if (presets.items[i].number == preset_number) {
             sprintf(preset_token_out, "PresetToken_%d", presets.items[i].number);
             break;
         }
