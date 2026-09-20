@@ -23,6 +23,7 @@
 #include "onvif_simple_server.h"
 #include "utils.h"
 
+#include <json_config.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +33,10 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+
+// Clients (TinyCam) expect a fixed set of numbered preset slots; present empty
+// placeholders up to this many so there are buttons to save into.
+#define MIN_PRESET_SLOTS 10
 
 extern service_context_t service_ctx;
 presets_t presets;
@@ -947,17 +952,47 @@ int ptz_get_presets()
         else
             fflush(stdout);
 
+        int max_num = -1;
         for (i = 0; i < presets.count; i++) {
-            sprintf(token, "PresetToken_%d", presets.items[i].number);
+            if (presets.items[i].number > max_num)
+                max_num = presets.items[i].number;
+        }
+        int slots = max_num + 1;
+        if (slots < MIN_PRESET_SLOTS)
+            slots = MIN_PRESET_SLOTS;
+
+        // Present the full slot range: real presets plus empty placeholders for
+        // the missing ids, so clients have numbered buttons to save into.
+        // SetPreset into a placeholder creates it.
+        for (int slot = 0; slot < slots; slot++) {
+            int found = -1;
+            for (i = 0; i < presets.count; i++) {
+                if (presets.items[i].number == slot) {
+                    found = i;
+                    break;
+                }
+            }
+            sprintf(token, "PresetToken_%d", slot);
+            if (found < 0) {
+                char slot_name[32];
+                snprintf(slot_name, sizeof(slot_name), "Preset_%d", slot);
+                size = cat(dest, "ptz_service_files/GetPresets_empty.xml", 4,
+                           "%TOKEN%", token, "%NAME%", slot_name);
+                if (c == 0)
+                    total_size += size;
+                else
+                    fflush(stdout);
+                continue;
+            }
             // Convert from machine units to ONVIF units
-            double pan_onvif = ptz_machine_to_onvif_units(presets.items[i].x,
+            double pan_onvif = ptz_machine_to_onvif_units(presets.items[found].x,
                                                           service_ctx.ptz_node.min_step_x,
                                                           service_ctx.ptz_node.max_step_x,
                                                           service_ctx.ptz_node.pan_min,
                                                           service_ctx.ptz_node.pan_max,
                                                           service_ctx.ptz_node.pan_inverted,
                                                           false);
-            double tilt_onvif = ptz_machine_to_onvif_units(presets.items[i].y,
+            double tilt_onvif = ptz_machine_to_onvif_units(presets.items[found].y,
                                                            service_ctx.ptz_node.min_step_y,
                                                            service_ctx.ptz_node.max_step_y,
                                                            service_ctx.ptz_node.tilt_min,
@@ -966,7 +1001,7 @@ int ptz_get_presets()
                                                            false);
             // Apply reverse after conversion to ONVIF space
             ptz_apply_reverse(&pan_onvif, &tilt_onvif);
-            double zoom_onvif = ptz_machine_to_onvif_units(presets.items[i].z,
+            double zoom_onvif = ptz_machine_to_onvif_units(presets.items[found].z,
                                                            service_ctx.ptz_node.min_step_z,
                                                            service_ctx.ptz_node.max_step_z,
                                                            0.0,
@@ -978,7 +1013,7 @@ int ptz_get_presets()
             snprintf(sz, sizeof(sz), "%.4f", zoom_onvif);
             // tt:Name is the user-facing description; the token stays derived
             // from the preset id.
-            xml_escape_preset_name(presets.items[i].name, name_xml, sizeof(name_xml));
+            xml_escape_preset_name(presets.items[found].name, name_xml, sizeof(name_xml));
             size = cat(
                 dest, "ptz_service_files/GetPresets_2.xml", 10, "%TOKEN%", token, "%NAME%", name_xml, "%X%", sx, "%Y%", sy, "%Z%", sz);
             if (c == 0)
@@ -2018,6 +2053,63 @@ static void shell_single_quote(const char *src, char *dst, size_t dst_size)
     dst[used] = '\0';
 }
 
+// Capture the current PTZ pose into the ONVIF home position, stored as the
+// first PTZ preset (motors.presets[0]) in /etc/thingino.json. Creates a Home
+// entry when the presets array is empty; an existing first preset keeps its
+// id/description.
+static int set_home_from_current_position(void)
+{
+    int x = -1, y = -1;
+    char buf[64];
+    FILE *fp;
+
+    if (service_ctx.ptz_node.get_position == NULL)
+        return -1;
+    fp = popen(service_ctx.ptz_node.get_position, "r");
+    if (fp == NULL)
+        return -1;
+    if (fgets(buf, sizeof(buf), fp) == NULL || sscanf(buf, "%d,%d", &x, &y) != 2) {
+        pclose(fp);
+        return -1;
+    }
+    pclose(fp);
+
+    JsonValue *config = load_config("/etc/thingino.json");
+    if (config == NULL)
+        return -1;
+
+    JsonValue *motors = get_object_item(config, "motors");
+    if (motors == NULL) {
+        motors = create_json_value(JSON_OBJECT);
+        if (motors == NULL) {
+            free_json_value(config);
+            return -1;
+        }
+        add_to_object(config, "motors", motors);
+    }
+    JsonValue *presets = get_object_item(motors, "presets");
+    if (presets == NULL || presets->type != JSON_ARRAY) {
+        presets = create_json_value(JSON_ARRAY);
+        if (presets == NULL) {
+            free_json_value(config);
+            return -1;
+        }
+        add_to_object(motors, "presets", presets);
+    }
+    if (get_array_size(presets) == 0) {
+        set_nested_item(config, "motors.presets.0.id", "0");
+        set_nested_item(config, "motors.presets.0.description", "Home");
+    }
+    snprintf(buf, sizeof(buf), "%d", x);
+    set_nested_item(config, "motors.presets.0.x", buf);
+    snprintf(buf, sizeof(buf), "%d", y);
+    set_nested_item(config, "motors.presets.0.y", buf);
+
+    int rc = save_config("/etc/thingino.json", config);
+    free_json_value(config);
+    return rc ? 0 : -1;
+}
+
 int ptz_set_preset()
 {
     int i;
@@ -2063,7 +2155,6 @@ int ptz_set_preset()
         }
     }
 
-    int preset_found;
     int presets_total_number;
 
     node = get_element_ptr(NULL, "ProfileToken", "Body");
@@ -2090,6 +2181,22 @@ int ptz_set_preset()
     }
     init_presets();
     presets_total_number = presets.count;
+
+    if (preset_token != NULL && strcasecmp(preset_token, "home") == 0) {
+        // SetPreset with the "home" token updates the home position, which
+        // lives in /etc/thingino.json as the first preset (motors.presets[0]).
+        // TinyCam sends exactly this when saving the home preset.
+        destroy_presets();
+        if (set_home_from_current_position() != 0) {
+            send_action_failed_fault("ptz_service", -11);
+            return -11;
+        }
+        // Refresh the daemon's cached home so GotoHomePosition follows.
+        run_command_silent("/bin/motors -R");
+        long size = cat(NULL, "ptz_service_files/SetPreset.xml", 2, "%PRESET_TOKEN%", "home");
+        output_http_headers(size);
+        return cat("stdout", "ptz_service_files/SetPreset.xml", 2, "%PRESET_TOKEN%", "home");
+    }
 
     if (preset_token == NULL) {
         // Add new preset: pick the first free id so the resulting token is
@@ -2139,19 +2246,8 @@ int ptz_set_preset()
             return -5;
         }
 
-        preset_found = 0;
-        for (i = 0; i < presets.count; i++) {
-            if (presets.items[i].number == preset_number) {
-                preset_found = 1;
-                break;
-            }
-        }
-        if (preset_found == 0) {
-            destroy_presets();
-            send_fault("ptz_service", "Sender", "ter:InvalidArgVal", "ter:NoToken", "No token", "The requested preset token does not exist");
-            return -6;
-        }
-
+        // A token naming an empty placeholder slot creates it; the backend
+        // captures the position.
         if (preset_name == NULL) {
             // No name given: keep whatever description is stored.
             preset_name_out[0] = '\0';
