@@ -721,14 +721,20 @@ static void get_first_string(char **dst, JsonValue *root, const char *keys[])
 // SOAP and streams). Read them from the installed streamer's own config
 // instead of a copy cached in onvif.json: prudynt.json and strero's
 // streamer.d/rtsp.json are JSON, timps.conf is flat key=value, and
-// raptor.conf is queried through raptorctl.
+// raptor.conf is queried through raptorctl. prudynt keeps the writable user
+// layer in /etc/prudynt.user.json, so prefer the consolidated /run/prudynt.json
+// when it exists and fall back to the static core before the layer is built.
 static void load_streamer_auth(void)
 {
     JsonValue *cfg;
     char buf[256];
+    const char *prudynt_conf = "/etc/prudynt.json";
 
-    if (access("/etc/prudynt.json", R_OK) == 0) {
-        cfg = load_config("/etc/prudynt.json");
+    if (access("/run/prudynt.json", R_OK) == 0)
+        prudynt_conf = "/run/prudynt.json";
+
+    if (access(prudynt_conf, R_OK) == 0) {
+        cfg = load_config(prudynt_conf);
         if (cfg) {
             const char *user_keys[] = {"rtsp.username", NULL};
             const char *pass_keys[] = {"rtsp.password", NULL};
