@@ -77,9 +77,15 @@ static inline const char *ptz_default_relative_pantilt_space(double fov_pan, dou
 
 // Zoom template sections – passed as replacements for %ZOOM_*% placeholders.
 // When ptz_supports_zoom() is false, these expand to empty strings.
-#define ZOOM_DEFAULT_SPACES_XML \
-    "                <tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>\n" \
-    "                <tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>\n" \
+// The three zoom defaults go in three places: PTZConfiguration is an
+// xs:sequence (absolute pan/tilt, absolute zoom, relative pan/tilt, relative
+// zoom, continuous pan/tilt, continuous zoom), and strict parsers such as
+// zeep (Frigate's) drop elements that arrive out of order.
+#define ZOOM_DEFAULT_ABS_XML \
+    "                <tt:DefaultAbsoluteZoomPositionSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace</tt:DefaultAbsoluteZoomPositionSpace>"
+#define ZOOM_DEFAULT_REL_XML \
+    "                <tt:DefaultRelativeZoomTranslationSpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/TranslationGenericSpace</tt:DefaultRelativeZoomTranslationSpace>"
+#define ZOOM_DEFAULT_VEL_XML \
     "                <tt:DefaultContinuousZoomVelocitySpace>http://www.onvif.org/ver10/tptz/ZoomSpaces/VelocityGenericSpace</tt:DefaultContinuousZoomVelocitySpace>"
 
 #define ZOOM_SPEED_XML \

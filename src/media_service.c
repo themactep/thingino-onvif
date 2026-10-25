@@ -306,14 +306,16 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                        const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+                        const char *zoom_def_abs = ptz_supports_zoom() ? ZOOM_DEFAULT_ABS_XML : "";
+                        const char *zoom_def_rel = ptz_supports_zoom() ? ZOOM_DEFAULT_REL_XML : "";
+                        const char *zoom_def_vel = ptz_supports_zoom() ? ZOOM_DEFAULT_VEL_XML : "";
                         const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
                         const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 10,
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 14,
                         "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                         ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                         "%USE_COUNT%", "1",
-                        "%ZOOM_DEFAULT_SPACES%", zoom_def,
+                        "%ZOOM_DEFAULT_ABS%", zoom_def_abs, "%ZOOM_DEFAULT_REL%", zoom_def_rel, "%ZOOM_DEFAULT_VEL%", zoom_def_vel,
                         "%ZOOM_SPEED%", zoom_spd,
                         "%ZOOM_LIMITS%", zoom_lim);
             }
@@ -385,14 +387,16 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                        const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+                        const char *zoom_def_abs = ptz_supports_zoom() ? ZOOM_DEFAULT_ABS_XML : "";
+                        const char *zoom_def_rel = ptz_supports_zoom() ? ZOOM_DEFAULT_REL_XML : "";
+                        const char *zoom_def_vel = ptz_supports_zoom() ? ZOOM_DEFAULT_VEL_XML : "";
                         const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
                         const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 10,
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 14,
                         "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                         ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                         "%USE_COUNT%", "2",
-                        "%ZOOM_DEFAULT_SPACES%", zoom_def,
+                        "%ZOOM_DEFAULT_ABS%", zoom_def_abs, "%ZOOM_DEFAULT_REL%", zoom_def_rel, "%ZOOM_DEFAULT_VEL%", zoom_def_vel,
                         "%ZOOM_SPEED%", zoom_spd,
                         "%ZOOM_LIMITS%", zoom_lim);
             }
@@ -451,14 +455,16 @@ int media_get_profiles()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                        const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+                        const char *zoom_def_abs = ptz_supports_zoom() ? ZOOM_DEFAULT_ABS_XML : "";
+                        const char *zoom_def_rel = ptz_supports_zoom() ? ZOOM_DEFAULT_REL_XML : "";
+                        const char *zoom_def_vel = ptz_supports_zoom() ? ZOOM_DEFAULT_VEL_XML : "";
                         const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
                         const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 10,
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 14,
                         "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                         ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                         "%USE_COUNT%", "2",
-                        "%ZOOM_DEFAULT_SPACES%", zoom_def,
+                        "%ZOOM_DEFAULT_ABS%", zoom_def_abs, "%ZOOM_DEFAULT_REL%", zoom_def_rel, "%ZOOM_DEFAULT_VEL%", zoom_def_vel,
                         "%ZOOM_SPEED%", zoom_spd,
                         "%ZOOM_LIMITS%", zoom_lim);
             }
@@ -571,13 +577,15 @@ int media_get_profile()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                        const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+                        const char *zoom_def_abs = ptz_supports_zoom() ? ZOOM_DEFAULT_ABS_XML : "";
+                        const char *zoom_def_rel = ptz_supports_zoom() ? ZOOM_DEFAULT_REL_XML : "";
+                        const char *zoom_def_vel = ptz_supports_zoom() ? ZOOM_DEFAULT_VEL_XML : "";
                         const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
                         const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 8,
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 12,
                         "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                         ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
-                        "%ZOOM_DEFAULT_SPACES%", zoom_def,
+                        "%ZOOM_DEFAULT_ABS%", zoom_def_abs, "%ZOOM_DEFAULT_REL%", zoom_def_rel, "%ZOOM_DEFAULT_VEL%", zoom_def_vel,
                         "%ZOOM_SPEED%", zoom_spd,
                         "%ZOOM_LIMITS%", zoom_lim);
             }
@@ -649,13 +657,15 @@ int media_get_profile()
             }
 
             if (service_ctx.ptz_node.enable == 1) {
-                        const char *zoom_def = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+                        const char *zoom_def_abs = ptz_supports_zoom() ? ZOOM_DEFAULT_ABS_XML : "";
+                        const char *zoom_def_rel = ptz_supports_zoom() ? ZOOM_DEFAULT_REL_XML : "";
+                        const char *zoom_def_vel = ptz_supports_zoom() ? ZOOM_DEFAULT_VEL_XML : "";
                         const char *zoom_spd = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
                         const char *zoom_lim = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
-                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 8,
+                size += cat(dest, "media_service_files/GetProfile_PTZ.xml", 12,
                         "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                         ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
-                        "%ZOOM_DEFAULT_SPACES%", zoom_def,
+                        "%ZOOM_DEFAULT_ABS%", zoom_def_abs, "%ZOOM_DEFAULT_REL%", zoom_def_rel, "%ZOOM_DEFAULT_VEL%", zoom_def_vel,
                         "%ZOOM_SPEED%", zoom_spd,
                         "%ZOOM_LIMITS%", zoom_lim);
             }
