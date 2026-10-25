@@ -497,11 +497,13 @@ int ptz_get_configurations()
         sprintf(use_count, "0");
     }
 
-    const char *zoom_default = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+    const char *zoom_default_abs = ptz_supports_zoom() ? ZOOM_DEFAULT_ABS_XML : "";
+    const char *zoom_default_rel = ptz_supports_zoom() ? ZOOM_DEFAULT_REL_XML : "";
+    const char *zoom_default_vel = ptz_supports_zoom() ? ZOOM_DEFAULT_VEL_XML : "";
     const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
     const char *zoom_limits = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
 
-    long size = cat(NULL, "ptz_service_files/GetConfigurations.xml", 22,
+    long size = cat(NULL, "ptz_service_files/GetConfigurations.xml", 26,
                     "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                     ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                     "%USE_COUNT%",
@@ -518,8 +520,12 @@ int ptz_get_configurations()
                     eflip_mode,
                     "%REVERSE_MODE%",
                     reverse_mode,
-                    "%ZOOM_DEFAULT_SPACES%",
-                    zoom_default,
+                    "%ZOOM_DEFAULT_ABS%",
+                    zoom_default_abs,
+                    "%ZOOM_DEFAULT_REL%",
+                    zoom_default_rel,
+                    "%ZOOM_DEFAULT_VEL%",
+                    zoom_default_vel,
                     "%ZOOM_SPEED%",
                     zoom_speed,
                     "%ZOOM_LIMITS%",
@@ -527,7 +533,7 @@ int ptz_get_configurations()
 
     output_http_headers(size);
 
-    return cat("stdout", "ptz_service_files/GetConfigurations.xml", 22,
+    return cat("stdout", "ptz_service_files/GetConfigurations.xml", 26,
                "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                "%USE_COUNT%",
@@ -544,8 +550,12 @@ int ptz_get_configurations()
                eflip_mode,
                "%REVERSE_MODE%",
                reverse_mode,
-               "%ZOOM_DEFAULT_SPACES%",
-               zoom_default,
+               "%ZOOM_DEFAULT_ABS%",
+               zoom_default_abs,
+               "%ZOOM_DEFAULT_REL%",
+               zoom_default_rel,
+               "%ZOOM_DEFAULT_VEL%",
+               zoom_default_vel,
                "%ZOOM_SPEED%",
                zoom_speed,
                "%ZOOM_LIMITS%",
@@ -566,11 +576,13 @@ int ptz_get_configuration()
     snprintf(tilt_min, sizeof(tilt_min), "%.4f", service_ctx.ptz_node.tilt_min);
     snprintf(tilt_max, sizeof(tilt_max), "%.4f", service_ctx.ptz_node.tilt_max);
 
-    const char *zoom_default = ptz_supports_zoom() ? ZOOM_DEFAULT_SPACES_XML : "";
+    const char *zoom_default_abs = ptz_supports_zoom() ? ZOOM_DEFAULT_ABS_XML : "";
+    const char *zoom_default_rel = ptz_supports_zoom() ? ZOOM_DEFAULT_REL_XML : "";
+    const char *zoom_default_vel = ptz_supports_zoom() ? ZOOM_DEFAULT_VEL_XML : "";
     const char *zoom_speed = ptz_supports_zoom() ? ZOOM_SPEED_XML : "";
     const char *zoom_limits = ptz_supports_zoom() ? ZOOM_LIMITS_XML : "";
 
-    long size = cat(NULL, "ptz_service_files/GetConfiguration.xml", 20,
+    long size = cat(NULL, "ptz_service_files/GetConfiguration.xml", 24,
                     "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                     ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                     "%MIN_X%",
@@ -585,8 +597,12 @@ int ptz_get_configuration()
                     eflip_mode,
                     "%REVERSE_MODE%",
                     reverse_mode,
-                    "%ZOOM_DEFAULT_SPACES%",
-                    zoom_default,
+                    "%ZOOM_DEFAULT_ABS%",
+                    zoom_default_abs,
+                    "%ZOOM_DEFAULT_REL%",
+                    zoom_default_rel,
+                    "%ZOOM_DEFAULT_VEL%",
+                    zoom_default_vel,
                     "%ZOOM_SPEED%",
                     zoom_speed,
                     "%ZOOM_LIMITS%",
@@ -594,7 +610,7 @@ int ptz_get_configuration()
 
     output_http_headers(size);
 
-    return cat("stdout", "ptz_service_files/GetConfiguration.xml", 20,
+    return cat("stdout", "ptz_service_files/GetConfiguration.xml", 24,
                "%PANTILT_RELATIVE_DEFAULT_SPACE%",
                ptz_default_relative_pantilt_space(service_ctx.ptz_node.fov_pan, service_ctx.ptz_node.fov_tilt),
                "%MIN_X%",
@@ -609,8 +625,12 @@ int ptz_get_configuration()
                eflip_mode,
                "%REVERSE_MODE%",
                reverse_mode,
-               "%ZOOM_DEFAULT_SPACES%",
-               zoom_default,
+               "%ZOOM_DEFAULT_ABS%",
+               zoom_default_abs,
+               "%ZOOM_DEFAULT_REL%",
+               zoom_default_rel,
+               "%ZOOM_DEFAULT_VEL%",
+               zoom_default_vel,
                "%ZOOM_SPEED%",
                zoom_speed,
                "%ZOOM_LIMITS%",
