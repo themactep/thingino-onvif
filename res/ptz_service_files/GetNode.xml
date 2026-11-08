@@ -76,8 +76,12 @@
 %ZOOM_SPEED_SPACE%
                 </tt:SupportedPTZSpaces>
                 <tt:MaximumNumberOfPresets>8</tt:MaximumNumberOfPresets>
-                <tt:MaximumNumberOfPresetTours>%MAX_PRESET_TOURS%</tt:MaximumNumberOfPresetTours>
                 <tt:HomeSupported>true</tt:HomeSupported>
+                <tt:Extension>
+                    <tt:SupportedPresetTour>
+                        <tt:MaximumNumberOfPresetTours>%MAX_PRESET_TOURS%</tt:MaximumNumberOfPresetTours>
+                    </tt:SupportedPresetTour>
+                </tt:Extension>
             </tptz:PTZNode>
         </tptz:GetNodeResponse>
     </SOAP-ENV:Body>
