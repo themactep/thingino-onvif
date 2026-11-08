@@ -124,7 +124,7 @@ test_imaging_service() {
     # Record original IR Cut filter so we can restore it later
     local original_ir
     original_ir=$(echo "$resp_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
-    [[ -n $original_ir ]] || original_ir="On"
+    [[ -n $original_ir ]] || original_ir="ON"
 
     # Verify GetOptions returns the expanded structures
     tmp_resp=$(mktemp)
@@ -151,15 +151,15 @@ test_imaging_service() {
     current_ir=$(echo "$resp_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
     [[ -n $current_ir ]] || current_ir="$original_ir"
 
-    # choose target value (toggle between On/Off; default to On if unknown)
+    # choose target value (toggle between ON/OFF; default to ON if unknown)
     local lc; lc=$(echo "$current_ir" | tr '[:upper:]' '[:lower:]')
     local target_ir
     if [ "$lc" = "on" ]; then
-        target_ir="Off"
+        target_ir="OFF"
     elif [ "$lc" = "off" ]; then
-        target_ir="On"
+        target_ir="ON"
     else
-        target_ir="On"
+        target_ir="ON"
     fi
 
     echo -e "[INFO] Imaging: current IrCutFilter=$current_ir -> setting to $target_ir to verify SetImagingSettings"

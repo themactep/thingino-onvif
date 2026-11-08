@@ -148,13 +148,13 @@ static const char *ircut_mode_to_string(ircut_mode_t mode)
 {
     switch (mode) {
     case IRCUT_MODE_ON:
-        return "On";
+        return "ON";
     case IRCUT_MODE_OFF:
-        return "Off";
+        return "OFF";
     case IRCUT_MODE_AUTO:
-        return "Auto";
+        return "AUTO";
     default:
-        return "Auto";
+        return "AUTO";
     }
 }
 
@@ -594,20 +594,20 @@ static void append_ircut_modes(xml_builder_t *builder, const imaging_entry_t *en
 
     int appended = 0;
     if (entry->supports_ircut_on) {
-        xml_builder_append(builder, "<tt:IrCutFilterModes>On</tt:IrCutFilterModes>\n");
+        xml_builder_append(builder, "<tt:IrCutFilterModes>ON</tt:IrCutFilterModes>\n");
         appended = 1;
     }
     if (entry->supports_ircut_off) {
-        xml_builder_append(builder, "<tt:IrCutFilterModes>Off</tt:IrCutFilterModes>\n");
+        xml_builder_append(builder, "<tt:IrCutFilterModes>OFF</tt:IrCutFilterModes>\n");
         appended = 1;
     }
     if (entry->supports_ircut_auto) {
-        xml_builder_append(builder, "<tt:IrCutFilterModes>Auto</tt:IrCutFilterModes>\n");
+        xml_builder_append(builder, "<tt:IrCutFilterModes>AUTO</tt:IrCutFilterModes>\n");
         appended = 1;
     }
 
     if (!appended) {
-        xml_builder_append(builder, "<tt:IrCutFilterModes>On</tt:IrCutFilterModes>\n<tt:IrCutFilterModes>Off</tt:IrCutFilterModes>\n");
+        xml_builder_append(builder, "<tt:IrCutFilterModes>ON</tt:IrCutFilterModes>\n<tt:IrCutFilterModes>OFF</tt:IrCutFilterModes>\n");
     }
 }
 
@@ -1207,7 +1207,7 @@ int imaging_set_imaging_settings()
                        "ter:InvalidArgVal",
                        "ter:ConfigModify",
                        "Unsupported IrCutFilter",
-                       "IrCutFilter value must be On, Off or Auto");
+                       "IrCutFilter value must be ON, OFF or AUTO");
             return -1;
         }
 
