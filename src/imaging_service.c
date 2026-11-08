@@ -966,9 +966,6 @@ static void build_imaging_settings_xml(const imaging_entry_t *entry, char *buffe
     if (!entry)
         return;
 
-    const char *token = entry->video_source_token ? entry->video_source_token : "VideoSourceToken";
-    xml_builder_append(&builder, "<tt:VideoSourceToken>%s</tt:VideoSourceToken>\n", token);
-
     append_mode_level_setting(&builder, "BacklightCompensation", &entry->backlight);
     append_float_element(&builder, "Brightness", &entry->brightness);
     append_float_element(&builder, "ColorSaturation", &entry->color_saturation);
@@ -996,9 +993,6 @@ static void build_imaging_options_xml(const imaging_entry_t *entry, char *buffer
 
     if (!entry)
         return;
-
-    const char *token = entry->video_source_token ? entry->video_source_token : "VideoSourceToken";
-    xml_builder_append(&builder, "<tt:VideoSourceToken>%s</tt:VideoSourceToken>\n", token);
 
     append_mode_level_options(&builder, "BacklightCompensationOptions", &entry->backlight);
     append_float_range(&builder, "Brightness", &entry->brightness);

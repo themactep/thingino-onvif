@@ -113,11 +113,11 @@ test_imaging_service() {
         if [ "$VERBOSE" = true ]; then echo "$resp_settings"; fi
     elif ! assert_valid_xml "$resp_settings" "imaging/GetImagingSettings"; then
         return 1
-    elif [[ $resp_settings == *"<tt:VideoSourceToken>$token</tt:VideoSourceToken>"* && $resp_settings == *"<tt:IrCutFilter>"* ]]; then
+    elif [[ $resp_settings == *"<tt:IrCutFilter>"* && $resp_settings != *"VideoSourceToken"* ]]; then
         echo -e "${GREEN}✓ Imaging GetImagingSettings - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_settings"
     else
-        echo -e "${YELLOW}⚠ Imaging GetImagingSettings - response missing VideoSourceToken/IrCutFilter${NC}"
+        echo -e "${YELLOW}⚠ Imaging GetImagingSettings - IrCutFilter missing, or a VideoSourceToken ImagingSettings20 does not have${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_settings"
     fi
 
@@ -138,11 +138,11 @@ test_imaging_service() {
         [ "$VERBOSE" = true ] && echo "$resp_options"
     elif ! assert_valid_xml "$resp_options" "imaging/GetOptions"; then
         return 1
-    elif [[ $resp_options == *"<tt:VideoSourceToken>$token</tt:VideoSourceToken>"* && $resp_options == *"<tt:IrCutFilterModes>"* ]]; then
+    elif [[ $resp_options == *"<tt:IrCutFilterModes>"* && $resp_options != *"VideoSourceToken"* ]]; then
         echo -e "${GREEN}✓ Imaging GetOptions - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_options"
     else
-        echo -e "${YELLOW}⚠ Imaging GetOptions - response missing VideoSourceToken/IrCutFilterModes${NC}"
+        echo -e "${YELLOW}⚠ Imaging GetOptions - IrCutFilterModes missing, or a VideoSourceToken ImagingOptions20 does not have${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_options"
     fi
 
