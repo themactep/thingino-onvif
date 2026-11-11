@@ -38,6 +38,11 @@ Notes:
 - `server.ifs` is normally ignored: the primary interface is taken from the
   routing table (default route) at config load. This key is only a fallback
   when no default route exists.
+- `scopes` is the fixed scope list returned by `GetScopes` and advertised in
+  WS-Discovery Hello/ProbeMatches/ResolveMatches. It should contain at least
+  one Profile, hardware and name scope.
+- WS-Discovery mode is changed at runtime with `SetDiscoveryMode`; the state
+  is kept in `/tmp/onvif_discovery_mode` and defaults to `Discoverable`.
 - `server.username`/`server.password` are only a fallback: by default the
   credentials are read from the installed streamer's own config
   (/etc/prudynt.json, /etc/streamer.d/rtsp.json, /etc/timps.conf or

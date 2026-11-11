@@ -11,7 +11,7 @@
                     <tt:System>
                         <tt:DiscoveryResolve>true</tt:DiscoveryResolve>
                         <tt:DiscoveryBye>true</tt:DiscoveryBye>
-                        <tt:RemoteDiscovery>true</tt:RemoteDiscovery>
+                        <tt:RemoteDiscovery>false</tt:RemoteDiscovery>
                         <tt:SystemBackup>false</tt:SystemBackup>
                         <tt:SystemLogging>false</tt:SystemLogging>
                         <tt:FirmwareUpgrade>false</tt:FirmwareUpgrade>
@@ -61,6 +61,7 @@
                 <tt:PTZ>
                     <tt:XAddr>%PTZ_SERVICE_ADDRESS%</tt:XAddr>
                 </tt:PTZ>
+%IMAGING_CAPABILITIES%
                 <tt:Extension>
                     <tt:DeviceIO>
                         <tt:XAddr>%DEVICEIO_SERVICE_ADDRESS%</tt:XAddr>

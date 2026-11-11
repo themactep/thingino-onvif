@@ -11,7 +11,7 @@
                     <tt:System>
                         <tt:DiscoveryResolve>true</tt:DiscoveryResolve>
                         <tt:DiscoveryBye>true</tt:DiscoveryBye>
-                        <tt:RemoteDiscovery>true</tt:RemoteDiscovery>
+                        <tt:RemoteDiscovery>false</tt:RemoteDiscovery>
                         <tt:SystemBackup>false</tt:SystemBackup>
                         <tt:SystemLogging>false</tt:SystemLogging>
                         <tt:FirmwareUpgrade>false</tt:FirmwareUpgrade>

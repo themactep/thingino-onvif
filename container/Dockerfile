@@ -36,8 +36,8 @@ COPY notify_files             /etc/onvif_notify_server/
 # Create /run/motion directory required by onvif_notify_server (event input directory)
 RUN mkdir -p /run/motion
 
-# Copy template files for WSD server (to its expected directory)
-COPY wsd_files                /etc/wsd_simple_server/
+# Copy template files for WSD server (installed path used by the daemon)
+COPY wsd_files                /var/www/onvif/wsd_files/
 
 # Copy config file and make it writable so mock commands can update state
 COPY onvif.json               /etc/onvif.json

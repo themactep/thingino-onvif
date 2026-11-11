@@ -63,6 +63,7 @@ static const onvif_method_entry_t onvif_dispatch_table[] = {
     {"device_service", "GetNetworkInterfaces", device_get_network_interfaces, NULL},
     {"device_service", "GetNetworkProtocols", device_get_network_protocols, NULL},
     {"device_service", "GetDiscoveryMode", device_get_discovery_mode, NULL},
+    {"device_service", "SetDiscoveryMode", device_set_discovery_mode, NULL},
     {"device_service", "GetNTP", device_get_ntp, NULL},
 
     // SetRelayOutputState exposed through device_service per ONVIF spec design

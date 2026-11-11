@@ -5,7 +5,7 @@
 
     <SOAP-ENV:Body>
         <tds:GetDiscoveryModeResponse>
-            <tds:DiscoveryMode>Discoverable</tds:DiscoveryMode>
+            <tds:DiscoveryMode>%DISCOVERY_MODE%</tds:DiscoveryMode>
         </tds:GetDiscoveryModeResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

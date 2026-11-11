@@ -555,6 +555,104 @@ int get_ip_address(char *address, char *netmask, char *name)
     return 0;
 }
 
+static int prefix_len_from_mask6(const struct sockaddr_in6 *mask)
+{
+    const unsigned char *p = (const unsigned char *) &mask->sin6_addr;
+    int bits = 0;
+    int i;
+
+    for (i = 0; i < 16; i++) {
+        unsigned char b = p[i];
+        while (b & 0x80) {
+            bits++;
+            b <<= 1;
+        }
+        if (b != 0)
+            break;
+    }
+
+    return bits;
+}
+
+/**
+ * Get the IPv6 addresses of an interface.
+ *
+ * Prefers a global unicast address over a link-local one. Returns a bitmask:
+ * 1 = link-local address found, 2 = global address found.
+ */
+int get_ip6_address_info(char *link_local, size_t ll_len, int *ll_prefix, char *global, size_t gl_len, int *gl_prefix, const char *name)
+{
+    struct ifaddrs *ifaddr, *ifa;
+    int found = 0;
+
+    if (link_local && ll_len)
+        link_local[0] = '\0';
+    if (global && gl_len)
+        global[0] = '\0';
+    if (ll_prefix)
+        *ll_prefix = 64;
+    if (gl_prefix)
+        *gl_prefix = 64;
+
+    if (getifaddrs(&ifaddr) == -1) {
+        log_error("Error in getifaddrs()");
+        return 0;
+    }
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        struct sockaddr_in6 *sa;
+        int prefix;
+
+        if (ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET6)
+            continue;
+        if (strcmp(ifa->ifa_name, name) != 0)
+            continue;
+
+        sa = (struct sockaddr_in6 *) ifa->ifa_addr;
+        if (IN6_IS_ADDR_LOOPBACK(&sa->sin6_addr))
+            continue;
+
+        prefix = ifa->ifa_netmask ? prefix_len_from_mask6((struct sockaddr_in6 *) ifa->ifa_netmask) : 64;
+
+        if (IN6_IS_ADDR_LINKLOCAL(&sa->sin6_addr)) {
+            if ((found & 1) == 0 && link_local && ll_len) {
+                inet_ntop(AF_INET6, &sa->sin6_addr, link_local, ll_len);
+                if (ll_prefix)
+                    *ll_prefix = prefix;
+                found |= 1;
+            }
+        } else if ((found & 2) == 0 && global && gl_len) {
+            inet_ntop(AF_INET6, &sa->sin6_addr, global, gl_len);
+            if (gl_prefix)
+                *gl_prefix = prefix;
+            found |= 2;
+        }
+    }
+
+    freeifaddrs(ifaddr);
+
+    return found;
+}
+
+int get_ip6_address(char *address, size_t len, const char *name)
+{
+    char link_local[INET6_ADDRSTRLEN];
+    char global[INET6_ADDRSTRLEN];
+    int found;
+
+    found = get_ip6_address_info(link_local, sizeof(link_local), NULL, global, sizeof(global), NULL, name);
+    if (found & 2) {
+        snprintf(address, len, "%s", global);
+        return 0;
+    }
+    if (found & 1) {
+        snprintf(address, len, "%s", link_local);
+        return 0;
+    }
+
+    return -1;
+}
+
 // Run a backend command with stdout silenced. The CGIs serve the HTTP response
 // on stdout; ircut/motors scripts print chatter that would corrupt the headers
 // (uhttpd then kills the CGI: "Bad Gateway").
@@ -629,6 +727,32 @@ void build_event_source_descriptions(char *out, size_t outlen, const event_t *ev
 }
 
 /**
+ * Get the persistent device MAC from /etc/thingino.json.
+ * This value is identical across all network interfaces.
+ */
+int get_persistent_mac(char *address, size_t len)
+{
+    JsonValue *config;
+    JsonValue *mac;
+
+    if (len)
+        address[0] = '\0';
+    if (access("/etc/thingino.json", R_OK) != 0)
+        return -1;
+
+    config = load_config("/etc/thingino.json");
+    if (config == NULL)
+        return -1;
+
+    mac = get_nested_item(config, "eth.mac");
+    if (mac && mac->type == JSON_STRING && mac->value.string && mac->value.string[0])
+        snprintf(address, len, "%s", mac->value.string);
+    free_json_value(config);
+
+    return address[0] ? 0 : -1;
+}
+
+/**
  * Get the MAC address of an interface "name"
  * @param name The name of the interface
  * @param address String that will contain the address
@@ -683,20 +807,10 @@ int get_mac_address(char *address, char *name)
         // The interface is down or 'name' matches nothing: fall back to the
         // persistent device MAC in /etc/thingino.json (eth.mac, written by
         // S03mac from the silicon serial at first boot).
-        if (access("/etc/thingino.json", R_OK) == 0) {
-            JsonValue *config = load_config("/etc/thingino.json");
-            if (config) {
-                JsonValue *mac = get_nested_item(config, "eth.mac");
-                if (mac && mac->type == JSON_STRING && mac->value.string &&
-                    mac->value.string[0]) {
-                    snprintf(address, 18, "%s", mac->value.string);
-                    free_json_value(config);
-                    close(sock);
-                    log_debug("MAC address: <%s>", address);
-                    return 0;
-                }
-                free_json_value(config);
-            }
+        if (get_persistent_mac(address, 18) == 0) {
+            close(sock);
+            log_debug("MAC address: <%s>", address);
+            return 0;
         }
         log_error("Unable to get  mac address");
         close(sock);
@@ -997,6 +1111,44 @@ int hashSHA1(char *input, unsigned long input_size, char *output, int output_siz
     sha1_done(&md, output);
 #endif //HAVE_MBEDTLS
 #endif //HAVE_WOLFSSL
+
+    return 0;
+}
+
+/**
+ * Build an RFC 4122 version 5 UUID from a stable device identity string.
+ */
+int gen_uuid_v5(const char *name, char *uuid_out)
+{
+    static const unsigned char dns_ns[16] = {
+        0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1,
+        0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8
+    };
+    unsigned char input[256];
+    unsigned char hash[20];
+    size_t name_len;
+
+    if (name == NULL || uuid_out == NULL)
+        return -1;
+
+    name_len = strlen(name);
+    if (name_len > sizeof(input) - sizeof(dns_ns))
+        name_len = sizeof(input) - sizeof(dns_ns);
+
+    memcpy(input, dns_ns, sizeof(dns_ns));
+    memcpy(input + sizeof(dns_ns), name, name_len);
+
+    if (hashSHA1((char *) input, (unsigned long) (sizeof(dns_ns) + name_len), (char *) hash, sizeof(hash)) < 0)
+        return -1;
+
+    hash[6] = (unsigned char) ((hash[6] & 0x0F) | 0x50);
+    hash[8] = (unsigned char) ((hash[8] & 0x3F) | 0x80);
+
+    snprintf(uuid_out, UUID_LEN + 1,
+             "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             hash[0], hash[1], hash[2], hash[3], hash[4], hash[5],
+             hash[6], hash[7], hash[8], hash[9], hash[10], hash[11],
+             hash[12], hash[13], hash[14], hash[15]);
 
     return 0;
 }

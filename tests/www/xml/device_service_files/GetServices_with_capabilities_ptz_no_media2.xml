@@ -15,7 +15,7 @@
                     <tds:Capabilities>
                         <tds:Network IPFilter="false"
                                      ZeroConfiguration="false"
-                                     IPVersion6="false"
+                                     IPVersion6="true"
                                      DynDNS="false"
                                      Dot11Configuration="false"
                                      Dot1XConfigurations="0"
@@ -41,7 +41,7 @@
                                       MaxPasswordLength="0"/>
                         <tds:System DiscoveryResolve="true"
                                     DiscoveryBye="true"
-                                    RemoteDiscovery="true"
+                                    RemoteDiscovery="false"
                                     SystemBackup="false"
                                     SystemLogging="false"
                                     FirmwareUpgrade="false"
@@ -62,8 +62,8 @@
                 <tds:XAddr>%EVENTS_SERVICE_ADDRESS%</tds:XAddr>
                 <tds:Capabilities>
                     <tev:Capabilities WSSubscriptionPolicySupport="%EVENTS_BASESUBSCRIPTION%"
-                                       WSPullPointSupport="%EVENTS_PULLPOINT%"
-                                       WSPausableSubscriptionManagerInterfaceSupport="false">
+                                      WSPullPointSupport="%EVENTS_PULLPOINT%"
+                                      WSPausableSubscriptionManagerInterfaceSupport="false">
                     </tev:Capabilities>
                 </tds:Capabilities>
                 <tds:Version>
@@ -110,6 +110,7 @@
                     <tt:Minor>12</tt:Minor>
                 </tds:Version>
             </tds:Service>
+%IMAGING_SERVICE_BLOCK%
         </tds:GetServicesResponse>
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>

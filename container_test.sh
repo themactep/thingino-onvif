@@ -28,8 +28,8 @@ test_uri_token_validation() {
     echo -e "\n${YELLOW}Testing: URI Token Validation${NC}"
 
     # Check if lib_wsse.sh exists
-    if [ ! -f tools/onvif/lib_wsse.sh ]; then
-        echo -e "${YELLOW}⚠ Skipping URI token validation - lib_wsse.sh not found${NC}"
+    if [ ! -f tools/onvif/lib_wsse.sh ] || [ ! -f tests/test_uri_token_validation.sh ]; then
+        echo -e "${YELLOW}⚠ Skipping URI token validation - helper script not found${NC}"
         return 0
     fi
 
@@ -66,6 +66,14 @@ render_imaging_template() {
 # Imaging Service Test (with WSSE auth)
 test_imaging_service() {
     echo -e "\n${YELLOW}Testing: ONVIF Imaging Service${NC}"
+
+    for tpl in imaging_get_service_capabilities.xml imaging_get_imaging_settings.xml \
+               imaging_get_options.xml imaging_set_imaging_settings.xml; do
+        if [ ! -f "tests/soap_templates/$tpl" ]; then
+            echo -e "${YELLOW}⚠ Skipping Imaging tests - tests/soap_templates/$tpl not found${NC}"
+            return 0
+        fi
+    done
 
     # use global credentials
     local token="VideoSourceToken"
@@ -663,60 +671,118 @@ test_preauth_events_http() {
     fi
 }
 
-# Test WS-Discovery for Home Assistant compatibility
+# Test WS-Discovery Target Service behaviour (ONVIF Core 26.06)
 test_ws_discovery() {
-    echo -e "\n${YELLOW}Testing: WS-Discovery (Home Assistant style)${NC}"
+    echo -e "\n${YELLOW}Testing: WS-Discovery Target Service${NC}"
 
-    if [ ! -f "tests/ws_discovery_probe.py" ]; then
+    if [ "$HAS_LOCAL_CONTAINER" != true ]; then
+        echo -e "${YELLOW}⚠ Skipping WS-Discovery probe - target is not the local container${NC}"
+        return 0
+    fi
+
+    local probe_script="tools/onvif/ws_discovery_probe.py"
+    if [ ! -f "$probe_script" ]; then
         echo -e "${YELLOW}⚠ Skipping WS-Discovery test - probe script not found${NC}"
         return 0
     fi
 
-    # Run the probe script
     local probe_response
-    probe_response=$(python3 tests/ws_discovery_probe.py "$SERVER_URL")
+    probe_response=$(python3 "$probe_script" --unicast 2>/dev/null)
     local exit_code=$?
 
-    if [ $exit_code -ne 0 ]; then
-        echo -e "${RED}✗ WS-Discovery - FAILED (no response from server)${NC}"
+    if [ $exit_code -ne 0 ] || [[ -z "$probe_response" ]]; then
+        echo -e "${RED}✗ WS-Discovery - FAILED (no ProbeMatches response)${NC}"
         return 1
     fi
 
-    if [[ -z "$probe_response" ]]; then
-        echo -e "${RED}✗ WS-Discovery - FAILED (empty response from probe script)${NC}"
-        return 1
-    fi
-
-    # Validate the response
     if ! assert_valid_xml "$probe_response" "ws-discovery/ProbeResponse"; then
         return 1
     fi
 
-    if [[ $probe_response != *"ProbeMatches"* ]]; then
-        echo -e "${RED}✗ WS-Discovery - FAILED (response does not contain ProbeMatches)${NC}"
+    local failed=0
+    for expected in "ProbeMatches" "tdn:NetworkVideoTransmitter" "tds:Device" \
+                    "onvif://www.onvif.org/Profile/Streaming" "<d:XAddrs>" "<d:MetadataVersion>"; do
+        if [[ $probe_response != *"$expected"* ]]; then
+            echo -e "${RED}✗ WS-Discovery - FAILED (missing $expected)${NC}"
+            failed=1
+        fi
+    done
+    if [[ ! $probe_response =~ InstanceId=\"[1-9][0-9]*\" ]]; then
+        echo -e "${RED}✗ WS-Discovery - FAILED (AppSequence InstanceId is zero or missing)${NC}"
+        failed=1
+    fi
+    if [[ ! $probe_response =~ MessageNumber=\"[1-9][0-9]*\" ]]; then
+        echo -e "${RED}✗ WS-Discovery - FAILED (AppSequence MessageNumber is zero or missing)${NC}"
+        failed=1
+    fi
+    if [ $failed -ne 0 ]; then
         [ "$VERBOSE" = true ] && echo "Response: $probe_response"
         return 1
     fi
+    echo -e "${GREEN}✓ WS-Discovery - ProbeMatches is ONVIF compliant${NC}"
 
-    # Extract XAddrs from the response
     local xaddrs
     xaddrs=$(echo "$probe_response" | grep -o '<d:XAddrs>[^<]*' | sed 's/<d:XAddrs>//' | sed 's/&amp;/\&/g')
-
     if [[ -z "$xaddrs" ]]; then
-        echo -e "${RED}✗ WS-Discovery - FAILED (could not extract XAddrs from ProbeMatches)${NC}"
-        [ "$VERBOSE" = true ] && echo "Response: $probe_response"
+        echo -e "${RED}✗ WS-Discovery - FAILED (could not extract XAddrs)${NC}"
         return 1
     fi
-
-    # XAddrs can be a space-separated list of URLs. We'll take the first one.
     local device_service_url
     device_service_url=$(echo "$xaddrs" | cut -d' ' -f1)
+    echo -e "${GREEN}✓ WS-Discovery - discovered device at $device_service_url${NC}"
 
-    echo -e "${GREEN}✓ WS-Discovery - SUCCESS (found device at $device_service_url)${NC}"
+    # Endpoint reference must be the same in ProbeMatches and GetEndpointReference.
+    local probe_epr
+    probe_epr=$(echo "$probe_response" | grep -o '<a:Address>urn:uuid:[^<]*' | head -1 | sed 's/<a:Address>//')
+    local epr_out
+    epr_out=$(mktemp)
+    preauth_post "onvif/device_service" \
+        '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:tds="http://www.onvif.org/ver10/device/wsdl"><s:Header/><s:Body><tds:GetEndpointReference/></s:Body></s:Envelope>' \
+        "$epr_out" >/dev/null
+    local epr_guid
+    epr_guid=$(grep -o '<tds:GUID>[^<]*' "$epr_out" 2>/dev/null | head -1 | sed 's/<tds:GUID>//')
+    rm -f "$epr_out"
+    if [[ -n "$probe_epr" && "$probe_epr" == "$epr_guid" ]]; then
+        echo -e "${GREEN}✓ WS-Discovery - GetEndpointReference GUID matches ProbeMatches EPR${NC}"
+    else
+        echo -e "${RED}✗ WS-Discovery - FAILED (EPR mismatch: probe=$probe_epr guid=$epr_guid)${NC}"
+        failed=1
+    fi
+
+    # Probe matching: unknown type or non-matching scope must not answer.
+    if python3 "$probe_script" --unicast --types tdn:NotACamera --expect-none >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ WS-Discovery - unknown Types Probe ignored${NC}"
+    else
+        echo -e "${RED}✗ WS-Discovery - FAILED (answered a non-matching Types Probe)${NC}"
+        failed=1
+    fi
+    if python3 "$probe_script" --unicast \
+        --scopes 'onvif://www.onvif.org/Profile/Streaming onvif://www.onvif.org/name/Nope' \
+        --expect-none >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ WS-Discovery - non-matching Scope Probe ignored${NC}"
+    else
+        echo -e "${RED}✗ WS-Discovery - FAILED (answered a non-matching Scope Probe)${NC}"
+        failed=1
+    fi
+
+    # Resolve / ResolveMatches.
+    if [[ -n "$probe_epr" ]]; then
+        local resolve_response
+        resolve_response=$(python3 "$probe_script" --unicast --resolve "$probe_epr" 2>/dev/null)
+        if [[ $resolve_response == *"ResolveMatches"* ]] && [[ $resolve_response == *"$probe_epr"* ]]; then
+            echo -e "${GREEN}✓ WS-Discovery - ResolveMatches returned the endpoint${NC}"
+        else
+            echo -e "${RED}✗ WS-Discovery - FAILED (Resolve did not return ResolveMatches)${NC}"
+            failed=1
+        fi
+    fi
+
+    if [ $failed -ne 0 ]; then
+        return 1
+    fi
     [ "$VERBOSE" = true ] && echo "Response: $probe_response"
 
     echo -e "\n${YELLOW}Testing: GetDeviceInformation from discovered endpoint${NC}"
-
     local soap_request
     soap_request=$(generate_auth_soap "GetDeviceInformation" "tds" "http://www.onvif.org/ver10/device/wsdl" "true")
     if [ -z "$soap_request" ]; then
@@ -724,10 +790,8 @@ test_ws_discovery() {
         return 0
     fi
 
-    local response_code
-    local response
+    local response_code response tmp_resp curl_rc
     local soap_action="http://www.onvif.org/ver10/device/wsdl/GetDeviceInformation"
-
     tmp_resp=$(mktemp)
     response_code=$(send_soap_raw "$device_service_url" "$soap_action" "$soap_request" "$tmp_resp")
     curl_rc=$?
@@ -738,11 +802,9 @@ test_ws_discovery() {
         echo -e "${RED}✗ GetDeviceInformation (discovered) - FAILED (transport/curl error, rc=$curl_rc)${NC}"
         return 1
     fi
-
     if ! assert_valid_xml "$response" "device/GetDeviceInformation (discovered)"; then
         return 1
     fi
-
     if [[ $response == *"GetDeviceInformationResponse"* ]]; then
         echo -e "${GREEN}✓ GetDeviceInformation (discovered) - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "Response: $response"
@@ -750,6 +812,132 @@ test_ws_discovery() {
         echo -e "${RED}✗ GetDeviceInformation (discovered) - FAILED (unexpected response, HTTP $response_code)${NC}"
         [ "$VERBOSE" = true ] && echo "Response: $response"
         return 1
+    fi
+
+    return 0
+}
+
+# Set the discovery mode through the device service and wait for WSD reload.
+set_discovery_mode_http() {
+    local mode=$1
+    local req tmp_resp http_code
+    req=$(generate_auth_soap "SetDiscoveryMode" "tds" "http://www.onvif.org/ver10/device/wsdl" "false")
+    req=$(printf '%s' "$req" | sed "s#</tds:SetDiscoveryMode>#<tds:DiscoveryMode>${mode}</tds:DiscoveryMode></tds:SetDiscoveryMode>#")
+    tmp_resp=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/device_service" \
+        "http://www.onvif.org/ver10/device/wsdl/SetDiscoveryMode" "$req" "$tmp_resp")
+    local response
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp"
+    if [[ $http_code != "200" ]] || [[ $response != *"SetDiscoveryModeResponse"* ]]; then
+        echo -e "${RED}✗ SetDiscoveryMode($mode) failed (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response"
+        return 1
+    fi
+    sleep 1
+    return 0
+}
+
+# Test discovery-related device service operations and live discovery mode
+test_discovery_services() {
+    echo -e "\n${YELLOW}Testing: Discovery services and capabilities${NC}"
+
+    local tmp_resp response http_code req
+
+    # Capability flags must match the implementation.
+    tmp_resp=$(mktemp)
+    preauth_post "onvif/device_service" \
+        '<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:tds="http://www.onvif.org/ver10/device/wsdl"><s:Header/><s:Body><tds:GetServiceCapabilities/></s:Body></s:Envelope>' \
+        "$tmp_resp" >/dev/null
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp"
+    if ! assert_valid_xml "$response" "device/GetServiceCapabilities (discovery)"; then
+        return 1
+    fi
+    if [[ $response == *'DiscoveryResolve="true"'* && $response == *'DiscoveryBye="true"'* &&
+          $response == *'RemoteDiscovery="false"'* && $response == *'IPVersion6="true"'* ]]; then
+        echo -e "${GREEN}✓ GetServiceCapabilities reports discovery and IPv6 support${NC}"
+    else
+        echo -e "${RED}✗ GetServiceCapabilities discovery flags are wrong${NC}"
+        [ "$VERBOSE" = true ] && echo "$response"
+        return 1
+    fi
+
+    # GetNetworkInterfaces must return an IPv6 block.
+    req=$(generate_auth_soap "GetNetworkInterfaces" "tds" "http://www.onvif.org/ver10/device/wsdl" "false")
+    tmp_resp=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/device_service" \
+        "http://www.onvif.org/ver10/device/wsdl/GetNetworkInterfaces" "$req" "$tmp_resp")
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp"
+    if [[ $http_code != "200" ]] || [[ $response != *"<tt:IPv6>"* ]]; then
+        echo -e "${RED}✗ GetNetworkInterfaces is missing the IPv6 block (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response"
+        return 1
+    fi
+    echo -e "${GREEN}✓ GetNetworkInterfaces reports IPv6${NC}"
+
+    # Set Discoverable as a known starting state.
+    if ! set_discovery_mode_http Discoverable; then
+        return 1
+    fi
+
+    # Read the mode back.
+    req=$(generate_auth_soap "GetDiscoveryMode" "tds" "http://www.onvif.org/ver10/device/wsdl" "false")
+    tmp_resp=$(mktemp)
+    http_code=$(send_soap_raw "$SERVER_URL/onvif/device_service" \
+        "http://www.onvif.org/ver10/device/wsdl/GetDiscoveryMode" "$req" "$tmp_resp")
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp"
+    if [[ $response == *"<tds:DiscoveryMode>Discoverable</tds:DiscoveryMode>"* ]]; then
+        echo -e "${GREEN}✓ GetDiscoveryMode returns Discoverable${NC}"
+    else
+        echo -e "${RED}✗ GetDiscoveryMode did not return Discoverable (HTTP $http_code)${NC}"
+        [ "$VERBOSE" = true ] && echo "$response"
+        return 1
+    fi
+
+    # Switch to non-discoverable and verify the daemon stops answering.
+    if ! set_discovery_mode_http NonDiscoverable; then
+        return 1
+    fi
+
+    req=$(generate_auth_soap "GetDiscoveryMode" "tds" "http://www.onvif.org/ver10/device/wsdl" "false")
+    tmp_resp=$(mktemp)
+    send_soap_raw "$SERVER_URL/onvif/device_service" \
+        "http://www.onvif.org/ver10/device/wsdl/GetDiscoveryMode" "$req" "$tmp_resp" >/dev/null
+    response=$(cat "$tmp_resp" 2>/dev/null || true)
+    rm -f "$tmp_resp"
+    if [[ $response == *"<tds:DiscoveryMode>NonDiscoverable</tds:DiscoveryMode>"* ]]; then
+        echo -e "${GREEN}✓ GetDiscoveryMode returns NonDiscoverable${NC}"
+    else
+        echo -e "${RED}✗ GetDiscoveryMode did not return NonDiscoverable${NC}"
+        set_discovery_mode_http Discoverable || true
+        return 1
+    fi
+
+    if [ "$HAS_LOCAL_CONTAINER" = true ]; then
+        sleep 1
+        if python3 tools/onvif/ws_discovery_probe.py --unicast --expect-none >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ NonDiscoverable mode stops answering Probes${NC}"
+        else
+            echo -e "${RED}✗ NonDiscoverable mode still answers Probes${NC}"
+            set_discovery_mode_http Discoverable || true
+            return 1
+        fi
+    fi
+
+    # Restore discoverable mode for subsequent tests.
+    if ! set_discovery_mode_http Discoverable; then
+        return 1
+    fi
+    if [ "$HAS_LOCAL_CONTAINER" = true ]; then
+        if python3 tools/onvif/ws_discovery_probe.py --unicast >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ Discoverable mode resumes answering Probes${NC}"
+        else
+            echo -e "${RED}✗ Discoverable mode did not resume answering Probes${NC}"
+            return 1
+        fi
     fi
 
     return 0
@@ -807,6 +995,7 @@ test_cgi_execution
 
 # Test WS-Discovery
 test_ws_discovery
+test_discovery_services
 
 
 # PRE_AUTH verification (must be accessible without auth)
@@ -840,7 +1029,7 @@ test_onvif_service "device_service" "GetCapabilities" "Get Device Capabilities" 
 # Assert DHCP flag now defaults to true per spec convenience
 test_onvif_service "device_service" "GetHostname" "Get Hostname" false "<tt:FromDHCP>true</tt:FromDHCP>"
 # Assert EPR includes an Address element with HTTP URL
-test_onvif_service "device_service" "GetEndpointReference" "Get EndpointReference" false "<wsa5:Address>http://"
+test_onvif_service "device_service" "GetEndpointReference" "Get EndpointReference" false "<tds:GUID>urn:uuid:"
 # Basic check for services
 test_onvif_service "device_service" "GetServices" "Get Available Services" false
 
@@ -1611,7 +1800,9 @@ test_media2_new_operations
 test_imaging_service
 
 # Events (PullPoint) Tests
-if bash tests/container_test_events.sh; then
+if [ ! -f tests/container_test_events.sh ]; then
+    echo -e "${YELLOW}⚠ Skipping Events tests - tests/container_test_events.sh not found${NC}"
+elif bash tests/container_test_events.sh; then
     echo -e "${GREEN}✓ Events tests - SUCCESS${NC}"
 else
     echo -e "${RED}✗ Events tests - FAILED${NC}"

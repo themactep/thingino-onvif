@@ -31,6 +31,22 @@ sed -i 's/"adv_enable_media2": false/"adv_enable_media2": true/' onvif.json
 # Fake motors response
 sed -i 's|"jump_to_abs": null|"jump_to_abs": "/bin/echo PTZ move to x=%f y=%f z=%f"|' onvif.json
 
+# Use the test credentials and a stable serial so WSD and GetEndpointReference
+# derive the same endpoint UUID.
+python3 - <<'PY'
+import json
+path = "onvif.json"
+with open(path) as f:
+    config = json.load(f)
+server = config.setdefault("server", {})
+server["ifs"] = "lo"
+server["username"] = "thingino"
+server["password"] = "thingino"
+config.setdefault("camera", {})["serial_num"] = "CONTAINER-TEST"
+with open(path, "w") as f:
+    json.dump(config, f, indent=2)
+PY
+
 podman build -t oss .
 
 echo "podman image 'oss' built successfully!"

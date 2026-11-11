@@ -22,10 +22,15 @@
 #include "onvif_simple_server.h"
 #include "utils.h"
 
+#include <arpa/inet.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <glob.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/reboot.h>
 #include <sys/types.h>
 #include <time.h>
@@ -786,30 +791,27 @@ int device_get_hostname()
 }
 int device_get_endpoint_reference()
 {
-    int ret = 0;
-    char address[16];
-    char netmask[16];
-    char port[8];
-    char device_service_address[MAX_LEN];
+    char identity[256];
+    char persistent_mac[32];
+    char guid[UUID_LEN + 1];
 
-    ret = get_ip_address(address, netmask, service_ctx.ifs);
-    if (ret < 0) {
-        log_error("Unable to get ip address from interface %s", service_ctx.ifs);
-        send_action_failed_fault("device_service", -1);
-        return -1;
+    if (service_ctx.serial_num && service_ctx.serial_num[0]) {
+        snprintf(identity, sizeof(identity), "serial:%s", service_ctx.serial_num);
+        if (gen_uuid_v5(identity, guid) < 0)
+            gen_uuid(guid);
+    } else if (get_persistent_mac(persistent_mac, sizeof(persistent_mac)) == 0) {
+        snprintf(identity, sizeof(identity), "mac:%s", persistent_mac);
+        if (gen_uuid_v5(identity, guid) < 0)
+            gen_uuid(guid);
+    } else {
+        gen_uuid(guid);
     }
 
-    port[0] = '\0';
-    if (service_ctx.port != 80) {
-        sprintf(port, ":%d", service_ctx.port);
-    }
-    sprintf(device_service_address, "http://%s%s/onvif/device_service", address, port);
-
-    long size = cat(NULL, "device_service_files/GetEndpointReference.xml", 2, "%ADDRESS%", device_service_address);
+    long size = cat(NULL, "device_service_files/GetEndpointReference.xml", 2, "%GUID%", guid);
 
     output_http_headers(size);
 
-    return cat("stdout", "device_service_files/GetEndpointReference.xml", 2, "%ADDRESS%", device_service_address);
+    return cat("stdout", "device_service_files/GetEndpointReference.xml", 2, "%GUID%", guid);
 }
 
 int device_get_capabilities()
@@ -1095,6 +1097,11 @@ int device_get_network_interfaces()
     char mtu[16];
     int prefix_len;
     char sprefix_len[3];
+    char ipv6_block[640];
+    char ll_addr[INET6_ADDRSTRLEN] = "";
+    char gl_addr[INET6_ADDRSTRLEN] = "";
+    int ll_prefix = 64, gl_prefix = 64;
+    int ipv6_found;
     int ret;
 
     ret = get_ip_address(address, netmask, service_ctx.ifs);
@@ -1111,9 +1118,34 @@ int device_get_network_interfaces()
     }
     sprintf(mtu, "%d", get_mtu(service_ctx.ifs));
 
+    ipv6_found = get_ip6_address_info(ll_addr, sizeof(ll_addr), &ll_prefix,
+                                      gl_addr, sizeof(gl_addr), &gl_prefix,
+                                      service_ctx.ifs);
+    if (ipv6_found > 0) {
+        char ll_elem[160] = "";
+        char gl_elem[160] = "";
+
+        if (ipv6_found & 1)
+            snprintf(ll_elem, sizeof(ll_elem),
+                     "<tt:LinkLocal><tt:Address>%s</tt:Address><tt:PrefixLength>%d</tt:PrefixLength></tt:LinkLocal>",
+                     ll_addr, ll_prefix);
+        if (ipv6_found & 2)
+            snprintf(gl_elem, sizeof(gl_elem),
+                     "<tt:Manual><tt:Address>%s</tt:Address><tt:PrefixLength>%d</tt:PrefixLength></tt:Manual>",
+                     gl_addr, gl_prefix);
+        snprintf(ipv6_block, sizeof(ipv6_block),
+                 "<tt:IPv6><tt:Enabled>true</tt:Enabled><tt:Config>"
+                 "<tt:AcceptRouterAdvert>false</tt:AcceptRouterAdvert>"
+                 "<tt:DHCP>Off</tt:DHCP>%s%s</tt:Config></tt:IPv6>",
+                 ll_elem, gl_elem);
+    } else {
+        snprintf(ipv6_block, sizeof(ipv6_block),
+                 "<tt:IPv6><tt:Enabled>false</tt:Enabled></tt:IPv6>");
+    }
+
     long size = cat(NULL,
                     "device_service_files/GetNetworkInterfaces.xml",
-                    10,
+                    12,
                     "%INTERFACE%",
                     service_ctx.ifs,
                     "%MAC_ADDRESS%",
@@ -1123,13 +1155,15 @@ int device_get_network_interfaces()
                     "%IP_ADDRESS%",
                     address,
                     "%NETMASK%",
-                    sprefix_len);
+                    sprefix_len,
+                    "%IPV6_BLOCK%",
+                    ipv6_block);
 
     output_http_headers(size);
 
     return cat("stdout",
                "device_service_files/GetNetworkInterfaces.xml",
-               10,
+               12,
                "%INTERFACE%",
                service_ctx.ifs,
                "%MAC_ADDRESS%",
@@ -1139,16 +1173,130 @@ int device_get_network_interfaces()
                "%IP_ADDRESS%",
                address,
                "%NETMASK%",
-               sprefix_len);
+               sprefix_len,
+               "%IPV6_BLOCK%",
+               ipv6_block);
+}
+
+#define DISCOVERY_MODE_FILE "/tmp/onvif_discovery_mode"
+
+static const char *discovery_mode_name(void)
+{
+    FILE *f;
+    char line[64];
+
+    f = fopen(DISCOVERY_MODE_FILE, "r");
+    if (f == NULL)
+        return "Discoverable";
+
+    line[0] = '\0';
+    if (fgets(line, sizeof(line), f) == NULL) {
+        fclose(f);
+        return "Discoverable";
+    }
+    fclose(f);
+
+    if (strncasecmp(line, "NonDiscoverable", 15) == 0)
+        return "NonDiscoverable";
+
+    return "Discoverable";
+}
+
+static int write_discovery_mode(const char *mode)
+{
+    char tmp_path[sizeof(DISCOVERY_MODE_FILE) + 8];
+    int fd;
+
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", DISCOVERY_MODE_FILE);
+    fd = open(tmp_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0)
+        return -1;
+    if (write(fd, mode, strlen(mode)) != (ssize_t) strlen(mode) ||
+        write(fd, "\n", 1) != 1) {
+        close(fd);
+        unlink(tmp_path);
+        return -1;
+    }
+    close(fd);
+
+    if (rename(tmp_path, DISCOVERY_MODE_FILE) < 0) {
+        unlink(tmp_path);
+        return -1;
+    }
+
+    return 0;
+}
+
+static void signal_wsd_reload(void)
+{
+    static const char *patterns[] = {
+        "/run/wsd_simple_server*.pid",
+        "/var/run/wsd_simple_server*.pid",
+        "/run/wsd.pid",
+        "/tmp/wsd_simple_server*.pid",
+        "/tmp/wsd.pid",
+        NULL
+    };
+    int i;
+
+    for (i = 0; patterns[i]; i++) {
+        glob_t matches;
+        size_t j;
+
+        memset(&matches, 0, sizeof(matches));
+        if (glob(patterns[i], 0, NULL, &matches) != 0)
+            continue;
+
+        for (j = 0; j < matches.gl_pathc; j++) {
+            FILE *f = fopen(matches.gl_pathv[j], "r");
+            long pid;
+
+            if (f == NULL)
+                continue;
+            if (fscanf(f, "%ld", &pid) == 1 && pid > 0)
+                kill((pid_t) pid, SIGHUP);
+            fclose(f);
+        }
+
+        globfree(&matches);
+    }
 }
 
 int device_get_discovery_mode()
 {
-    long size = cat(NULL, "device_service_files/GetDiscoveryMode.xml", 0);
+    const char *mode = discovery_mode_name();
+    long size = cat(NULL, "device_service_files/GetDiscoveryMode.xml", 2, "%DISCOVERY_MODE%", (char *) mode);
 
     output_http_headers(size);
 
-    return cat("stdout", "device_service_files/GetDiscoveryMode.xml", 0);
+    return cat("stdout", "device_service_files/GetDiscoveryMode.xml", 2, "%DISCOVERY_MODE%", (char *) mode);
+}
+
+int device_set_discovery_mode()
+{
+    const char *mode = get_element("DiscoveryMode", "Body");
+
+    if (mode == NULL ||
+        (strcasecmp(mode, "Discoverable") != 0 && strcasecmp(mode, "NonDiscoverable") != 0)) {
+        send_fault("device_service",
+                   "Sender",
+                   "ter:InvalidArgVal",
+                   "ter:InvalidDiscoveryMode",
+                   "Invalid discovery mode",
+                   "DiscoveryMode must be Discoverable or NonDiscoverable");
+        return -1;
+    }
+
+    if (write_discovery_mode(mode) < 0) {
+        log_error("Cannot write discovery mode state file: %s", strerror(errno));
+        send_action_failed_fault("device_service", -1);
+        return -1;
+    }
+
+    signal_wsd_reload();
+
+    send_empty_response("tds", "SetDiscoveryMode");
+    return 0;
 }
 
 int device_get_ntp()

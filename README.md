@@ -11,6 +11,7 @@ Small, dependency‑light, and integrated with Thingino’s build, config, and l
   - Managed via jct where needed (init scripts)
 - **Syslog logging integration** (0=fatal .. 5=trace). Loglevel from JSON or CLI
 - **Raw XML request/response mirroring** to a file for SOAP troubleshooting
+- **WS-Discovery Target Service** aligned with ONVIF Core 26.06 and WS-Discovery 2005/04, including Probe/Resolve, IPv4+IPv6, and live discovery mode
 - **Reorganized tree**: src/, xml/, config/, docs/
 - **Thingino Buildroot package** installs binaries, templates, JSON, init scripts
 - **Proper Buildroot integration** with thingino-jct and mxml dependencies
@@ -46,6 +47,7 @@ Small, dependency‑light, and integrated with Thingino’s build, config, and l
 - **Migration**: [MIGRATION_SUMMARY.md](docs/MIGRATION_SUMMARY.md), [MXML_MIGRATION.md](docs/MXML_MIGRATION.md)
 - **Configuration**: [CONFIGURATION.md](docs/CONFIGURATION.md), [API.md](docs/API.md)
 - **Operations**: [DEPLOYMENT.md](docs/DEPLOYMENT.md), [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- **WS-Discovery**: [WS_DISCOVERY.md](docs/WS_DISCOVERY.md)
 - **Development**: [CHANGELOG.md](docs/CHANGELOG.md), [README.md](docs/README.md), [GIT_HOOKS.md](docs/GIT_HOOKS.md)
 
 ## Attribution & License

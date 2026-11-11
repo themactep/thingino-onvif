@@ -149,7 +149,7 @@ make CC="$CC" STRIP="$STRIP" \
      INCLUDE="-I$(pwd)/local/include -Isrc -I. $CRYPTO_FLAGS" \
      LIBS_O="-Wl,--gc-sections $CRYPTO_LIB -L$(pwd)/local/lib -ljct -lmxml -lpthread -lrt" \
      LIBS_N="-Wl,--gc-sections $CRYPTO_LIB -L$(pwd)/local/lib -ljct -lmxml -lpthread -lrt" \
-     LIBS_W="-Wl,--gc-sections $CRYPTO_LIB -L$(pwd)/local/lib -lmxml -lpthread"
+     LIBS_W="-Wl,--gc-sections $CRYPTO_LIB -L$(pwd)/local/lib -ljct -lmxml -lpthread -lrt"
 
 # Check if build was successful
 if [ $? -eq 0 ] && [ -f "onvif_simple_server" ]; then

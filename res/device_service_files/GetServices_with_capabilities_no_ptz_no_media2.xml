@@ -14,7 +14,7 @@
                     <tds:Capabilities>
                         <tds:Network IPFilter="false"
                                      ZeroConfiguration="false"
-                                     IPVersion6="false"
+                                     IPVersion6="true"
                                      DynDNS="false"
                                      Dot11Configuration="false"
                                      Dot1XConfigurations="0"
@@ -40,7 +40,7 @@
                                       MaxPasswordLength="0"/>
                         <tds:System DiscoveryResolve="true"
                                     DiscoveryBye="true"
-                                    RemoteDiscovery="true"
+                                    RemoteDiscovery="false"
                                     SystemBackup="false"
                                     SystemLogging="false"
                                     FirmwareUpgrade="false"

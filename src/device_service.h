@@ -33,6 +33,7 @@ int device_get_capabilities();
 int device_get_network_interfaces();
 int device_get_network_protocols();
 int device_get_discovery_mode();
+int device_set_discovery_mode();
 int device_get_hostname();
 int device_get_endpoint_reference();
 int device_get_ntp();

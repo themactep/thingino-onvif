@@ -1,6 +1,14 @@
 # Changelog
 
 ## Unreleased
+- WS-Discovery aligned with ONVIF Core 26.06 and WS-Discovery 2005/04:
+  - Hello/ProbeMatches/ResolveMatches advertise `tds:Device` and `tdn:NetworkVideoTransmitter`
+  - Probe type and scope matching, Resolve/ResolveMatches, duplicate suppression
+  - Stable serial/persistent-MAC endpoint UUID, boot-time AppSequence instance IDs
+  - Configurable scopes, single-datagram size guard, IPv4+IPv6 dual-stack
+  - `SetDiscoveryMode` with live `SIGHUP` transition, truthful discovery capabilities
+  - `GetEndpointReference` now returns the ONVIF GUID element
+  - `GetNetworkInterfaces` reports IPv6 addresses
 - Reorganized source tree: all C/H sources moved to `src/`
 - XML templates relocated under `xml/` in the source tree; installed paths under `/var/www/onvif/*` unchanged
 - Introduced `docs/` with comprehensive documentation:

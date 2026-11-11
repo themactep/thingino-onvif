@@ -1,3 +1,5 @@
+> Historical notes. The current implementation also implements Resolve/ResolveMatches, Probe type/scope matching and IPv6; see [WS_DISCOVERY.md](WS_DISCOVERY.md).
+
 # Better Probe Handling in wsd_simple_server
 
 ## Summary
