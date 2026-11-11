@@ -113,18 +113,18 @@ test_imaging_service() {
         if [ "$VERBOSE" = true ]; then echo "$resp_settings"; fi
     elif ! assert_valid_xml "$resp_settings" "imaging/GetImagingSettings"; then
         return 1
-    elif [[ $resp_settings == *"<tt:VideoSourceToken>$token</tt:VideoSourceToken>"* && $resp_settings == *"<tt:IrCutFilter>"* ]]; then
+    elif [[ $resp_settings == *"<tt:IrCutFilter>"* && $resp_settings != *"VideoSourceToken"* ]]; then
         echo -e "${GREEN}✓ Imaging GetImagingSettings - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_settings"
     else
-        echo -e "${YELLOW}⚠ Imaging GetImagingSettings - response missing VideoSourceToken/IrCutFilter${NC}"
+        echo -e "${YELLOW}⚠ Imaging GetImagingSettings - IrCutFilter missing, or a VideoSourceToken ImagingSettings20 does not have${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_settings"
     fi
 
     # Record original IR Cut filter so we can restore it later
     local original_ir
     original_ir=$(echo "$resp_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
-    [[ -n $original_ir ]] || original_ir="On"
+    [[ -n $original_ir ]] || original_ir="ON"
 
     # Verify GetOptions returns the expanded structures
     tmp_resp=$(mktemp)
@@ -138,11 +138,11 @@ test_imaging_service() {
         [ "$VERBOSE" = true ] && echo "$resp_options"
     elif ! assert_valid_xml "$resp_options" "imaging/GetOptions"; then
         return 1
-    elif [[ $resp_options == *"<tt:VideoSourceToken>$token</tt:VideoSourceToken>"* && $resp_options == *"<tt:IrCutFilterModes>"* ]]; then
+    elif [[ $resp_options == *"<tt:IrCutFilterModes>"* && $resp_options != *"VideoSourceToken"* ]]; then
         echo -e "${GREEN}✓ Imaging GetOptions - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_options"
     else
-        echo -e "${YELLOW}⚠ Imaging GetOptions - response missing VideoSourceToken/IrCutFilterModes${NC}"
+        echo -e "${YELLOW}⚠ Imaging GetOptions - IrCutFilterModes missing, or a VideoSourceToken ImagingOptions20 does not have${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_options"
     fi
 
@@ -151,15 +151,15 @@ test_imaging_service() {
     current_ir=$(echo "$resp_settings" | sed -n 's|.*<tt:IrCutFilter>\(.*\)</tt:IrCutFilter>.*|\1|p')
     [[ -n $current_ir ]] || current_ir="$original_ir"
 
-    # choose target value (toggle between On/Off; default to On if unknown)
+    # choose target value (toggle between ON/OFF; default to ON if unknown)
     local lc; lc=$(echo "$current_ir" | tr '[:upper:]' '[:lower:]')
     local target_ir
     if [ "$lc" = "on" ]; then
-        target_ir="Off"
+        target_ir="OFF"
     elif [ "$lc" = "off" ]; then
-        target_ir="On"
+        target_ir="ON"
     else
-        target_ir="On"
+        target_ir="ON"
     fi
 
     echo -e "[INFO] Imaging: current IrCutFilter=$current_ir -> setting to $target_ir to verify SetImagingSettings"
