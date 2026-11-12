@@ -8,12 +8,12 @@
   },
   "aux": [
     {
-      "exec": "irled on",
-      "name": "IRLED ON"
+      "exec": "light ir on",
+      "name": "IR LED ON"
     },
     {
-      "exec": "irled off",
-      "name": "IRLED OFF"
+      "exec": "light ir off",
+      "name": "IR LED OFF"
     },
     {
       "exec": "color on",
@@ -72,15 +72,13 @@
   "events_enable": 1,
   "imaging": [
     {
-      "cmd_ircut_auto": "/sbin/ircut auto",
       "cmd_ircut_off": "/sbin/ircut off",
       "cmd_ircut_on": "/sbin/ircut on",
       "ircut_modes": [
         "On",
-        "Off",
-        "Auto"
+        "Off"
       ],
-      "ircut_state": "Auto",
+      "ircut_state": "Off",
       "video_source_token": "VideoSourceToken"
     }
   ],
@@ -152,15 +150,14 @@
       "token": "IRCutFilter"
     },
     {
-      "close": "irled off",
+      "close": "light ir off",
       "idle_state": "close",
-      "open": "irled on",
+      "open": "light ir on",
       "token": "IRLEDs"
     }
   ],
   "scopes": [
     "onvif://www.onvif.org/Profile/Streaming",
-    "onvif://www.onvif.org/Profile/T",
     "onvif://www.onvif.org/hardware",
     "onvif://www.onvif.org/name"
   ],
