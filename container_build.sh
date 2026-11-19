@@ -43,6 +43,14 @@ server["ifs"] = "lo"
 server["username"] = "thingino"
 server["password"] = "thingino"
 config.setdefault("camera", {})["serial_num"] = "CONTAINER-TEST"
+# TemperatureCritical is not in the stock config (it needs a thermal zone, T32
+# and newer); add it here so the events suite covers it. No Source (8.9.10).
+events = config.setdefault("events", [])
+if not any(e.get("topic") == "tns1:Device/HardwareFailure/TemperatureCritical" for e in events):
+    events.append({
+        "input_file": "/run/motion/temperature_critical",
+        "topic": "tns1:Device/HardwareFailure/TemperatureCritical",
+    })
 with open(path, "w") as f:
     json.dump(config, f, indent=2)
 PY

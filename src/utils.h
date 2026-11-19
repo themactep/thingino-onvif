@@ -99,6 +99,7 @@ int gen_uuid_v5(const char *name, char *uuid_out);
 void run_command_silent(const char *command);
 void build_event_sources(char *out, size_t outlen, const event_t *ev);
 void build_event_source_descriptions(char *out, size_t outlen, const event_t *ev);
+void event_data_item(const char *topic, const char **name, const char **type);
 int netmask2prefixlen(char *netmask);
 int get_mtu(char *if_name);
 char *trim(char *s);

@@ -112,11 +112,10 @@ pull_messages() {
     soap_post "$EVENTS_URL?sub=$sub" "$(envelope '<tev:PullMessages><tev:Timeout>PT5S</tev:Timeout><tev:MessageLimit>10</tev:MessageLimit></tev:PullMessages>')"
 }
 
+# GetEventProperties lists topics as nested elements, so look for the leaf.
 event_present() {
     local topic=$1
-    local props
-    props=$(get_event_properties)
-    [ -n "$props" ] && printf '%s' "$props" | grep -qF "$topic"
+    [ -n "$(topic_description "$(get_event_properties)" "${topic##*/}")" ]
 }
 
 container_available() {
@@ -141,10 +140,48 @@ value_present() {
     printf '%s' "$response" | tr -d '\n' | grep -Eq "Name=\"$name\"[^>]*Value=\"$value\""
 }
 
+# The topic's leaf element in GetEventProperties, e.g. StorageFailure, with its
+# MessageDescription (the topic set nests Device > HardwareFailure > leaf).
+topic_description() {
+    local props=$1
+    local leaf=$2
+    printf '%s' "$props" | tr -d '\n' | sed -n "s|.*\(<\([a-z0-9]*:\)\{0,1\}$leaf[ >].*</\([a-z0-9]*:\)\{0,1\}$leaf>\).*|\1|p"
+}
+
+# GetEventProperties advertises the data item and, when the spec has one, the
+# Token source.
+check_failure_description() {
+    local topic=$1
+    local data_name=$2
+    local source=$3
+    local desc
+    desc=$(topic_description "$(get_event_properties)" "${topic##*/}")
+
+    if printf '%s' "$desc" | grep -q "Name=\"$data_name\" Type=\"xsd:boolean\""; then
+        pass "$topic advertises $data_name (xsd:boolean)"
+    else
+        fail "$topic does not advertise $data_name (xsd:boolean)"
+        [ "$VERBOSE" = true ] && printf '%s\n' "$desc"
+    fi
+
+    if [ -n "$source" ]; then
+        if printf '%s' "$desc" | grep -q "<tt:Source><tt:SimpleItemDescription Name=\"$source\""; then
+            pass "$topic advertises the $source source"
+        else
+            fail "$topic does not advertise the $source source"
+        fi
+    elif printf '%s' "$desc" | grep -q "<tt:Source"; then
+        fail "$topic advertises a Source; the spec defines none"
+    else
+        pass "$topic advertises no Source"
+    fi
+}
+
 check_failure_event() {
     local topic=$1
     local flag=$2
     local data_name=$3
+    local source=${4:-}
 
     echo -e "\n${YELLOW}Testing: $topic${NC}"
 
@@ -153,6 +190,8 @@ check_failure_event() {
         return 0
     fi
 
+    check_failure_description "$topic" "$data_name" "$source"
+
     if ! container_available; then
         skip "$topic is configured; failure flags need the local test container"
         return 0
@@ -160,12 +199,23 @@ check_failure_event() {
 
     # Start clean so the subscription's initial event is a known state.
     set_flag "$flag" false
-    sleep 1
+    sleep 2
+
+    # No flag: no card or a healthy one (the firmware monitor decides). The
+    # Initialized message must report false.
+    local sub resp
+    sub=$(create_subscription)
+    resp=$([ -n "$sub" ] && pull_messages "$sub")
+    if printf '%s' "$resp" | grep -qF "$topic" && value_present "$resp" "$data_name" false; then
+        pass "$topic reports $data_name=false without the flag (no card, or healthy)"
+    else
+        fail "$topic did not report $data_name=false without the flag (no card, or healthy)"
+        [ "$VERBOSE" = true ] && printf '%s\n' "$resp"
+    fi
 
     set_flag "$flag" true
     sleep 2
 
-    local sub resp
     sub=$(create_subscription)
     if [ -z "$sub" ]; then
         fail "could not create a PullPoint subscription for $topic"
@@ -215,7 +265,8 @@ fi
 check_failure_event \
     "tns1:Device/HardwareFailure/StorageFailure" \
     "/run/motion/storage_failure" \
-    "Failed"
+    "Failed" \
+    "Token"
 
 # TemperatureCritical: ONVIF Core 25.12 8.9.10, data field Critical.
 check_failure_event \
