@@ -56,6 +56,17 @@
         }
       ],
       "topic": "tns1:RuleEngine/CellMotionDetector/Motion"
+    },
+    {
+      "input_file": "/run/motion/storage_failure",
+      "sources": [
+        {
+          "name": "Token",
+          "type": "tt:ReferenceToken",
+          "value": "StorageToken_0"
+        }
+      ],
+      "topic": "tns1:Device/HardwareFailure/StorageFailure"
     }
   ],
   "events_enable": 1,

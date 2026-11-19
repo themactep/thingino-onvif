@@ -32,10 +32,10 @@ The topic selects the ONVIF data item:
 | `tns1:Device/HardwareFailure/StorageFailure` | `Failed` |
 | `tns1:Device/HardwareFailure/TemperatureCritical` | `Critical` |
 
-Motion and relay events are configured by default. The two HardwareFailure
-events are not in the default config yet; the firmware-side monitors and the
-`Failed`/`Critical` data mapping are a follow-up. The events test suite
-exercises them conditionally once they are present.
+Motion, relay and StorageFailure events are configured by default.
+TemperatureCritical is not, since only SoCs with a thermal zone (T32 and newer)
+can raise it; the test container adds it. The events test suite exercises both
+when they are configured.
 
 ## Hardware failure events
 
@@ -51,7 +51,7 @@ The spec-shaped events use file flags like the motion path:
 
 A monitor creates the flag while the failure is active and removes it when the
 condition clears. An absent card is not a failure. The firmware-side monitors
-are not implemented yet.
+are not implemented yet; until they are, both events report false.
 
 ---
 

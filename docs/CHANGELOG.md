@@ -3,6 +3,7 @@
 ## Unreleased
 - Removed the bare `tns1:Device/HardwareFailure` placeholder from the default config and container templates; it had no producer.
 - Added `tests/container_test_events.sh`, wired into `container_test.sh`, with PullPoint and conditional `StorageFailure`/`TemperatureCritical` failure coverage.
+- Events: `HardwareFailure` sub-topics carry `Failed` (`Critical` for `TemperatureCritical`) in PullMessages, Notify and GetEventProperties; events without sources no longer emit an empty `tt:Source`. `StorageFailure` is in the default config.
 - Fixed the Imaging `GetImagingSettings` and `GetOptions` builders to use the ONVIF 20 element names and extension nesting, including the `NoiseReduction`/`NoiseReductionOptions` `Level` children.
 - Synced the stock config templates with the `light ir` / `ircut` / Profile T fixes and set the default IR-cut state to `On`.
 - WS-Discovery aligned with ONVIF Core 26.06 and WS-Discovery 2005/04:

@@ -77,9 +77,11 @@ plus a Data item. The legacy single-item keys `source_name`/`source_type`/
 The topic selects the ONVIF data item. MotionAlarm carries `State`,
 CellMotionDetector/Motion carries `IsMotion`, relay events carry `LogicalState`,
 and the HardwareFailure sub-topics carry `Failed` (`Critical` for
-TemperatureCritical). The default config no longer includes the bare
-`tns1:Device/HardwareFailure` placeholder. The spec-shaped StorageFailure and
-TemperatureCritical entries, and their firmware-side monitors, are a follow-up:
+TemperatureCritical). The default config includes StorageFailure (below); the
+bare `tns1:Device/HardwareFailure` placeholder is gone. TemperatureCritical is
+not in the default config, since only SoCs with a thermal zone (T32 and newer)
+can raise it. Its entry has no `sources` (ONVIF Core 8.9.10): just `topic` and
+`"input_file": "/run/motion/temperature_critical"`.
 
 ```json
 {

@@ -46,6 +46,13 @@
             "source_type": "tt:ReferenceToken",
             "source_value": "VideoSourceConfigToken",
             "input_file": "/run/motion/motion_alarm"
+        },
+        {
+            "topic": "tns1:Device/HardwareFailure/StorageFailure",
+            "source_name": "Token",
+            "source_type": "tt:ReferenceToken",
+            "source_value": "StorageToken_0",
+            "input_file": "/run/motion/storage_failure"
         }
     ],
     "imaging": [
