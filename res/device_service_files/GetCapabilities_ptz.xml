@@ -50,6 +50,7 @@
                     <tt:WSPullPointSupport>%EVENTS_PULLPOINT%</tt:WSPullPointSupport>
                     <tt:WSPausableSubscriptionManagerInterfaceSupport>false</tt:WSPausableSubscriptionManagerInterfaceSupport>
                 </tt:Events>
+%IMAGING_CAPABILITIES%
                 <tt:Media>
                     <tt:XAddr>%MEDIA_SERVICE_ADDRESS%</tt:XAddr>
                     <tt:StreamingCapabilities>
@@ -61,7 +62,6 @@
                 <tt:PTZ>
                     <tt:XAddr>%PTZ_SERVICE_ADDRESS%</tt:XAddr>
                 </tt:PTZ>
-%IMAGING_CAPABILITIES%
                 <tt:Extension>
                     <tt:DeviceIO>
                         <tt:XAddr>%DEVICEIO_SERVICE_ADDRESS%</tt:XAddr>

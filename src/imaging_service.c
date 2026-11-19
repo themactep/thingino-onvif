@@ -148,13 +148,13 @@ static const char *ircut_mode_to_string(ircut_mode_t mode)
 {
     switch (mode) {
     case IRCUT_MODE_ON:
-        return "On";
+        return "ON";
     case IRCUT_MODE_OFF:
-        return "Off";
+        return "OFF";
     case IRCUT_MODE_AUTO:
-        return "Auto";
+        return "AUTO";
     default:
-        return "Auto";
+        return "AUTO";
     }
 }
 
@@ -594,20 +594,20 @@ static void append_ircut_modes(xml_builder_t *builder, const imaging_entry_t *en
 
     int appended = 0;
     if (entry->supports_ircut_on) {
-        xml_builder_append(builder, "<tt:IrCutFilterModes>On</tt:IrCutFilterModes>\n");
+        xml_builder_append(builder, "<tt:IrCutFilterModes>ON</tt:IrCutFilterModes>\n");
         appended = 1;
     }
     if (entry->supports_ircut_off) {
-        xml_builder_append(builder, "<tt:IrCutFilterModes>Off</tt:IrCutFilterModes>\n");
+        xml_builder_append(builder, "<tt:IrCutFilterModes>OFF</tt:IrCutFilterModes>\n");
         appended = 1;
     }
     if (entry->supports_ircut_auto) {
-        xml_builder_append(builder, "<tt:IrCutFilterModes>Auto</tt:IrCutFilterModes>\n");
+        xml_builder_append(builder, "<tt:IrCutFilterModes>AUTO</tt:IrCutFilterModes>\n");
         appended = 1;
     }
 
     if (!appended) {
-        xml_builder_append(builder, "<tt:IrCutFilterModes>On</tt:IrCutFilterModes>\n<tt:IrCutFilterModes>Off</tt:IrCutFilterModes>\n");
+        xml_builder_append(builder, "<tt:IrCutFilterModes>ON</tt:IrCutFilterModes>\n<tt:IrCutFilterModes>OFF</tt:IrCutFilterModes>\n");
     }
 }
 
@@ -966,9 +966,6 @@ static void build_imaging_settings_xml(const imaging_entry_t *entry, char *buffe
     if (!entry)
         return;
 
-    const char *token = entry->video_source_token ? entry->video_source_token : "VideoSourceToken";
-    xml_builder_append(&builder, "<tt:VideoSourceToken>%s</tt:VideoSourceToken>\n", token);
-
     append_mode_level_setting(&builder, "BacklightCompensation", &entry->backlight);
     append_float_element(&builder, "Brightness", &entry->brightness);
     append_float_element(&builder, "ColorSaturation", &entry->color_saturation);
@@ -996,9 +993,6 @@ static void build_imaging_options_xml(const imaging_entry_t *entry, char *buffer
 
     if (!entry)
         return;
-
-    const char *token = entry->video_source_token ? entry->video_source_token : "VideoSourceToken";
-    xml_builder_append(&builder, "<tt:VideoSourceToken>%s</tt:VideoSourceToken>\n", token);
 
     append_mode_level_options(&builder, "BacklightCompensationOptions", &entry->backlight);
     append_float_range(&builder, "Brightness", &entry->brightness);
@@ -1213,7 +1207,7 @@ int imaging_set_imaging_settings()
                        "ter:InvalidArgVal",
                        "ter:ConfigModify",
                        "Unsupported IrCutFilter",
-                       "IrCutFilter value must be On, Off or Auto");
+                       "IrCutFilter value must be ON, OFF or AUTO");
             return -1;
         }
 
