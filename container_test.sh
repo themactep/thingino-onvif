@@ -122,6 +122,11 @@ test_imaging_service() {
     elif ! assert_valid_xml "$resp_settings" "imaging/GetImagingSettings"; then
         return 1
     elif [[ $resp_settings == *"<tt:IrCutFilter>"* && $resp_settings != *"VideoSourceToken"* ]]; then
+        if [[ $resp_settings == *"<tt:NoiseReduction>"* && $resp_settings != *"<tt:NoiseReduction><tt:Level>"* ]]; then
+            echo -e "${RED}✗ Imaging GetImagingSettings - NoiseReduction is missing the Level wrapper${NC}"
+            [ "$VERBOSE" = true ] && echo "$resp_settings"
+            return 1
+        fi
         echo -e "${GREEN}✓ Imaging GetImagingSettings - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_settings"
     else
@@ -147,6 +152,18 @@ test_imaging_service() {
     elif ! assert_valid_xml "$resp_options" "imaging/GetOptions"; then
         return 1
     elif [[ $resp_options == *"<tt:IrCutFilterModes>"* && $resp_options != *"VideoSourceToken"* ]]; then
+        local old_names=("ExposureOptions20" "FocusOptions20" "WhiteBalanceOptions20"
+                         "BacklightCompensationOptions" "WideDynamicRangeOptions"
+                         "IrCutFilterAutoAdjustmentOptions" "ImageStabilizationOptions"
+                         "NoiseReduction")
+        local old_name
+        for old_name in "${old_names[@]}"; do
+            if [[ $resp_options == *"<tt:$old_name>"* ]]; then
+                echo -e "${RED}✗ Imaging GetOptions - response still uses <tt:$old_name>${NC}"
+                [ "$VERBOSE" = true ] && echo "$resp_options"
+                return 1
+            fi
+        done
         echo -e "${GREEN}✓ Imaging GetOptions - SUCCESS${NC}"
         [ "$VERBOSE" = true ] && echo "$resp_options"
     else

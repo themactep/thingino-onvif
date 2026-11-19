@@ -481,7 +481,7 @@ static void append_exposure_options(xml_builder_t *builder, const imaging_exposu
     if (!has_range && config->modes.count == 0 && config->priorities.count == 0)
         return;
 
-    xml_builder_append(builder, "<tt:ExposureOptions20>\n");
+    xml_builder_append(builder, "<tt:Exposure>\n");
     append_string_list(builder, "Mode", &config->modes);
     append_string_list(builder, "Priority", &config->priorities);
     append_float_range(builder, "MinExposureTime", &config->min_exposure_time);
@@ -493,7 +493,7 @@ static void append_exposure_options(xml_builder_t *builder, const imaging_exposu
     append_float_range(builder, "MinIris", &config->min_iris);
     append_float_range(builder, "MaxIris", &config->max_iris);
     append_float_range(builder, "Iris", &config->iris);
-    xml_builder_append(builder, "</tt:ExposureOptions20>\n");
+    xml_builder_append(builder, "</tt:Exposure>\n");
 }
 
 static void append_focus_settings(xml_builder_t *builder, const imaging_focus_config_t *config)
@@ -520,12 +520,12 @@ static void append_focus_options(xml_builder_t *builder, const imaging_focus_con
     if (!has_range && config->modes.count == 0)
         return;
 
-    xml_builder_append(builder, "<tt:FocusOptions20>\n");
+    xml_builder_append(builder, "<tt:Focus>\n");
     append_string_list(builder, "AutoFocusModes", &config->modes);
     append_float_range(builder, "DefaultSpeed", &config->default_speed);
     append_float_range(builder, "NearLimit", &config->near_limit);
     append_float_range(builder, "FarLimit", &config->far_limit);
-    xml_builder_append(builder, "</tt:FocusOptions20>\n");
+    xml_builder_append(builder, "</tt:Focus>\n");
 }
 
 static void append_white_balance_settings(xml_builder_t *builder, const imaging_white_balance_config_t *config)
@@ -550,11 +550,11 @@ static void append_white_balance_options(xml_builder_t *builder, const imaging_w
     if (!has_range && config->modes.count == 0)
         return;
 
-    xml_builder_append(builder, "<tt:WhiteBalanceOptions20>\n");
+    xml_builder_append(builder, "<tt:WhiteBalance>\n");
     append_string_list(builder, "Mode", &config->modes);
     append_float_range(builder, "CrGain", &config->cr_gain);
     append_float_range(builder, "CbGain", &config->cb_gain);
-    xml_builder_append(builder, "</tt:WhiteBalanceOptions20>\n");
+    xml_builder_append(builder, "</tt:WhiteBalance>\n");
 }
 
 static void append_ircut_auto_adjustment_settings(xml_builder_t *builder, const imaging_ircut_auto_adjustment_t *config)
@@ -580,11 +580,11 @@ static void append_ircut_auto_adjustment_options(xml_builder_t *builder, const i
     if (!has_range && config->boundary_types.count == 0)
         return;
 
-    xml_builder_append(builder, "<tt:IrCutFilterAutoAdjustmentOptions>\n");
+    xml_builder_append(builder, "<tt:IrCutFilterAutoAdjustment>\n");
     append_string_list(builder, "BoundaryType", &config->boundary_types);
     append_float_range(builder, "BoundaryOffset", &config->boundary_offset);
     append_float_range(builder, "ResponseTime", &config->response_time);
-    xml_builder_append(builder, "</tt:IrCutFilterAutoAdjustmentOptions>\n");
+    xml_builder_append(builder, "</tt:IrCutFilterAutoAdjustment>\n");
 }
 
 static void append_ircut_modes(xml_builder_t *builder, const imaging_entry_t *entry)
@@ -976,11 +976,40 @@ static void build_imaging_settings_xml(const imaging_entry_t *entry, char *buffe
     append_float_element(&builder, "Sharpness", &entry->sharpness);
     append_mode_level_setting(&builder, "WideDynamicRange", &entry->wide_dynamic_range);
     append_white_balance_settings(&builder, &entry->white_balance);
-    append_ircut_auto_adjustment_settings(&builder, &entry->ircut_auto_adjustment);
-    append_mode_level_setting(&builder, "ImageStabilization", &entry->image_stabilization);
-    append_mode_level_setting(&builder, "ToneCompensation", &entry->tone_compensation);
-    append_mode_level_setting(&builder, "Defogging", &entry->defogging);
-    append_float_element(&builder, "NoiseReduction", &entry->noise_reduction);
+
+    int has_stabilization = entry->image_stabilization.present;
+    int has_ircut_auto = entry->ircut_auto_adjustment.present;
+    int has_tone = entry->tone_compensation.present;
+    int has_defog = entry->defogging.present;
+    int has_noise = entry->noise_reduction.present && entry->noise_reduction.has_value;
+    int has_ext203 = has_tone || has_defog || has_noise;
+    int has_ext202 = has_ircut_auto || has_ext203;
+    int has_ext20 = has_stabilization || has_ext202;
+
+    if (has_ext20) {
+        xml_builder_append(&builder, "<tt:Extension>\n");
+        if (has_stabilization)
+            append_mode_level_setting(&builder, "ImageStabilization", &entry->image_stabilization);
+        if (has_ext202) {
+            xml_builder_append(&builder, "<tt:Extension>\n");
+            if (has_ircut_auto)
+                append_ircut_auto_adjustment_settings(&builder, &entry->ircut_auto_adjustment);
+            if (has_ext203) {
+                xml_builder_append(&builder, "<tt:Extension>\n");
+                if (has_tone)
+                    append_mode_level_setting(&builder, "ToneCompensation", &entry->tone_compensation);
+                if (has_defog)
+                    append_mode_level_setting(&builder, "Defogging", &entry->defogging);
+                if (has_noise)
+                    xml_builder_append(&builder,
+                                       "<tt:NoiseReduction><tt:Level>%.6f</tt:Level></tt:NoiseReduction>\n",
+                                       entry->noise_reduction.value);
+                xml_builder_append(&builder, "</tt:Extension>\n");
+            }
+            xml_builder_append(&builder, "</tt:Extension>\n");
+        }
+        xml_builder_append(&builder, "</tt:Extension>\n");
+    }
 }
 
 static void build_imaging_options_xml(const imaging_entry_t *entry, char *buffer, size_t buffer_len)
@@ -994,7 +1023,7 @@ static void build_imaging_options_xml(const imaging_entry_t *entry, char *buffer
     if (!entry)
         return;
 
-    append_mode_level_options(&builder, "BacklightCompensationOptions", &entry->backlight);
+    append_mode_level_options(&builder, "BacklightCompensation", &entry->backlight);
     append_float_range(&builder, "Brightness", &entry->brightness);
     append_float_range(&builder, "ColorSaturation", &entry->color_saturation);
     append_float_range(&builder, "Contrast", &entry->contrast);
@@ -1002,13 +1031,46 @@ static void build_imaging_options_xml(const imaging_entry_t *entry, char *buffer
     append_focus_options(&builder, &entry->focus);
     append_ircut_modes(&builder, entry);
     append_float_range(&builder, "Sharpness", &entry->sharpness);
-    append_mode_level_options(&builder, "WideDynamicRangeOptions", &entry->wide_dynamic_range);
+    append_mode_level_options(&builder, "WideDynamicRange", &entry->wide_dynamic_range);
     append_white_balance_options(&builder, &entry->white_balance);
-    append_ircut_auto_adjustment_options(&builder, &entry->ircut_auto_adjustment);
-    append_mode_level_options(&builder, "ImageStabilizationOptions", &entry->image_stabilization);
-    append_mode_level_options(&builder, "ToneCompensationOptions", &entry->tone_compensation);
-    append_mode_level_options(&builder, "DefoggingOptions", &entry->defogging);
-    append_float_range(&builder, "NoiseReduction", &entry->noise_reduction);
+
+    int has_stabilization = (entry->image_stabilization.modes.count > 0 && entry->image_stabilization.modes.items != NULL)
+                            || entry->image_stabilization.level.has_min || entry->image_stabilization.level.has_max;
+    int has_ircut_auto = (entry->ircut_auto_adjustment.boundary_types.count > 0 && entry->ircut_auto_adjustment.boundary_types.items != NULL)
+                         || entry->ircut_auto_adjustment.boundary_offset.has_min || entry->ircut_auto_adjustment.boundary_offset.has_max
+                         || entry->ircut_auto_adjustment.response_time.has_min || entry->ircut_auto_adjustment.response_time.has_max;
+    int has_tone = (entry->tone_compensation.modes.count > 0 && entry->tone_compensation.modes.items != NULL)
+                   || entry->tone_compensation.level.has_min || entry->tone_compensation.level.has_max;
+    int has_defog = (entry->defogging.modes.count > 0 && entry->defogging.modes.items != NULL) || entry->defogging.level.has_min
+                    || entry->defogging.level.has_max;
+    int has_noise = entry->noise_reduction.present;
+    int has_ext3 = has_tone || has_defog || has_noise;
+    int has_ext2 = has_ircut_auto || has_ext3;
+    int has_ext = has_stabilization || has_ext2;
+
+    if (has_ext) {
+        xml_builder_append(&builder, "<tt:Extension>\n");
+        if (has_stabilization)
+            append_mode_level_options(&builder, "ImageStabilization", &entry->image_stabilization);
+        if (has_ext2) {
+            xml_builder_append(&builder, "<tt:Extension>\n");
+            if (has_ircut_auto)
+                append_ircut_auto_adjustment_options(&builder, &entry->ircut_auto_adjustment);
+            if (has_ext3) {
+                xml_builder_append(&builder, "<tt:Extension>\n");
+                if (has_tone)
+                    append_mode_level_options(&builder, "ToneCompensationOptions", &entry->tone_compensation);
+                if (has_defog)
+                    append_mode_level_options(&builder, "DefoggingOptions", &entry->defogging);
+                if (has_noise)
+                    xml_builder_append(&builder,
+                                       "<tt:NoiseReductionOptions><tt:Level>true</tt:Level></tt:NoiseReductionOptions>\n");
+                xml_builder_append(&builder, "</tt:Extension>\n");
+            }
+            xml_builder_append(&builder, "</tt:Extension>\n");
+        }
+        xml_builder_append(&builder, "</tt:Extension>\n");
+    }
 }
 
 static void execute_backend_command(const char *command)
@@ -1248,7 +1310,6 @@ int imaging_set_imaging_settings()
         {"ColorSaturation", "saturation"},
         {"Contrast", "contrast"},
         {"Sharpness", "sharpness"},
-        {"NoiseReduction", "noise_reduction"},
     };
 
     prudynt_command_t commands[sizeof(prudynt_map) / sizeof(prudynt_map[0])];
@@ -1274,6 +1335,7 @@ int imaging_set_imaging_settings()
         {"WideDynamicRange", "wide_dynamic_range"},
         {"ToneCompensation", "tone"},
         {"Defogging", "defog"},
+        {"NoiseReduction", "noise_reduction"},
     };
 
     for (size_t i = 0; i < sizeof(prudynt_mode_level_map) / sizeof(prudynt_mode_level_map[0]); ++i) {
