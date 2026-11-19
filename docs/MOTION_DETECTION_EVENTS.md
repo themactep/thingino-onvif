@@ -16,7 +16,42 @@ Motion events are **file-based**. The `onvif_notify_server` daemon watches the
 | File **deleted** from `/run/motion/` | Motion **stop** (`IsMotion = false`) |
 
 This means the camera's motion detection pipeline only needs to create/delete a file to
-signal state changes — it does not talk to the ONVIF layer directly.
+signal state changes - it does not talk to the ONVIF layer directly.
+
+---
+
+## Event data fields
+
+The topic selects the ONVIF data item:
+
+| Topic | Data item |
+|-------|-----------|
+| `tns1:VideoSource/MotionAlarm` | `State` |
+| `tns1:RuleEngine/CellMotionDetector/Motion` | `IsMotion` |
+| `tns1:Device/Trigger/Relay` | `LogicalState` |
+| `tns1:Device/HardwareFailure/StorageFailure` | `Failed` |
+| `tns1:Device/HardwareFailure/TemperatureCritical` | `Critical` |
+
+Motion and relay events are configured by default. The two HardwareFailure
+events are not in the default config yet; the firmware-side monitors and the
+`Failed`/`Critical` data mapping are a follow-up. The events test suite
+exercises them conditionally once they are present.
+
+## Hardware failure events
+
+The default config no longer ships the bare `tns1:Device/HardwareFailure`
+placeholder. It had no producer and only ever reported `State=false`.
+
+The spec-shaped events use file flags like the motion path:
+
+| Event | Flag | Data |
+|-------|------|------|
+| `tns1:Device/HardwareFailure/StorageFailure` | `/run/motion/storage_failure` | `Failed` |
+| `tns1:Device/HardwareFailure/TemperatureCritical` | `/run/motion/temperature_critical` | `Critical` |
+
+A monitor creates the flag while the failure is active and removes it when the
+condition clears. An absent card is not a failure. The firmware-side monitors
+are not implemented yet.
 
 ---
 

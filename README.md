@@ -39,6 +39,10 @@ Small, dependency‑light, and integrated with Thingino’s build, config, and l
 ## Debugging
 - Logs: syslog (foreground prints to stderr)
 
+## Testing
+- `./container_test.sh` runs the integration suite against the local `oss` container.
+- `tests/container_test_events.sh` (invoked by the suite) covers PullPoint delivery. It also exercises `StorageFailure` and `TemperatureCritical` when those topics are configured, creating and removing the input flags in the local container. Those cases skip when the events are not configured or the target is not local.
+
 ## Templates
 - XML templates installed under /var/www/onvif/* from the xml/ directory
 

@@ -63,11 +63,32 @@ plus a Data item. The legacy single-item keys `source_name`/`source_type`/
   {
     "input_file": "/run/motion/motion_alarm",
     "sources": [
-      { "name": "Source", "type": "tt:ReferenceToken", "value": "VideoSourceToken" }
+      {
+        "name": "VideoSourceConfigurationToken",
+        "type": "tt:ReferenceToken",
+        "value": "VideoSourceConfigToken"
+      }
     ],
     "topic": "tns1:VideoSource/MotionAlarm"
   }
 ]
+```
+
+The topic selects the ONVIF data item. MotionAlarm carries `State`,
+CellMotionDetector/Motion carries `IsMotion`, relay events carry `LogicalState`,
+and the HardwareFailure sub-topics carry `Failed` (`Critical` for
+TemperatureCritical). The default config no longer includes the bare
+`tns1:Device/HardwareFailure` placeholder. The spec-shaped StorageFailure and
+TemperatureCritical entries, and their firmware-side monitors, are a follow-up:
+
+```json
+{
+  "input_file": "/run/motion/storage_failure",
+  "sources": [
+    { "name": "Token", "type": "tt:ReferenceToken", "value": "StorageToken_0" }
+  ],
+  "topic": "tns1:Device/HardwareFailure/StorageFailure"
+}
 ```
 
 ## /etc/onvif.d/preset_tours.json

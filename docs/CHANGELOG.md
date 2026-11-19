@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Removed the bare `tns1:Device/HardwareFailure` placeholder from the default config and container templates; it had no producer.
+- Added `tests/container_test_events.sh`, wired into `container_test.sh`, with PullPoint and conditional `StorageFailure`/`TemperatureCritical` failure coverage.
 - WS-Discovery aligned with ONVIF Core 26.06 and WS-Discovery 2005/04:
   - Hello/ProbeMatches/ResolveMatches advertise `tds:Device` and `tdn:NetworkVideoTransmitter`
   - Probe type and scope matching, Resolve/ResolveMatches, duplicate suppression

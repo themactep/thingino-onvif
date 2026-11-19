@@ -62,12 +62,15 @@ This repository integrates with the Thingino Buildroot package `onvif-simple-ser
 - **[CONFIGURATION.md](CONFIGURATION.md)** - Complete configuration schema and examples
 - **[CONFIGURATION_SIMPLIFICATION.md](CONFIGURATION_SIMPLIFICATION.md)** - Configuration improvements
 - **[API.md](API.md)** - ONVIF API endpoints and usage
-- **[MOTION_DETECTION_EVENTS.md](MOTION_DETECTION_EVENTS.md)** - Motion event triggering, delivery models, and client recovery guidance
+- **[MOTION_DETECTION_EVENTS.md](MOTION_DETECTION_EVENTS.md)** - Motion and hardware failure event triggering, delivery models, and client recovery guidance
 
 ### 🚀 Operations & Deployment
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Image integration and installed files
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 - **[WSD_DEBUG_LOG_EXAMPLE.md](WSD_DEBUG_LOG_EXAMPLE.md)** - WS-Discovery debugging
+
+### 🧪 Testing
+- **[../README.md](../README.md#testing)** - Container integration suite and event failure coverage
 
 ### 🔧 Development & Maintenance
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
