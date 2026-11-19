@@ -14,7 +14,6 @@
   "port": 80,
   "scopes": [
     "onvif://www.onvif.org/Profile/Streaming",
-    "onvif://www.onvif.org/Profile/T",
     "onvif://www.onvif.org/hardware",
     "onvif://www.onvif.org/name"
   ],

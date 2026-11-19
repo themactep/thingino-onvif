@@ -8,12 +8,12 @@
     "adv_synology_nvr": false,
     "aux": [
         {
-            "name": "IRLED ON",
-            "exec": "irled on"
+            "name": "IR LED ON",
+            "exec": "light ir on"
         },
         {
-            "name": "IRLED OFF",
-            "exec": "irled off"
+            "name": "IR LED OFF",
+            "exec": "light ir off"
         },
         {
             "name": "COLOR ON",
@@ -51,15 +51,13 @@
     "imaging": [
         {
             "video_source_token": "VideoSourceToken",
-            "ircut_state": "Auto",
+            "ircut_state": "On",
             "ircut_modes": [
                 "On",
-                "Off",
-                "Auto"
+                "Off"
             ],
             "cmd_ircut_on": "ircut on",
-            "cmd_ircut_off": "ircut off",
-            "cmd_ircut_auto": ""
+            "cmd_ircut_off": "ircut off"
         }
     ],
     "profiles": {
@@ -129,13 +127,12 @@
         },
         {
             "idle_state": "close",
-            "close": "irled off",
-            "open": "irled on"
+            "close": "light ir off",
+            "open": "light ir on"
         }
     ],
     "scopes": [
         "onvif://www.onvif.org/Profile/Streaming",
-        "onvif://www.onvif.org/Profile/T",
         "onvif://www.onvif.org/hardware",
         "onvif://www.onvif.org/name"
     ],

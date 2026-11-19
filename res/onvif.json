@@ -67,7 +67,7 @@
         "On",
         "Off"
       ],
-      "ircut_state": "Off",
+      "ircut_state": "On",
       "video_source_token": "VideoSourceToken"
     }
   ],

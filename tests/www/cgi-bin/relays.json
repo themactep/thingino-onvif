@@ -6,7 +6,7 @@
   },
   {
     "idle_state": "close",
-    "close": "irled off",
-    "open": "irled on"
+    "close": "light ir off",
+    "open": "light ir on"
   }
 ]
