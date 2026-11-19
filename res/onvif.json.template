@@ -46,13 +46,6 @@
             "source_type": "tt:ReferenceToken",
             "source_value": "VideoSourceConfigToken",
             "input_file": "/run/motion/motion_alarm"
-        },
-        {
-            "topic": "tns1:Device/HardwareFailure",
-            "source_name": "Source",
-            "source_type": "tt:ReferenceToken",
-            "source_value": "HardwareId",
-            "input_file": "/tmp/hardware_failure"
         }
     ],
     "imaging": [

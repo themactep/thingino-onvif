@@ -56,17 +56,6 @@
         }
       ],
       "topic": "tns1:RuleEngine/CellMotionDetector/Motion"
-    },
-    {
-      "input_file": "/tmp/hardware_failure",
-      "sources": [
-        {
-          "name": "Source",
-          "type": "tt:ReferenceToken",
-          "value": "HardwareId"
-        }
-      ],
-      "topic": "tns1:Device/HardwareFailure"
     }
   ],
   "events_enable": 1,
