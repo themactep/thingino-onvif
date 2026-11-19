@@ -1802,7 +1802,12 @@ test_imaging_service
 # Events (PullPoint) Tests
 if [ ! -f tests/container_test_events.sh ]; then
     echo -e "${YELLOW}⚠ Skipping Events tests - tests/container_test_events.sh not found${NC}"
-elif bash tests/container_test_events.sh; then
+elif SERVER_URL="$SERVER_URL" \
+    DEFAULT_USERNAME="$DEFAULT_USERNAME" \
+    DEFAULT_PASSWORD="$DEFAULT_PASSWORD" \
+    CONTAINER_NAME="$CONTAINER_NAME" \
+    VERBOSE="$VERBOSE" \
+    bash tests/container_test_events.sh; then
     echo -e "${GREEN}✓ Events tests - SUCCESS${NC}"
 else
     echo -e "${RED}✗ Events tests - FAILED${NC}"
