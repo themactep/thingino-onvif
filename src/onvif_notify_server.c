@@ -386,13 +386,9 @@ int send_notify(char *reference, int alarm_index, time_t e_time, char *property,
     build_event_sources(sources_xml, sizeof(sources_xml), &service_ctx.events[alarm_index]);
     char data_name[32];
     const char *topic = service_ctx.events[alarm_index].topic ? service_ctx.events[alarm_index].topic : "";
-    if (strstr(topic, "tns1:Device/Trigger/Relay")) {
-        strcpy(data_name, "LogicalState");
-    } else if (strstr(topic, "CellMotionDetector/Motion")) {
-        strcpy(data_name, "IsMotion");
-    } else {
-        strcpy(data_name, "State");
-    }
+    const char *item_name, *item_type;
+    event_data_item(topic, &item_name, &item_type);
+    strcpy(data_name, item_name);
     size = cat(NULL,
                template_file,
                12,

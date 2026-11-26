@@ -508,19 +508,9 @@ int events_pull_messages()
                         strcpy(data_value, "false");
                     }
                 }
-                if (service_ctx.events[i].topic != NULL && strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
-                    strcpy(data_name, "LogicalState");
-                } else if (service_ctx.events[i].topic != NULL
-                           && strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")) {
-                    // ONVIF event catalog: VideoSource/MotionAlarm carries State
-                    strcpy(data_name, "State");
-                } else if (service_ctx.events[i].topic != NULL
-                           && strstr(service_ctx.events[i].topic, "CellMotionDetector/Motion")) {
-                    // ONVIF event catalog: CellMotionDetector/Motion carries IsMotion
-                    strcpy(data_name, "IsMotion");
-                } else {
-                    strcpy(data_name, "State");
-                }
+                const char *item_name, *item_type;
+                event_data_item(service_ctx.events[i].topic, &item_name, &item_type);
+                strcpy(data_name, item_name);
                 // Ensure we have valid strings to prevent null pointer dereference
                 const char *safe_topic = service_ctx.events[i].topic ? service_ctx.events[i].topic : "Unknown";
                 char sources_xml[512];
@@ -1048,23 +1038,10 @@ int events_get_event_properties()
                 return -1;
             }
 
-            if (service_ctx.events[i].topic != NULL && strcmp("tns1:Device/Trigger/Relay", service_ctx.events[i].topic) == 0) {
-                strcpy(data_name, "LogicalState");
-                strcpy(data_type, "tt:RelayLogicalState");
-            } else if (service_ctx.events[i].topic != NULL
-                       && strstr(service_ctx.events[i].topic, "VideoSource/MotionAlarm")) {
-                // ONVIF event catalog: VideoSource/MotionAlarm advertises State
-                strcpy(data_name, "State");
-                strcpy(data_type, "xsd:boolean");
-            } else if (service_ctx.events[i].topic != NULL
-                       && strstr(service_ctx.events[i].topic, "CellMotionDetector/Motion")) {
-                // ONVIF event catalog: CellMotionDetector/Motion advertises IsMotion
-                strcpy(data_name, "IsMotion");
-                strcpy(data_type, "xsd:boolean");
-            } else {
-                strcpy(data_name, "State");
-                strcpy(data_type, "xsd:boolean");
-            }
+            const char *item_name, *item_type;
+            event_data_item(service_ctx.events[i].topic, &item_name, &item_type);
+            strcpy(data_name, item_name);
+            strcpy(data_type, item_type);
 
             // Ensure we have valid strings to prevent null pointer dereference
             char sources_xml[512];
@@ -1109,8 +1086,9 @@ int events_get_event_properties()
             strcpy(data_type, "xsd:boolean");
             // Spec: MotionAlarm source is "Source" (the video source token)
             char sources_xml[512];
-            snprintf(sources_xml, sizeof(sources_xml),
-                     "<tt:SimpleItemDescription Name=\"Source\" Type=\"tt:ReferenceToken\"/>");
+            snprintf(sources_xml,
+                     sizeof(sources_xml),
+                     "<tt:Source><tt:SimpleItemDescription Name=\"Source\" Type=\"tt:ReferenceToken\"/></tt:Source>");
             size = cat(dest,
                        "events_service_files/GetEventProperties_2.xml",
                        18,

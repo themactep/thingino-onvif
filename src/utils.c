@@ -678,38 +678,58 @@ void run_command_silent(const char *command)
     close(nullfd);
 }
 
-// Build the <tt:SimpleItem .../> fragment for an event notification's Source
-// list (one element per configured source, all on a single line for the
-// template engine).
+#define EVENT_SOURCE_CLOSE "</tt:Source>"
+
+// Room for source items, keeping space to close the <tt:Source> element.
+static size_t event_source_room(size_t outlen)
+{
+    return outlen > sizeof(EVENT_SOURCE_CLOSE) ? outlen - (sizeof(EVENT_SOURCE_CLOSE) - 1) : 0;
+}
+
+// Drop a partly written item and close <tt:Source> if one was opened.
+static void close_event_source(char *out, size_t used)
+{
+    out[used] = '\0';
+    if (used)
+        strcpy(out + used, EVENT_SOURCE_CLOSE);
+}
+
+// Build the <tt:Source> element for an event notification (one SimpleItem per
+// configured source, all on a single line for the template engine). An event
+// without sources gets no Source element, e.g. TemperatureCritical (ONVIF Core
+// 8.9.10).
 void build_event_sources(char *out, size_t outlen, const event_t *ev)
 {
     size_t used = 0;
+    size_t room = event_source_room(outlen);
 
-    out[0] = '\0';
-    if (!ev)
+    if (outlen)
+        out[0] = '\0';
+    if (!ev || !room)
         return;
 
     for (int i = 0; i < ev->sources_num; i++) {
         const event_source_t *src = &ev->sources[i];
         if (!src->name || !src->name[0] || !src->value || !src->value[0])
             continue;
-        int n = snprintf(out + used, outlen - used,
-                         "<tt:SimpleItem Name=\"%s\" Value=\"%s\"/>",
-                         src->name, src->value);
-        if (n < 0 || (size_t) n >= outlen - used)
+        int n = snprintf(out + used, room - used, "%s<tt:SimpleItem Name=\"%s\" Value=\"%s\"/>", used ? "" : "<tt:Source>", src->name, src->value);
+        if (n < 0 || (size_t) n >= room - used)
             break;
         used += (size_t) n;
     }
+    close_event_source(out, used);
 }
 
-// Build the <tt:SimpleItemDescription .../> fragment for GetEventProperties'
-// Source property list.
+// Build the <tt:Source> element of a GetEventProperties MessageDescription
+// (one SimpleItemDescription per configured source); none without sources.
 void build_event_source_descriptions(char *out, size_t outlen, const event_t *ev)
 {
     size_t used = 0;
+    size_t room = event_source_room(outlen);
 
-    out[0] = '\0';
-    if (!ev)
+    if (outlen)
+        out[0] = '\0';
+    if (!ev || !room)
         return;
 
     for (int i = 0; i < ev->sources_num; i++) {
@@ -717,12 +737,33 @@ void build_event_source_descriptions(char *out, size_t outlen, const event_t *ev
         if (!src->name || !src->name[0])
             continue;
         const char *type = (src->type && src->type[0]) ? src->type : "tt:ReferenceToken";
-        int n = snprintf(out + used, outlen - used,
-                         "<tt:SimpleItemDescription Name=\"%s\" Type=\"%s\"/>",
-                         src->name, type);
-        if (n < 0 || (size_t) n >= outlen - used)
+        int n = snprintf(out + used, room - used, "%s<tt:SimpleItemDescription Name=\"%s\" Type=\"%s\"/>", used ? "" : "<tt:Source>", src->name, type);
+        if (n < 0 || (size_t) n >= room - used)
             break;
         used += (size_t) n;
+    }
+    close_event_source(out, used);
+}
+
+// The ONVIF data item an event topic carries, with its type for
+// GetEventProperties. Shared by PullMessages, Notify and GetEventProperties.
+void event_data_item(const char *topic, const char **name, const char **type)
+{
+    *name = "State"; // also VideoSource/MotionAlarm
+    *type = "xsd:boolean";
+    if (!topic)
+        return;
+    if (strcmp(topic, "tns1:Device/Trigger/Relay") == 0) {
+        *name = "LogicalState";
+        *type = "tt:RelayLogicalState";
+    } else if (strstr(topic, "CellMotionDetector/Motion")) {
+        *name = "IsMotion";
+    } else if (strstr(topic, "HardwareFailure/TemperatureCritical")) {
+        // ONVIF Core 25.12 8.9.10
+        *name = "Critical";
+    } else if (strstr(topic, "HardwareFailure/")) {
+        // ONVIF Core 25.12 8.9.10: FanFailure, PowerSupplyFailure, StorageFailure
+        *name = "Failed";
     }
 }
 
